@@ -50,14 +50,6 @@ include(FindGTestFix)
 if(GTest_FOUND)
   #add_subdirectory(tests)
   add_custom_target(everything DEPENDS
-    all_tests
     daqlite
     )
-  create_coverage_targets(
-    coverage
-    run_unit_tests
-    ${PROJECT_BINARY_DIR}
-    ${CMAKE_SOURCE_DIR}/source/
-    ${PROJECT_BINARY_DIR}/tests/coverage
-  )
 endif()
