@@ -8,3 +8,4 @@ find_package(h5cpp 0.4.0 REQUIRED)
 find_package(Threads REQUIRED)
 
 add_subdirectory(daqlite)
+add_subdirectory(schemasniffer)
