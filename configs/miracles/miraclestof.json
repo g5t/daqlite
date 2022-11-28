@@ -19,8 +19,8 @@
 
   "tof" : {
     "scale" : 1000,
-    "max_value" : 125000,
-    "bin_size" : 128
+    "max_value" : 280000,
+    "bin_size" : 2048
   },
 
   "plot": {
@@ -30,7 +30,7 @@
     "clear_periodic" : false,
     "clear_interval_seconds" : 30,
     "interpolate_pixels" : false,
-    "color_gradient" : "spectrum",
+    "color_gradient" : "thermal",
     "invert_gradient" : false,
     "log_scale" : false,
     "window_height" : 250,
