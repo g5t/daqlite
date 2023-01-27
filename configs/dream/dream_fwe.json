@@ -11,7 +11,7 @@
   },
 
   "geometry" : {
-    "xdim" : 616,
+    "xdim" : 280,
     "ydim" : 256,
     "zdim" : 1,
     "offset" : 0
@@ -19,13 +19,13 @@
 
   "plot": {
     "plot_type" : "pixels",
-    "window_title" : "DREAM BW EndCap detector image",
+    "window_title" : "DREAM FW EndCap image",
     "plot_title" : "Pixels",
     "clear_periodic" : false,
     "clear_interval_seconds" : 5,
     "interpolate_pixels" : false,
     "color_gradient" : "hot",
-    "invert_gradient" : true,
+    "invert_gradient" : false,
     "log_scale" : true
   }
 }
