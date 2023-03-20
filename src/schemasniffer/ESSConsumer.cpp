@@ -13,7 +13,7 @@
 #include <vector>
 
 ESSConsumer::ESSConsumer(std::string Broker, std::string Topic) :
-  Topic(Topic), Broker(Broker) {
+  Broker(Broker), Topic(Topic) {
 
   mConsumer = subscribeTopic();
   assert(mConsumer != nullptr);
@@ -72,7 +72,7 @@ bool ESSConsumer::isNeutronEvent(const EventMessage * EvMsg) {
 bool ESSConsumer::isMonitor(const EventMessage * EvMsg) {
   std::string SourceName = EvMsg->source_name()->str();
   auto PixelIds = EvMsg->detector_id();
-  auto TOFs = EvMsg->time_of_flight();
+  //auto TOFs = EvMsg->time_of_flight();
 
   bool failed = false;
 

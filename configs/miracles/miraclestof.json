@@ -19,7 +19,7 @@
 
   "tof" : {
     "scale" : 1000,
-    "max_value" : 280000,
+    "max_value" : 300000,
     "bin_size" : 1024
   },
 
