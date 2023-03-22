@@ -1,7 +1,7 @@
 {
   "kafka" : {
     "broker" : "172.30.242.20:9092",
-    "topic" : "bifrost_detector",
+    "topic" : "dream_detector",
 
     "message.max.bytes" : "10000000",
     "fetch.message.max.bytes" : "10000000",
@@ -11,29 +11,21 @@
   },
 
   "geometry" : {
-    "xdim" : 900,
-    "ydim" : 15,
+    "xdim" : 112,
+    "ydim" : 3584,
     "zdim" : 1,
-    "offset" : 0
-  },
-
-  "tof" : {
-    "scale" : 1000,
-    "max_value" : 2000,
-    "bin_size" : 1024
+    "offset" : 1122304
   },
 
   "plot": {
-    "plot_type" : "tof",
-    "window_title" : "BIFROST TOF",
-    "plot_title" : "TOF",
+    "plot_type" : "pixels",
+    "window_title" : "DREAM High Res. image",
+    "plot_title" : "Pixels",
     "clear_periodic" : false,
-    "clear_interval_seconds" : 30,
+    "clear_interval_seconds" : 5,
     "interpolate_pixels" : false,
-    "color_gradient" : "spectrum",
+    "color_gradient" : "hot",
     "invert_gradient" : false,
-    "log_scale" : false,
-    "window_height" : 250,
-    "window_width" : 750
-   }
+    "log_scale" : true
+  }
 }
