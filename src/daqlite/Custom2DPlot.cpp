@@ -190,8 +190,9 @@ void Custom2DPlot::addData(std::vector<uint32_t> &Histogram) {
   //
   int64_t nsBetweenClear = 1000000000LL * mConfig.Plot.ClearEverySeconds;
   if (mConfig.Plot.ClearPeriodic and (elapsed.count() >= nsBetweenClear)) {
-    std::fill(HistogramData.begin(), HistogramData.end(), 0);
     t1 = std::chrono::high_resolution_clock::now();
+    std::fill(HistogramData.begin(), HistogramData.end(), 0);
+    plotDetectorImage(true);
   }
 
   // Accumulate counts, PixelId 0 does not exist
