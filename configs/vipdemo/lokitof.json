@@ -24,7 +24,7 @@
     "clear_periodic" : false,
     "clear_interval_seconds" : 30,
     "interpolate_pixels" : false,
-    "color_gradient" : "spectrum",
+    "color_gradient" : "hot",
     "invert_gradient" : false,
     "log_scale" : false
   }
