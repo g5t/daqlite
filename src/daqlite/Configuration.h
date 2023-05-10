@@ -92,5 +92,8 @@ public:
   struct Kafka Kafka;
   struct Plot Plot;
 
+  std::string KafkaConfigFile{""};
+  std::vector<std::pair<std::string, std::string>> KafkaConfig;
+
   nlohmann::json JsonObj;
 };
