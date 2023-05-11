@@ -14,7 +14,8 @@
 #include <unistd.h>
 #include <vector>
 
-ESSConsumer::ESSConsumer(Configuration &Config) : mConfig(Config) {
+ESSConsumer::ESSConsumer(Configuration &Config, std::vector<std::pair<std::string, std::string>> &KafkaConfig) :
+    mConfig(Config), mKafkaConfig(KafkaConfig) {
   auto &geom = mConfig.Geometry;
   uint32_t NumPixels = geom.XDim * geom.YDim * geom.ZDim;
   mMinPixel = geom.Offset + 1;
@@ -50,6 +51,10 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
   mConf->set("enable.auto.commit", mConfig.Kafka.EnableAutoCommit, ErrStr);
   mConf->set("enable.auto.offset.store", mConfig.Kafka.EnableAutoOffsetStore,
              ErrStr);
+ 
+  for (auto &Config : mKafkaConfig) {
+    mConf->set(Config.first, Config.second, ErrStr);
+  }
 
   auto ret = RdKafka::KafkaConsumer::create(mConf, ErrStr);
   if (!ret) {

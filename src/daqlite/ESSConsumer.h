@@ -10,13 +10,14 @@
 
 #pragma once
 
+#include <string>
 #include <Configuration.h>
 #include <librdkafka/rdkafkacpp.h>
 
 class ESSConsumer {
 public:
   /// \brief Constructor needs the configured Broker and Topic
-  ESSConsumer(Configuration &Config);
+  ESSConsumer(Configuration &Config, std::vector<std::pair<std::string, std::string>> &KafkaConfig);
 
   /// \brief wrapper function for librdkafka consumer
   RdKafka::Message *consume();
@@ -63,6 +64,9 @@ private:
 
   /// \brief configuration obtained from main()
   Configuration &mConfig;
+  
+  /// \brief loadable Kafka-specific configuration
+  std::vector<std::pair<std::string, std::string>> &mKafkaConfig;
 
   /// \brief Some stat counters
   /// \todo use or delete?
