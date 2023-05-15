@@ -1,0 +1,6 @@
+# YMIR
+DAQLITE_BROKER="-b 10.100.1.21:9092" ./bifrost.bash
+# local
+DAQLITE_BROKER="-b 127.0.0.1:9092" ./bifrost.bash
+# office
+DAQLITE_BROKER="-b 10.70.6.35:9092" ./bifrost.bash
