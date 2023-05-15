@@ -13,6 +13,7 @@
 #pragma once
 
 #include <ESSConsumer.h>
+#include <KafkaConfig.h>
 #include <QMutex>
 #include <QThread>
 #include <QMutex>
@@ -23,7 +24,8 @@ class WorkerThread : public QThread {
 
 public:
   WorkerThread(Configuration &Config) : mConfig(Config) {
-    Consumer = new ESSConsumer(Config);
+    KafkaConfig KafkaCfg(Config.KafkaConfigFile);
+    Consumer = new ESSConsumer(Config, KafkaCfg.CfgParms);
   };
 
   ~WorkerThread(){};

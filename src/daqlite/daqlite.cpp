@@ -32,6 +32,9 @@ int main(int argc, char *argv[]) {
   QCommandLineOption kafkaBrokerOption("b", "Kafka broker", "unusedDefault");
   CLI.addOption(kafkaBrokerOption);
 
+  QCommandLineOption kafkaConfigOption("k", "Kafka configuration file", "unusedDefault");
+  CLI.addOption(kafkaConfigOption);
+
   CLI.process(app);
 
   Configuration Config;
@@ -44,6 +47,11 @@ int main(int argc, char *argv[]) {
     std::string KafkaBroker = CLI.value(kafkaBrokerOption).toStdString();
     Config.Kafka.Broker = KafkaBroker;
     printf("<<<< \n WARNING Override kafka broker to %s \n>>>>\n", Config.Kafka.Broker.c_str());
+  }
+
+  if (CLI.isSet(kafkaConfigOption)) {
+    std::string FileName = CLI.value(kafkaConfigOption).toStdString();
+    Config.KafkaConfigFile = FileName;
   }
 
   MainWindow w(Config);
