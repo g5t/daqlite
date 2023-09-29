@@ -147,8 +147,8 @@ void CustomAMOR2DTOFPlot::clearDetectorImage(std::vector<uint32_t> &PixelIDs,
 void CustomAMOR2DTOFPlot::plotDetectorImage(bool Force) {
   setCustomParameters();
 
-  for (unsigned int y = 0; y < 352; y++) {
-    for (unsigned int x = 0; x < 512; x++) {
+  for (unsigned int y = 0; y < mConfig.Geometry.YDim; y++) {
+    for (unsigned int x = 0; x < mConfig.TOF.BinSize; x++) {
       if ((HistogramData2D[x][y] == 0) and (not Force)) {
         continue;
       }
