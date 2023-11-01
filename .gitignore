@@ -1,0 +1,31 @@
+# Compiled source #
+###################
+*.o
+*.a
+*.so
+*.pyc
+*.gcda
+*.gcno
+a.out
+*/core
+
+# Misc programs
+
+*Test$
+
+#directories
+build*/
+cmake-build-*/
+doxygen/
+# MacOs folder metadata
+.DS_Store
+
+#IDE
+CMakeLists.txt.user
+.idea/
+.atom*
+*.code-workspace
+.cache
+.vscode
+.devcontainer
+resources
