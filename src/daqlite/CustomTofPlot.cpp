@@ -6,6 +6,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <CustomTofPlot.h>
+#include <QPlot/qcustomplot/qcustomplot.h>
 #include <WorkerThread.h>
 #include <algorithm>
 #include <assert.h>
@@ -13,6 +14,11 @@
 #include <string>
 
 CustomTofPlot::CustomTofPlot(Configuration &Config) : mConfig(Config) {
+
+  // Register callback functions for events
+  connect(this, SIGNAL(mouseMove(QMouseEvent *)), this,
+          SLOT(showPointToolTip(QMouseEvent *)));
+  setAttribute(Qt::WA_AlwaysShowToolTips);
 
   auto &geom = mConfig.Geometry;
 
@@ -111,4 +117,23 @@ void CustomTofPlot::clearDetectorImage() {
   std::fill(HistogramTofData.begin(), HistogramTofData.end(), 0);
   addData(HistogramTofData);
   plotDetectorImage(true);
+}
+
+// MouseOver, display coordinate and data in tooltip
+void CustomTofPlot::showPointToolTip(QMouseEvent *event) {
+  int x = this->xAxis->pixelToCoord(event->pos().x());
+
+  // Calculate x coord width of the graphical representation of the column
+  int xCoordStep = int(mConfig.TOF.MaxValue / mConfig.TOF.BinSize);
+
+  // Get the index in data store for the x coordinate
+  int xCoordDataIndex = int((x - xCoordStep / 2) / xCoordStep);
+
+  // Get coulmn middle TOF value for the x coordinate
+  int xCoordTofValue = int((x + xCoordStep / 2) / xCoordStep) * xCoordStep;
+
+  // Get the count value from the data store
+  double count = mGraph->data()->at(xCoordDataIndex)->mainValue();
+
+  setToolTip(QString("Tof: %1 Count: %2").arg(xCoordTofValue).arg(count));
 }
