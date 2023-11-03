@@ -203,10 +203,12 @@ void Custom2DPlot::addData(std::vector<uint32_t> &Histogram) {
   return;
 }
 
-// MouseOver
+// MouseOver, display coordinate and data in tool-tip
 void Custom2DPlot::showPointToolTip(QMouseEvent *event) {
   int x = this->xAxis->pixelToCoord(event->pos().x());
   int y = this->yAxis->pixelToCoord(event->pos().y());
 
-  setToolTip(QString("%1 , %2").arg(x).arg(y));
+  double zValue = mColorMap->data()->data(x, y);
+
+  setToolTip(QString("%1 , %2, %3").arg(x).arg(y).arg(zValue));
 }
