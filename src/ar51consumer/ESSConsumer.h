@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "ar52_readout_data_generated.h"
+#include "ar51_readout_data_generated.h"
 #include <librdkafka/rdkafkacpp.h>
 
 class ESSConsumer {
@@ -46,7 +46,7 @@ public:
   bool handleMessage(RdKafka::Message *Msg);
 
   /// \brief print out some information
-  uint32_t processAR52Data(RdKafka::Message *Msg);
+  uint32_t processAR51Data(RdKafka::Message *Msg);
 
 private:
   std::string Broker{""};

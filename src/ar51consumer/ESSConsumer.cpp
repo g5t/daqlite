@@ -57,7 +57,7 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
 
 
 /// proof of concept only, poor error checking
-uint32_t ESSConsumer::processAR52Data(RdKafka::Message *Msg) {
+uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
 
   const auto & RawReadoutMsg = GetRawReadoutMessage(Msg->payload());
 
@@ -76,9 +76,9 @@ bool ESSConsumer::handleMessage(RdKafka::Message *Message) {
 
   case RdKafka::ERR_NO_ERROR:
     if (RawReadoutMessageBufferHasIdentifier(Message->payload())) {
-      processAR52Data(Message);
+      processAR51Data(Message);
     } else {
-      printf("Not a ar52 Kafka message!\n");
+      printf("Not a ar51 Kafka message!\n");
     }
     return true;
     break;
