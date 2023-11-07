@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2022 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2020 - 2023 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file daqlite.cpp
@@ -32,6 +32,9 @@ int main(int argc, char *argv[]) {
   QCommandLineOption kafkaBrokerOption("b", "Kafka broker", "unusedDefault");
   CLI.addOption(kafkaBrokerOption);
 
+  QCommandLineOption kafkaTopicOption("t", "Kafka topic", "unusedDefault");
+  CLI.addOption(kafkaTopicOption);
+
   QCommandLineOption kafkaConfigOption("k", "Kafka configuration file", "unusedDefault");
   CLI.addOption(kafkaConfigOption);
 
@@ -47,6 +50,12 @@ int main(int argc, char *argv[]) {
     std::string KafkaBroker = CLI.value(kafkaBrokerOption).toStdString();
     Config.Kafka.Broker = KafkaBroker;
     printf("<<<< \n WARNING Override kafka broker to %s \n>>>>\n", Config.Kafka.Broker.c_str());
+  }
+
+  if (CLI.isSet(kafkaTopicOption)) {
+    std::string KafkaTopic = CLI.value(kafkaTopicOption).toStdString();
+    Config.Kafka.Topic = KafkaTopic;
+    printf("<<<< \n WARNING Override kafka topic to %s \n>>>>\n", Config.Kafka.Topic.c_str());
   }
 
   if (CLI.isSet(kafkaConfigOption)) {
