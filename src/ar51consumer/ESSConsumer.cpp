@@ -60,10 +60,42 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
 uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
 
   const auto & RawReadoutMsg = GetRawReadoutMessage(Msg->payload());
+  int MsgSize = RawReadoutMsg->raw_data()->size();
 
   struct PacketHeaderV0 * Header = (struct PacketHeaderV0 *)RawReadoutMsg->raw_data()->Data();
-  printf("OQ %u, SEQ %u, length %u\n", Header->OutputQueue, Header->SeqNum,
-           Header->TotalLength);
+
+  if (Header->CookieAndType >> 8 != 0x53534500) {
+    printf("Non-ESS readout (cookie 0x%08x)\n", Header->CookieAndType);
+    return 0;
+  }
+
+  if (Header->TotalLength !=  MsgSize) {
+    printf("Readout size mismatch\n");
+    return 0;
+  }
+
+  printf("OQ %u, SEQ %u, length %u (%u)\n", Header->OutputQueue, Header->SeqNum,
+           Header->TotalLength, RawReadoutMsg->raw_data()->size());
+
+  if (MsgSize == 30) {
+    printf("Heartbeat\n");
+    return 0;
+  }
+
+  int Type = Header->CookieAndType >> 28;
+
+  if (Type == 4) {
+    printf("VMM3 based readout\n");
+  } else if (Type == 3) {
+    printf("CAEN based readout\n");
+  } else if (Type == 6) {
+    printf("CDT based readout\n");
+  } else {
+    printf("Unregistered readout\n");
+    return 0;
+  }
+
+
 
   return 0;
 }
