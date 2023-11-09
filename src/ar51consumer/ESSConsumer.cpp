@@ -64,7 +64,7 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
 
   struct PacketHeaderV0 * Header = (struct PacketHeaderV0 *)RawReadoutMsg->raw_data()->Data();
 
-  if (Header->CookieAndType >> 8 != 0x53534500) {
+  if ((Header->CookieAndType & 0xffffff) != 0x535345) {
     printf("Non-ESS readout (cookie 0x%08x)\n", Header->CookieAndType);
     return 0;
   }
