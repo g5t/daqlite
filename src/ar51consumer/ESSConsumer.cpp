@@ -74,7 +74,8 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
     return 0;
   }
 
-  printf("OQ %u, SEQ %u, length %u (%u)\n", Header->OutputQueue, Header->SeqNum,
+
+  printf("OQ %u, SEQ %u, length %u (%u) ", Header->OutputQueue, Header->SeqNum,
            Header->TotalLength, RawReadoutMsg->raw_data()->size());
 
   if (MsgSize == 30) {
@@ -92,11 +93,7 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
     printf("CDT based readout\n");
   } else {
     printf("Unregistered readout\n");
-    return 0;
   }
-
-
-
   return 0;
 }
 
