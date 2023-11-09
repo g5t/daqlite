@@ -75,8 +75,8 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
   }
 
 
-  printf("OQ %u, SEQ %u, length %u (%u) ", Header->OutputQueue, Header->SeqNum,
-           Header->TotalLength, RawReadoutMsg->raw_data()->size());
+  printf("OQ %u, SEQ %u, length %u ", Header->OutputQueue, Header->SeqNum,
+           Header->TotalLength);
 
   if (MsgSize == 30) {
     printf("Heartbeat\n");
