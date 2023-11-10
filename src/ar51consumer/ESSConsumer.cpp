@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2023 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2023 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file ESSConsumer.cpp
@@ -55,10 +55,32 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
 }
 
 
+/// \brief Example parser for VMM3a data
+void ESSConsumer::parseVMM3aData(uint8_t * Readout, int Size) {
+  int BytesLeft = Size;
+  while (BytesLeft >= sizeof(vmm3a_readout)) {
+    vmm3a_readout * vmd = (vmm3a_readout *)Readout;
+    printf("Hybrid %d, ASIC %d, Channel %d\n", vmd->VMM >> 1, vmd->VMM & 1, vmd->Channel);
+    BytesLeft -= sizeof(vmm3a_readout);
+    Readout += sizeof(vmm3a_readout);
+  }
+}
 
-/// proof of concept only, poor error checking
+/// \brief Example parser for CAEN Data
+void ESSConsumer::parseCAENData(uint8_t * Readout, int Size) {
+  printf("Nothing to see here, please move on\n");
+}
+
+/// \brief Example parser for CDT data
+void ESSConsumer::parseCDTData(uint8_t * Readout, int Size) {
+    printf("Nothing to see here, please move on\n");
+}
+
+
+/// Main processing function for AR51 data
 uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
 
+  // First check header
   const auto & RawReadoutMsg = GetRawReadoutMessage(Msg->payload());
   int MsgSize = RawReadoutMsg->raw_data()->size();
 
@@ -75,28 +97,38 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
   }
 
 
+  // Then print details of the data
   printf("OQ %u, SEQ %u, length %u ", Header->OutputQueue, Header->SeqNum,
            Header->TotalLength);
 
-  if (MsgSize == 30) {
+  if (MsgSize == sizeof(struct PacketHeaderV0)) {
     printf("Heartbeat\n");
     return 0;
   }
 
   int Type = Header->CookieAndType >> 28;
 
+  uint8_t * DataPtr = (uint8_t * )Header + 30;
+  int DataLength = Header->TotalLength - sizeof(struct PacketHeaderV0);
+
+  // Dispatch technology specific
   if (Type == 4) {
     printf("VMM3 based readout\n");
+    parseVMM3aData(DataPtr, DataLength);
   } else if (Type == 3) {
     printf("CAEN based readout\n");
+    parseCAENData(DataPtr, DataLength);
   } else if (Type == 6) {
     printf("CDT based readout\n");
+    parseCDTData(DataPtr, DataLength);
   } else {
     printf("Unregistered readout\n");
   }
   return 0;
 }
 
+
+///\brief Main entry for kafka message processing
 bool ESSConsumer::handleMessage(RdKafka::Message *Message) {
   switch (Message->err()) {
   case RdKafka::ERR__TIMED_OUT:

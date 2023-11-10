@@ -16,6 +16,21 @@
 class ESSConsumer {
 public:
 
+  // Data fromat for VMM3a based readout
+  struct vmm3a_readout {
+    uint8_t Ring;
+    uint8_t FEN;
+    uint16_t Length;
+    uint32_t TimeHi;
+    uint32_t TimeLo;
+    uint16_t BC;
+    uint16_t OTADC;
+    uint8_t GEO;
+    uint8_t TDC;
+    uint8_t VMM;
+    uint8_t Channel;
+  } __attribute__((packed));
+
   // Data format for the common ESS readout header
   struct PacketHeaderV0 {
     uint8_t Padding0;
@@ -30,6 +45,8 @@ public:
     uint32_t PrevPulseLow;
     uint32_t SeqNum;
   } __attribute__((packed));
+
+
 
 
   /// \brief Constructor needs the configured Broker and Topic
@@ -47,6 +64,15 @@ public:
 
   /// \brief print out some information
   uint32_t processAR51Data(RdKafka::Message *Msg);
+
+  ///
+  void parseVMM3aData(uint8_t * Readout, int Size);
+
+  ///
+  void parseCAENData(uint8_t * Readout, int Size);
+
+  ///
+  void parseCDTData(uint8_t * Readout, int Size);
 
 private:
   std::string Broker{""};
