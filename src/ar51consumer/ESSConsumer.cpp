@@ -60,7 +60,8 @@ void ESSConsumer::parseVMM3aData(uint8_t * Readout, int Size) {
   int BytesLeft = Size;
   while (BytesLeft >= sizeof(vmm3a_readout)) {
     vmm3a_readout * vmd = (vmm3a_readout *)Readout;
-    printf("Hybrid %d, ASIC %d, Channel %d\n", vmd->VMM >> 1, vmd->VMM & 1, vmd->Channel);
+    printf("Ring %u, FEN %u, Hybrid %d, ASIC %d, Channel %d\n",
+           vmd->Ring, vmd->FEN, vmd->VMM >> 1, vmd->VMM & 1, vmd->Channel);
     BytesLeft -= sizeof(vmm3a_readout);
     Readout += sizeof(vmm3a_readout);
   }
