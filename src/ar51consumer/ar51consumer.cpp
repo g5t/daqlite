@@ -9,9 +9,9 @@
 //===----------------------------------------------------------------------===//
 
 #include <ESSConsumer.h>
+#include <MainWindow.h>
 #include <QApplication>
 #include <QGridLayout>
-#include <QMainWindow>
 #include <QCommandLineParser>
 #include <WorkerThread.h>
 #include <stdio.h>
@@ -31,12 +31,11 @@ int main(int argc, char *argv[]) {
 
   CLI.process(app);
 
-  QMainWindow win;
-
-  WorkerThread Receiver(
+  MainWindow win{
     CLI.value(kafkaBrokerOption).toStdString(),
     CLI.value(kafkaTopicOption).toStdString()
-  );
+  };
+
 
   QGridLayout *layout = new QGridLayout;
   //creating a QWidget, and setting the WCwindow as parent

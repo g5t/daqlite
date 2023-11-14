@@ -98,4 +98,7 @@ private:
     uint64_t MessagesUnknown{0};
     uint64_t MessagesOther{0};
   } mKafkaStats;
+
+  // Rings, Hybrids, Asics, Channels
+  int Histogram[12][5][2][64];
 };

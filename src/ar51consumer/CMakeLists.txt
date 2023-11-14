@@ -10,11 +10,13 @@ set(ar51consumer_src
   ar51consumer.cpp
   ESSConsumer.cpp
   WorkerThread.cpp
+  MainWindow.cpp
   )
 
 set(ar51consumer_inc
   ESSConsumer.h
   WorkerThread.h
+  MainWindow.h
   )
 
 

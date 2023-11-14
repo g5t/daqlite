@@ -17,6 +17,8 @@ ESSConsumer::ESSConsumer(std::string Broker, std::string Topic) :
 
   mConsumer = subscribeTopic();
   assert(mConsumer != nullptr);
+
+  memset(&Histogram, 0, sizeof(Histogram));
 }
 
 RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
@@ -60,8 +62,14 @@ void ESSConsumer::parseVMM3aData(uint8_t * Readout, int Size) {
   int BytesLeft = Size;
   while (BytesLeft >= sizeof(vmm3a_readout)) {
     vmm3a_readout * vmd = (vmm3a_readout *)Readout;
+    int Ring = vmd->Ring;
+    int FEN = vmd->FEN;
+    int Hybrid = vmd->VMM >> 1;
+    int Asic = vmd->VMM & 1;
+    int Channel = vmd->Channel;
     printf("Ring %u, FEN %u, Hybrid %d, ASIC %d, Channel %d\n",
-           vmd->Ring, vmd->FEN, vmd->VMM >> 1, vmd->VMM & 1, vmd->Channel);
+           Ring, FEN, Hybrid, Asic, Channel);
+    Histogram[Ring][Hybrid][Asic][Channel]++;
     BytesLeft -= sizeof(vmm3a_readout);
     Readout += sizeof(vmm3a_readout);
   }

@@ -8,7 +8,7 @@
 #include <WorkerThread.h>
 
 void WorkerThread::run() {
-
+  qDebug("Entering main consumer loop\n");
   while (true) {
     auto Msg = Consumer->consume();
     Consumer->handleMessage(Msg);
