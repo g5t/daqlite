@@ -1,16 +1,20 @@
+# Copyright (C) 2023 European Spallation Source, ERIC. See LICENSE file
+
 include(QtLibraryConfig)
 find_package(RdKafka REQUIRED)
 find_package(qplot REQUIRED)
 
-#include_directories(.)
+#
 
 set(ar51consumer_src
   ar51consumer.cpp
   ESSConsumer.cpp
+  WorkerThread.cpp
   )
 
 set(ar51consumer_inc
   ESSConsumer.h
+  WorkerThread.h
   )
 
 

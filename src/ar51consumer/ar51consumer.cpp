@@ -10,8 +10,12 @@
 
 #include <ESSConsumer.h>
 #include <QApplication>
+#include <QGridLayout>
+#include <QMainWindow>
 #include <QCommandLineParser>
+#include <WorkerThread.h>
 #include <stdio.h>
+
 
 int main(int argc, char *argv[]) {
   QApplication app(argc, argv);
@@ -27,12 +31,22 @@ int main(int argc, char *argv[]) {
 
   CLI.process(app);
 
+  QMainWindow win;
 
-  ESSConsumer consumer(
-      CLI.value(kafkaBrokerOption).toStdString(),
-      CLI.value(kafkaTopicOption).toStdString());
-   while (true) {
-     auto Msg = consumer.consume();
-     consumer.handleMessage(Msg);
-   }
+  WorkerThread Receiver(
+    CLI.value(kafkaBrokerOption).toStdString(),
+    CLI.value(kafkaTopicOption).toStdString()
+  );
+
+  QGridLayout *layout = new QGridLayout;
+  //creating a QWidget, and setting the WCwindow as parent
+  QWidget * widget = new QWidget();
+
+  //set the gridlayout for the widget
+  widget->setLayout(layout);
+
+  //setting the WCwindow's central widget
+  win.setCentralWidget(widget);
+  win.show();
+  return app.exec();
 }
