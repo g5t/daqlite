@@ -36,7 +36,7 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
   mConf->set("message.max.bytes", MessageMaxBytes, ErrStr);
   mConf->set("fetch.message.max.bytes", FetchMessagMaxBytes, ErrStr);
   mConf->set("replica.fetch.max.bytes", ReplicaFetchMaxBytes, ErrStr);
-  std::string GroupId = "Anyrandomstring0";
+  std::string GroupId = fmt::format("Groupid (pid) {}", getpid());
   mConf->set("group.id", GroupId, ErrStr);
   mConf->set("enable.auto.commit", EnableAutoCommit, ErrStr);
   mConf->set("enable.auto.offset.store", EnableAutoOffsetStore, ErrStr);
@@ -107,8 +107,8 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
 
 
   // Then print details of the data
-  //printf("OQ %u, SEQ %u, length %u ", Header->OutputQueue, Header->SeqNum,
-  //         Header->TotalLength);
+  // printf("OQ %u, SEQ %u, length %u ", Header->OutputQueue, Header->SeqNum,
+  //          Header->TotalLength);
 
   if (MsgSize == sizeof(struct PacketHeaderV0)) {
     //printf("Heartbeat\n");

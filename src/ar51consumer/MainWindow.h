@@ -31,18 +31,17 @@ public:
   /// \brief spin up a thread for consuming topic
   void startKafkaConsumerThread(std::string Broker, std::string Topic);
 
+  /// \brief
+  void setupPlottingWidgets(int Row, int Col);
+
 public slots:
   void handleReceivedData();
 
 private:
-
   /// \brief
   WorkerThread *KafkaConsumerThread;
 
   QGridLayout *layout{nullptr};
-
-  QVector<double> x;
-  QVector<double> y;
+  QVector<double> x, y, y2;
   QCustomPlot * Graphs[5][3];
-
 };
