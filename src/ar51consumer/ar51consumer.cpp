@@ -11,7 +11,6 @@
 #include <ESSConsumer.h>
 #include <MainWindow.h>
 #include <QApplication>
-#include <QGridLayout>
 #include <QCommandLineParser>
 #include <WorkerThread.h>
 #include <stdio.h>
@@ -31,21 +30,10 @@ int main(int argc, char *argv[]) {
 
   CLI.process(app);
 
-  MainWindow win{
+  MainWindow win {
     CLI.value(kafkaBrokerOption).toStdString(),
     CLI.value(kafkaTopicOption).toStdString()
   };
-
-
-  QGridLayout *layout = new QGridLayout;
-  //creating a QWidget, and setting the WCwindow as parent
-  QWidget * widget = new QWidget();
-
-  //set the gridlayout for the widget
-  widget->setLayout(layout);
-
-  //setting the WCwindow's central widget
-  win.setCentralWidget(widget);
-  win.show();
+  win.resize(1400, 600);
   return app.exec();
 }

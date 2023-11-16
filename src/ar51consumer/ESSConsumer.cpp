@@ -62,13 +62,13 @@ void ESSConsumer::parseVMM3aData(uint8_t * Readout, int Size) {
   int BytesLeft = Size;
   while (BytesLeft >= sizeof(vmm3a_readout)) {
     vmm3a_readout * vmd = (vmm3a_readout *)Readout;
-    int Ring = vmd->Ring;
+    int Ring = vmd->Fiber/2;
     int FEN = vmd->FEN;
     int Hybrid = vmd->VMM >> 1;
     int Asic = vmd->VMM & 1;
     int Channel = vmd->Channel;
-    printf("Ring %u, FEN %u, Hybrid %d, ASIC %d, Channel %d\n",
-           Ring, FEN, Hybrid, Asic, Channel);
+    //printf("Ring %u, FEN %u, Hybrid %d, ASIC %d, Channel %d\n",
+    //       Ring, FEN, Hybrid, Asic, Channel);
     Histogram[Ring][Hybrid][Asic][Channel]++;
     BytesLeft -= sizeof(vmm3a_readout);
     Readout += sizeof(vmm3a_readout);
@@ -107,11 +107,11 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
 
 
   // Then print details of the data
-  printf("OQ %u, SEQ %u, length %u ", Header->OutputQueue, Header->SeqNum,
-           Header->TotalLength);
+  //printf("OQ %u, SEQ %u, length %u ", Header->OutputQueue, Header->SeqNum,
+  //         Header->TotalLength);
 
   if (MsgSize == sizeof(struct PacketHeaderV0)) {
-    printf("Heartbeat\n");
+    //printf("Heartbeat\n");
     return 0;
   }
 
@@ -122,7 +122,7 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
 
   // Dispatch technology specific
   if (Type == 4) {
-    printf("VMM3 based readout\n");
+    //printf("VMM3 based readout\n");
     parseVMM3aData(DataPtr, DataLength);
   } else if (Type == 3) {
     printf("CAEN based readout\n");

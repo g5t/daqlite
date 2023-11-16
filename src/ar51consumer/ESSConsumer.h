@@ -18,7 +18,7 @@ public:
 
   // Data fromat for VMM3a based readout
   struct vmm3a_readout {
-    uint8_t Ring;
+    uint8_t Fiber;
     uint8_t FEN;
     uint16_t Length;
     uint32_t TimeHi;
@@ -74,6 +74,9 @@ public:
   ///
   void parseCDTData(uint8_t * Readout, int Size);
 
+  // Rings, Hybrids, Asics, Channels
+  int Histogram[12][5][2][64];
+
 private:
   std::string Broker{""};
   std::string Topic{""};
@@ -87,18 +90,4 @@ private:
   RdKafka::Conf *mTConf;
   RdKafka::KafkaConsumer *mConsumer;
   RdKafka::Topic *mTopic;
-
-  /// \brief Some stat counters
-  /// \todo use or delete?
-  struct Stat {
-    uint64_t MessagesRx{0};
-    uint64_t MessagesTMO{0};
-    uint64_t MessagesData{0};
-    uint64_t MessagesEOF{0};
-    uint64_t MessagesUnknown{0};
-    uint64_t MessagesOther{0};
-  } mKafkaStats;
-
-  // Rings, Hybrids, Asics, Channels
-  int Histogram[12][5][2][64];
 };

@@ -31,6 +31,7 @@ target_link_libraries(
   PUBLIC fmt::fmt
   PRIVATE RdKafka::rdkafka++
   PRIVATE RdKafka::rdkafka
+  PRIVATE QPlot
   PRIVATE Qt5::Widgets
 )
 

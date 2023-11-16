@@ -24,9 +24,11 @@ public:
   /// \brief thread main loop
   void run() override;
 
-signals:
-
-private:
   /// \brief Kafka consumer
   ESSConsumer *Consumer;
+
+signals:
+  /// \brief this signal is 'emitted' when there is new data
+  void resultReady();
+
 };

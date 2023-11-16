@@ -8,7 +8,11 @@
 
 #pragma once
 
+#include <QGridLayout>
 #include <QMainWindow>
+#include <QPlot/qcustomplot/qcustomplot.h>
+#include <QPlot/QPlot.h>
+#include <QVector>
 #include <WorkerThread.h>
 
 QT_BEGIN_NAMESPACE
@@ -28,10 +32,17 @@ public:
   void startKafkaConsumerThread(std::string Broker, std::string Topic);
 
 public slots:
+  void handleReceivedData();
 
 private:
 
   /// \brief
   WorkerThread *KafkaConsumerThread;
+
+  QGridLayout *layout{nullptr};
+
+  QVector<double> x;
+  QVector<double> y;
+  QCustomPlot * Graphs[5][3];
 
 };

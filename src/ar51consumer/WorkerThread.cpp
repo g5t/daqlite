@@ -13,5 +13,6 @@ void WorkerThread::run() {
     auto Msg = Consumer->consume();
     Consumer->handleMessage(Msg);
     delete Msg;
+    emit resultReady();
   }
 }
