@@ -42,7 +42,7 @@ private:
   /// \brief
   WorkerThread *Consumer;
 
-  QGridLayout *layout{nullptr};
+  QGridLayout layout;
 
   VMM3aGraph vmmgraph{};
 };

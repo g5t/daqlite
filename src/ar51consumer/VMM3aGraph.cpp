@@ -79,7 +79,6 @@ void VMM3aGraph::addGraph(QGridLayout * Layout, int Row, int Col) {
 
 
 void VMM3aGraph::updatePlots() {
-  qDebug("Update plot");
   for (int Row = 0; Row < 3; Row++) {
     for (int Col = 0; Col < 5; Col++) {
       if (Row == 2 and Col == 4)

@@ -1,4 +1,4 @@
-../src/ar51consumer/CMakeLists.txt# Copyright (C) 2023 European Spallation Source, ERIC. See LICENSE file
+# Copyright (C) 2023 European Spallation Source, ERIC. See LICENSE file
 
 include(QtLibraryConfig)
 find_package(RdKafka REQUIRED)
