@@ -10,9 +10,8 @@
 
 #include <QGridLayout>
 #include <QMainWindow>
-#include <QPlot/qcustomplot/qcustomplot.h>
 #include <QPlot/QPlot.h>
-#include <QVector>
+#include <VMM3aGraph.h>
 #include <WorkerThread.h>
 
 QT_BEGIN_NAMESPACE
@@ -29,27 +28,21 @@ public:
   ~MainWindow();
 
   /// \brief spin up a thread for consuming topic
-  void startKafkaConsumerThread(std::string Broker, std::string Topic);
+  void startConsumer(std::string Broker, std::string Topic);
 
   /// \brief intial setup
   void setupPlottingWidgets(int Row, int Col);
 
   /// \brief Use keyboard shortcuts to affect plotting
-  void keyPressEvent(QKeyEvent *event);
+  //void keyPressEvent(QKeyEvent *event);
 
-public slots:
-
-  void updatePlots();
-  void toggle(); // toggle histogram visibility
-  void clear(); // clear histogram data
   void quitProg();
 
 private:
   /// \brief
-  WorkerThread *KafkaConsumerThread;
+  WorkerThread *Consumer;
 
   QGridLayout *layout{nullptr};
-  QVector<double> x, y, y2;
-  QCustomPlot * Graphs[5][3];
-  int TogglePlots{0};
+
+  VMM3aGraph vmmgraph{};
 };

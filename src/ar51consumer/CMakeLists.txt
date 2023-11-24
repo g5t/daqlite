@@ -1,4 +1,4 @@
-# Copyright (C) 2023 European Spallation Source, ERIC. See LICENSE file
+../src/ar51consumer/CMakeLists.txt# Copyright (C) 2023 European Spallation Source, ERIC. See LICENSE file
 
 include(QtLibraryConfig)
 find_package(RdKafka REQUIRED)
@@ -9,12 +9,14 @@ find_package(qplot REQUIRED)
 set(ar51consumer_src
   ar51consumer.cpp
   ESSConsumer.cpp
+  VMM3aGraph.cpp
   WorkerThread.cpp
   MainWindow.cpp
   )
 
 set(ar51consumer_inc
   ESSConsumer.h
+  VMM3aGraph.h
   WorkerThread.h
   MainWindow.h
   )
