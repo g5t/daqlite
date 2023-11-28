@@ -16,23 +16,31 @@
 #include <stdio.h>
 
 
+struct {
+  QCommandLineOption KafkaBrokerOption{"b", "Kafka broker", "unusedDefault"};
+  QCommandLineOption KafkaTopicOption{"t", "Kafka topic", "unusedDefault"};
+  QCommandLineOption ReadoutType{"r", "readout", "unusedDefault"};
+} Options;
+
+
 int main(int argc, char *argv[]) {
   QApplication app(argc, argv);
 
   QCommandLineParser CLI;
-  CLI.setApplicationDescription("Daquiri light - when you're driving home");
+  CLI.setApplicationDescription("Area51 - where lost channels are found");
   CLI.addHelpOption();
 
-  QCommandLineOption kafkaBrokerOption("b", "Kafka broker", "unusedDefault");
-  CLI.addOption(kafkaBrokerOption);
-  QCommandLineOption kafkaTopicOption("t", "Kafka topic", "unusedDefault");
-  CLI.addOption(kafkaTopicOption);
+
+  CLI.addOption(Options.KafkaBrokerOption);
+  CLI.addOption(Options.KafkaTopicOption);
+  CLI.addOption(Options.ReadoutType);
 
   CLI.process(app);
 
   MainWindow win {
-    CLI.value(kafkaBrokerOption).toStdString(),
-    CLI.value(kafkaTopicOption).toStdString()
+    CLI.value(Options.KafkaBrokerOption).toStdString(),
+    CLI.value(Options.KafkaTopicOption).toStdString(),
+    CLI.value(Options.ReadoutType).toStdString()
   };
   win.resize(1400, 600);
   return app.exec();

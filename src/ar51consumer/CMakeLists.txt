@@ -10,6 +10,7 @@ set(ar51consumer_src
   ar51consumer.cpp
   ESSConsumer.cpp
   VMM3aGraph.cpp
+  CDTGraph.cpp
   WorkerThread.cpp
   MainWindow.cpp
   )
@@ -17,6 +18,7 @@ set(ar51consumer_src
 set(ar51consumer_inc
   ESSConsumer.h
   VMM3aGraph.h
+  CDTGraph.h
   WorkerThread.h
   MainWindow.h
   )

@@ -31,6 +31,21 @@ public:
     uint8_t Channel;
   } __attribute__((packed));
 
+
+  // Data fromat for CDT Readout
+  struct cdt_readout {
+    uint8_t Fiber;
+    uint8_t FEN;
+    uint16_t Length;
+    uint32_t TimeHi;
+    uint32_t TimeLo;
+    uint8_t OM;
+    uint8_t UnitId;
+    uint8_t Cathode;
+    uint8_t Anode;
+  } __attribute__((packed));
+  
+
   // Data format for the common ESS readout header
   struct PacketHeaderV0 {
     uint8_t Padding0;
@@ -74,8 +89,10 @@ public:
   ///
   void parseCDTData(uint8_t * Readout, int Size);
 
-  // Rings, Hybrids, Asics, Channels
+  // Ring, Hybrid, Asic, Channel
   int Histogram[12][5][2][64];
+  // Ring, FEN, Anode/Cathode, Channel
+  int CDTHistogram[12][12][2][256];
 
 private:
   std::string Broker{""};

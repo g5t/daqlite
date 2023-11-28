@@ -11,6 +11,7 @@
 #include <QGridLayout>
 #include <QMainWindow>
 #include <QPlot/QPlot.h>
+#include <CDTGraph.h>
 #include <VMM3aGraph.h>
 #include <WorkerThread.h>
 
@@ -24,7 +25,8 @@ class MainWindow : public QMainWindow {
   Q_OBJECT
 
 public:
-  MainWindow(std::string Broker, std::string Topic, QWidget *parent = nullptr);
+  MainWindow(std::string Broker, std::string Topic, std::string Readout,
+    QWidget *parent = nullptr);
   ~MainWindow();
 
   /// \brief spin up a thread for consuming topic
@@ -45,4 +47,5 @@ private:
   QGridLayout layout;
 
   VMM3aGraph vmmgraph{};
+  CDTGraph cdtgraph{};
 };

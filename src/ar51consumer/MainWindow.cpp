@@ -7,13 +7,23 @@
 
 #include <MainWindow.h>
 #include <fmt/format.h>
+#include <stdlib.h>
 #include <string.h>
 
 
-MainWindow::MainWindow(std::string Broker, std::string Topic, QWidget *parent)
+MainWindow::MainWindow(std::string Broker, std::string Topic,
+  std::string Readout, QWidget *parent)
     : QMainWindow(parent) {
 
-  vmmgraph.setupPlot(&layout);
+
+  if (Readout == "VMM") {
+    vmmgraph.setupPlot(&layout);
+  } else if (Readout == "CDT") {
+    cdtgraph.setupPlot(&layout);
+  } else {
+    qDebug("Unknown readout type %s (Use one of VMM, CDT)", Readout.c_str());
+    exit(0);
+  }
 
   //creating a QWidget, and setting the window as parent
   QWidget * widget = new QWidget();
@@ -31,5 +41,6 @@ MainWindow::~MainWindow() {}
 void MainWindow::startConsumer(std::string Broker, std::string Topic) {
   Consumer = new WorkerThread(Broker, Topic);
   vmmgraph.WThread = Consumer;
+  cdtgraph.WThread = Consumer;
   Consumer->start();
 }

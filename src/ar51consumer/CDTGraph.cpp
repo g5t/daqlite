@@ -1,29 +1,40 @@
 // Copyright (C) 2023 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
-/// \file VMM3aGraph
+/// \file CDTGraph
 ///
-/// \brief Class for handling plotting of VMM readouts
+/// \brief Class for handling plotting of CDT readouts
 ///
 //===----------------------------------------------------------------------===//
 
 #include <QPlot/qcustomplot/qcustomplot.h>
-#include <VMM3aGraph.h>
+#include <CDTGraph.h>
 #include <map>
 
 
-void VMM3aGraph::setupPlot(QGridLayout * Layout) {
+bool ignoreRowCol(int Ring, int FEN) {
+  std::vector<int> FENS {12, 10, 10, 6, 6, 6, 12, 8, 9, 9, 9};
+  //if (FEN >= FENS[Ring]) {
+  if (FEN >= 4) {
+    return true;
+  }
+  return false;
+}
 
-  for (int i = 0; i < 64; i++) {
+
+void CDTGraph::setupPlot(QGridLayout * Layout) {
+
+  for (int i = 0; i < 256; i++) {
     x.push_back(i);
     y0.push_back(0);
     y1.push_back(0);
   }
 
-  for (int Row = 0; Row < 3; Row++) {
-    for (int Col = 0; Col < 5; Col++) {
-      if (Row == 2 and Col == 4)
+  for (int Row = 0; Row < 11; Row++) {
+    for (int Col = 0; Col < 12; Col++) {
+      if (ignoreRowCol(Row, Col)) {
         continue;
+      }
       addGraph(Layout, Row, Col);
     }
   }
@@ -40,7 +51,7 @@ void VMM3aGraph::setupPlot(QGridLayout * Layout) {
   hblayout->addWidget(btnClear);
   hblayout->addWidget(btnQuit);
 
-  Layout->addLayout(hblayout, 4, 0);
+  Layout->addLayout(hblayout, 11, 0);
 
   connect(btnToggle, SIGNAL(clicked()), this, SLOT(toggle()));
   connect(btnDead, SIGNAL(clicked()), this, SLOT(dead()));
@@ -50,20 +61,22 @@ void VMM3aGraph::setupPlot(QGridLayout * Layout) {
 
   /// Update timer
   QTimer *timer = new QTimer(this);
-  connect(timer, &QTimer::timeout, this, &VMM3aGraph::updatePlots);
+  connect(timer, &QTimer::timeout, this, &CDTGraph::updatePlots);
   timer->start(1000);
 }
 
 
   /// \brief
-void VMM3aGraph::addGraph(QGridLayout * Layout, int Row, int Col) {
+void CDTGraph::addGraph(QGridLayout * Layout, int Row, int Col) {
   QCustomPlot * QCP = new QCustomPlot();
-  int GraphKey = Row * 256 + Col;
+  int Ring = Row;
+  int FEN = Col;
+  int GraphKey = Ring * 256 + FEN;
   Graphs[GraphKey] = QCP;
 
   //std::string title = fmt::format("r{}, h{}", Row, Col);
   //QCP->legend->setVisible(true);
-  QCP->xAxis->setRange(0, 63);
+  QCP->xAxis->setRange(0, 255);
   QCP->yAxis->setRange(0, 5);
   QCP->addGraph();
   //QCP->graph(0)->setName(title.c_str());
@@ -74,23 +87,24 @@ void VMM3aGraph::addGraph(QGridLayout * Layout, int Row, int Col) {
   QCP->graph(1)->setData(x, y1);
   QCP->graph(1)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
   QCP->graph(1)->setBrush(QBrush(QColor(255,50,20,20)));
-  Layout->addWidget(QCP, Row, Col);
+  Layout->addWidget(QCP, Ring, FEN);
 }
 
 
-void VMM3aGraph::updatePlots() {
-  for (int Row = 0; Row < 3; Row++) {
-    for (int Col = 0; Col < 5; Col++) {
-      if (Row == 2 and Col == 4)
+void CDTGraph::updatePlots() {
+  for (int Row = 0; Row < 11; Row++) {
+    for (int Col = 0; Col < 12; Col++) {
+      if (ignoreRowCol(Row, Col)) {
         continue;
+      }
       int Ring = Row;
-      int Hybrid = Col;
-      int GraphKey = Row * 256 + Col;
+      int FEN = Col;
+      int GraphKey = Ring * 256 + FEN;
       auto qp = Graphs[GraphKey];
 
       for (int i= 0; i < 64; i++) {
-        y0[i] = WThread->Consumer->Histogram[Ring][Hybrid][0][i];
-        y1[i] = WThread->Consumer->Histogram[Ring][Hybrid][1][i];
+        y0[i] = WThread->Consumer->CDTHistogram[Ring][FEN][0][i];
+        y1[i] = WThread->Consumer->CDTHistogram[Ring][FEN][1][i];
       }
 
       qp->graph(0)->setVisible(false);
@@ -111,42 +125,45 @@ void VMM3aGraph::updatePlots() {
 }
 
 
-void VMM3aGraph::toggle() {
+void CDTGraph::toggle() {
   TogglePlots = (TogglePlots+1)^3;
   updatePlots();
 }
 
 
-void VMM3aGraph::dead() {
-  for (int Row = 0; Row < 3; Row++) {
-    for (int Col = 0; Col < 5; Col++) {
-      if (Row == 2 and Col == 4)
+void CDTGraph::dead() {
+
+  for (int Row = 0; Row < 11; Row++) {
+    for (int Col = 0; Col < 12; Col++) {
+      if (ignoreRowCol(Row, Col)) {
         continue;
+      }
+
       int Ring = Row;
-      int Hybrid = Col;
-      int DeadAsic0{0};
-      int DeadAsic1{0};
+      int FEN = Col;
+      int DeadCathodes{0};
+      int DeadAnodes{0};
       for (int i= 0; i < 64; i++) {
-        if (WThread->Consumer->Histogram[Ring][Hybrid][0][i] == 0) {
-          DeadAsic0++;
+        if (WThread->Consumer->CDTHistogram[Ring][FEN][0][i] == 0) {
+          DeadCathodes++;
         }
-        if (i >=16 and i <= 47 and WThread->Consumer->Histogram[Ring][Hybrid][1][i] == 0) {
-          DeadAsic1++;
+        if (WThread->Consumer->CDTHistogram[Ring][FEN][1][i] == 0) {
+          DeadAnodes++;
         }
       }
-      qDebug("Ring %d, Hybrid %d - dead strips %d, dead wires %d", Ring, Hybrid, DeadAsic0, DeadAsic1);
+      qDebug("Ring %d, FEN %d - dead cathodes %d, dead anodes %d", Ring, FEN, DeadCathodes, DeadAnodes);
     }
   }
 }
 
 
-void VMM3aGraph::clear() {
-  memset(WThread->Consumer->Histogram, 0,
-    sizeof(WThread->Consumer->Histogram));
+void CDTGraph::clear() {
+  memset(WThread->Consumer->CDTHistogram, 0,
+    sizeof(WThread->Consumer->CDTHistogram));
   updatePlots();
 }
 
 
-void VMM3aGraph::quitProg() {
+void CDTGraph::quitProg() {
   QApplication::quit();
 }

@@ -82,7 +82,18 @@ void ESSConsumer::parseCAENData(uint8_t * Readout, int Size) {
 
 /// \brief Example parser for CDT data
 void ESSConsumer::parseCDTData(uint8_t * Readout, int Size) {
-    printf("Nothing to see here, please move on\n");
+  int BytesLeft = Size;
+  while (BytesLeft >= sizeof(vmm3a_readout)) {
+    cdt_readout * cd = (cdt_readout *)Readout;
+    int Ring = cd->Fiber/2;
+    int FEN = cd->FEN;
+    int Cathode = cd->Cathode;
+    int Anode = cd->Anode;
+    CDTHistogram[Ring][FEN][0][Cathode]++;
+    CDTHistogram[Ring][FEN][1][Anode]++;
+    BytesLeft -= sizeof(cdt_readout);
+    Readout += sizeof(cdt_readout);
+  }
 }
 
 
