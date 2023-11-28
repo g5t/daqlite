@@ -15,7 +15,7 @@
 bool ignoreRowCol(int Ring, int FEN) {
   std::vector<int> FENS {12, 10, 10, 6, 6, 6, 12, 8, 9, 9, 9};
   //if (FEN >= FENS[Ring]) {
-  if (FEN >= 4) {
+  if ((FEN >= 4) or (Ring > 4)) {
     return true;
   }
   return false;
@@ -40,13 +40,15 @@ void CDTGraph::setupPlot(QGridLayout * Layout) {
   }
 
   // Add final row of buttons
-  QPushButton *btnToggle = new QPushButton("Toggle");
+  QPushButton *btnToggle = new QPushButton("Select data");
+  QPushButton *btnLogLin = new QPushButton("Log/lin");
   QPushButton *btnDead = new QPushButton("Dead");
   QPushButton *btnClear = new QPushButton("Clear");
   QPushButton *btnQuit = new QPushButton("Quit");
 
   QHBoxLayout *hblayout = new QHBoxLayout();
   hblayout->addWidget(btnToggle);
+  hblayout->addWidget(btnLogLin);
   hblayout->addWidget(btnDead);
   hblayout->addWidget(btnClear);
   hblayout->addWidget(btnQuit);
@@ -54,6 +56,7 @@ void CDTGraph::setupPlot(QGridLayout * Layout) {
   Layout->addLayout(hblayout, 11, 0);
 
   connect(btnToggle, SIGNAL(clicked()), this, SLOT(toggle()));
+  connect(btnLogLin, SIGNAL(clicked()), this, SLOT(loglin()));
   connect(btnDead, SIGNAL(clicked()), this, SLOT(dead()));
   connect(btnClear, SIGNAL(clicked()), this, SLOT(clear()));
   connect(btnQuit, SIGNAL(clicked()), this, SLOT(quitProg()));
@@ -82,11 +85,11 @@ void CDTGraph::addGraph(QGridLayout * Layout, int Row, int Col) {
   //QCP->graph(0)->setName(title.c_str());
   QCP->graph(0)->setData(x, y0);
   QCP->graph(0)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
-  QCP->graph(0)->setBrush(QBrush(QColor(20,50,255,20)));
+  QCP->graph(0)->setBrush(QBrush(QColor(20,50,255,40)));
   QCP->addGraph();
   QCP->graph(1)->setData(x, y1);
   QCP->graph(1)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
-  QCP->graph(1)->setBrush(QBrush(QColor(255,50,20,20)));
+  QCP->graph(1)->setBrush(QBrush(QColor(255,50,20,40)));
   Layout->addWidget(QCP, Ring, FEN);
 }
 
@@ -102,7 +105,7 @@ void CDTGraph::updatePlots() {
       int GraphKey = Ring * 256 + FEN;
       auto qp = Graphs[GraphKey];
 
-      for (int i= 0; i < 64; i++) {
+      for (int i= 0; i < 256; i++) {
         y0[i] = WThread->Consumer->CDTHistogram[Ring][FEN][0][i];
         y1[i] = WThread->Consumer->CDTHistogram[Ring][FEN][1][i];
       }
@@ -119,6 +122,11 @@ void CDTGraph::updatePlots() {
       }
 
       qp->yAxis->rescale();
+      if (LogScale) {
+        qp->yAxis->setScaleType(QCPAxis::stLogarithmic);
+      } else {
+        qp->yAxis->setScaleType(QCPAxis::stLinear);
+      }
       qp->replot();
     }
   }
@@ -126,7 +134,12 @@ void CDTGraph::updatePlots() {
 
 
 void CDTGraph::toggle() {
-  TogglePlots = (TogglePlots+1)^3;
+  TogglePlots = (TogglePlots+1)%3;
+  updatePlots();
+}
+
+void CDTGraph::loglin() {
+  LogScale ^= 1;
   updatePlots();
 }
 
@@ -143,7 +156,7 @@ void CDTGraph::dead() {
       int FEN = Col;
       int DeadCathodes{0};
       int DeadAnodes{0};
-      for (int i= 0; i < 64; i++) {
+      for (int i= 0; i < 256; i++) {
         if (WThread->Consumer->CDTHistogram[Ring][FEN][0][i] == 0) {
           DeadCathodes++;
         }

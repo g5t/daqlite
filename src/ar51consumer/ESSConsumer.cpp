@@ -133,13 +133,11 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
 
   // Dispatch technology specific
   if (Type == 4) {
-    //printf("VMM3 based readout\n");
     parseVMM3aData(DataPtr, DataLength);
   } else if (Type == 3) {
     printf("CAEN based readout\n");
     parseCAENData(DataPtr, DataLength);
   } else if (Type == 6) {
-    printf("CDT based readout\n");
     parseCDTData(DataPtr, DataLength);
   } else {
     printf("Unregistered readout\n");

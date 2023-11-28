@@ -29,13 +29,15 @@ void VMM3aGraph::setupPlot(QGridLayout * Layout) {
   }
 
   // Add final row of buttons
-  QPushButton *btnToggle = new QPushButton("Toggle");
+  QPushButton *btnToggle = new QPushButton("Select data");
+  QPushButton *btnLogLin = new QPushButton("Log/lin");
   QPushButton *btnDead = new QPushButton("Dead");
   QPushButton *btnClear = new QPushButton("Clear");
   QPushButton *btnQuit = new QPushButton("Quit");
 
   QHBoxLayout *hblayout = new QHBoxLayout();
   hblayout->addWidget(btnToggle);
+  hblayout->addWidget(btnLogLin);
   hblayout->addWidget(btnDead);
   hblayout->addWidget(btnClear);
   hblayout->addWidget(btnQuit);
@@ -43,6 +45,7 @@ void VMM3aGraph::setupPlot(QGridLayout * Layout) {
   Layout->addLayout(hblayout, 4, 0);
 
   connect(btnToggle, SIGNAL(clicked()), this, SLOT(toggle()));
+  connect(btnLogLin, SIGNAL(clicked()), this, SLOT(loglin()));
   connect(btnDead, SIGNAL(clicked()), this, SLOT(dead()));
   connect(btnClear, SIGNAL(clicked()), this, SLOT(clear()));
   connect(btnQuit, SIGNAL(clicked()), this, SLOT(quitProg()));
@@ -105,6 +108,11 @@ void VMM3aGraph::updatePlots() {
       }
 
       qp->yAxis->rescale();
+      if (LogScale) {
+        qp->yAxis->setScaleType(QCPAxis::stLogarithmic);
+      } else {
+        qp->yAxis->setScaleType(QCPAxis::stLinear);
+      }
       qp->replot();
     }
   }
@@ -112,7 +120,12 @@ void VMM3aGraph::updatePlots() {
 
 
 void VMM3aGraph::toggle() {
-  TogglePlots = (TogglePlots+1)^3;
+  TogglePlots = (TogglePlots+1)%3;
+  updatePlots();
+}
+
+void VMM3aGraph::loglin() {
+  LogScale ^= 1;
   updatePlots();
 }
 

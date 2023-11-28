@@ -37,6 +37,7 @@ public Q_SLOTS:
 
   void updatePlots();
   void toggle(); // toggle histogram visibility
+  void loglin(); // toggle log or linear scale
   void dead(); // deadchannels
   void clear(); // clear histogram data
   void quitProg(); // quit
@@ -46,4 +47,5 @@ private:
   QVector<double> x, y0, y1;
   int TogglePlots{0};
   int FindDead{0};
+  bool LogScale{false};
 };
