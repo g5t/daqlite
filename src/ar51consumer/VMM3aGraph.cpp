@@ -38,11 +38,13 @@ void VMM3aGraph::setupPlot(QGridLayout * Layout) {
   QHBoxLayout *hblayout = new QHBoxLayout();
   hblayout->addWidget(btnToggle);
   hblayout->addWidget(btnLogLin);
-  hblayout->addWidget(btnDead);
-  hblayout->addWidget(btnClear);
-  hblayout->addWidget(btnQuit);
+  QHBoxLayout *hblayout2 = new QHBoxLayout();
+  hblayout2->addWidget(btnDead);
+  hblayout2->addWidget(btnClear);
+  hblayout2->addWidget(btnQuit);
 
   Layout->addLayout(hblayout, 4, 0);
+  Layout->addLayout(hblayout2, 4, 1);
 
   connect(btnToggle, SIGNAL(clicked()), this, SLOT(toggle()));
   connect(btnLogLin, SIGNAL(clicked()), this, SLOT(loglin()));

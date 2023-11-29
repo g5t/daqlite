@@ -49,11 +49,16 @@ void CDTGraph::setupPlot(QGridLayout * Layout) {
   QHBoxLayout *hblayout = new QHBoxLayout();
   hblayout->addWidget(btnToggle);
   hblayout->addWidget(btnLogLin);
-  hblayout->addWidget(btnDead);
-  hblayout->addWidget(btnClear);
-  hblayout->addWidget(btnQuit);
-
   Layout->addLayout(hblayout, 11, 0);
+
+  QHBoxLayout *hblayout2 = new QHBoxLayout();
+  hblayout2->addWidget(btnDead);
+  hblayout2->addWidget(btnClear);
+  hblayout2->addWidget(btnQuit);
+  Layout->addLayout(hblayout2, 11, 1);
+
+
+
 
   connect(btnToggle, SIGNAL(clicked()), this, SLOT(toggle()));
   connect(btnLogLin, SIGNAL(clicked()), this, SLOT(loglin()));
@@ -133,10 +138,13 @@ void CDTGraph::updatePlots() {
 }
 
 
+///\brief Button signals below
+
 void CDTGraph::toggle() {
   TogglePlots = (TogglePlots+1)%3;
   updatePlots();
 }
+
 
 void CDTGraph::loglin() {
   LogScale ^= 1;
