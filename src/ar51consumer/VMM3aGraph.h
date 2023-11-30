@@ -7,18 +7,13 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include <QGridLayout>
-#include <QPlot/qcustomplot/qcustomplot.h>
-#include <QVector>
-#include <WorkerThread.h>
-#include <map>
+#include <GraphBase.h>
 
 
 #pragma once
 
 
-class VMM3aGraph : public QObject {
-  Q_OBJECT
+class VMM3aGraph : public GraphBase {
 
 public:
 
@@ -28,24 +23,22 @@ public:
   ///\brief
   void setupPlot(QGridLayout * Layout);
 
-  /// \brief
+  ///\brief
   void addGraph(QGridLayout * Layout, int Row, int Col);
+
+  ///\brief helper function for irregular layouts
+  bool ignoreEntry(int Ring, int Hybrid);
+
 
   WorkerThread *WThread{nullptr}; // needed to access histogram data
 
 public Q_SLOTS:
 
   void updatePlots();
-  void toggle(); // toggle histogram visibility
-  void loglin(); // toggle log or linear scale
   void dead(); // deadchannels
   void clear(); // clear histogram data
-  void quitProg(); // quit
 
 private:
-  std::map<int, QCustomPlot *> Graphs;
   QVector<double> x, y0, y1;
-  int TogglePlots{0};
-  int FindDead{0};
-  bool LogScale{false};
+  int NumChannels{64};
 };

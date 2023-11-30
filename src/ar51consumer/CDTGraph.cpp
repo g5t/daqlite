@@ -7,14 +7,12 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include <QPlot/qcustomplot/qcustomplot.h>
 #include <CDTGraph.h>
-#include <map>
+#include <fmt/format.h>
 
 
-bool ignoreRowCol(int Ring, int FEN) {
-  std::vector<int> FENS {12, 10, 10, 6, 6, 6, 12, 8, 9, 9, 9};
-  //if (FEN >= FENS[Ring]) {
+bool CDTGraph::ignoreEntry(int Ring, int FEN) {
+  //std::vector<int> FENS {12, 10, 10, 6, 6, 6, 12, 8, 9, 9, 9};
   if ((FEN >= 4) or (Ring > 4)) {
     return true;
   }
@@ -23,28 +21,24 @@ bool ignoreRowCol(int Ring, int FEN) {
 
 
 void CDTGraph::setupPlot(QGridLayout * Layout) {
-
-  for (int i = 0; i < 256; i++) {
+  for (int i = 0; i < NumChannels; i++) {
     x.push_back(i);
     y0.push_back(0);
     y1.push_back(0);
   }
 
-  for (int Row = 0; Row < 11; Row++) {
-    for (int Col = 0; Col < 12; Col++) {
-      if (ignoreRowCol(Row, Col)) {
+  for (int Ring = 0; Ring < 11; Ring++) {
+    for (int FEN = 0; FEN < 12; FEN++) {
+      if (ignoreEntry(Ring, FEN)) {
         continue;
       }
-      addGraph(Layout, Row, Col);
+      addGraph(Layout, Ring, FEN);
     }
   }
 
-  // Add final row of buttons
-  QPushButton *btnToggle = new QPushButton("Select data");
-  QPushButton *btnLogLin = new QPushButton("Log/lin");
+  // Add final row of buttons (some inherited from base)
   QPushButton *btnDead = new QPushButton("Dead");
   QPushButton *btnClear = new QPushButton("Clear");
-  QPushButton *btnQuit = new QPushButton("Quit");
 
   QHBoxLayout *hblayout = new QHBoxLayout();
   hblayout->addWidget(btnToggle);
@@ -57,14 +51,8 @@ void CDTGraph::setupPlot(QGridLayout * Layout) {
   hblayout2->addWidget(btnQuit);
   Layout->addLayout(hblayout2, 11, 1);
 
-
-
-
-  connect(btnToggle, SIGNAL(clicked()), this, SLOT(toggle()));
-  connect(btnLogLin, SIGNAL(clicked()), this, SLOT(loglin()));
   connect(btnDead, SIGNAL(clicked()), this, SLOT(dead()));
   connect(btnClear, SIGNAL(clicked()), this, SLOT(clear()));
-  connect(btnQuit, SIGNAL(clicked()), this, SLOT(quitProg()));
 
 
   /// Update timer
@@ -75,16 +63,14 @@ void CDTGraph::setupPlot(QGridLayout * Layout) {
 
 
   /// \brief
-void CDTGraph::addGraph(QGridLayout * Layout, int Row, int Col) {
+void CDTGraph::addGraph(QGridLayout * Layout, int Ring, int FEN) {
   QCustomPlot * QCP = new QCustomPlot();
-  int Ring = Row;
-  int FEN = Col;
   int GraphKey = Ring * 256 + FEN;
   Graphs[GraphKey] = QCP;
 
-  //std::string title = fmt::format("r{}, h{}", Row, Col);
+  addText(QCP, fmt::format("R{}/F{}", Ring, FEN));
   //QCP->legend->setVisible(true);
-  QCP->xAxis->setRange(0, 255);
+  QCP->xAxis->setRange(0, NumChannels - 1);
   QCP->yAxis->setRange(0, 5);
   QCP->addGraph();
   //QCP->graph(0)->setName(title.c_str());
@@ -100,17 +86,15 @@ void CDTGraph::addGraph(QGridLayout * Layout, int Row, int Col) {
 
 
 void CDTGraph::updatePlots() {
-  for (int Row = 0; Row < 11; Row++) {
-    for (int Col = 0; Col < 12; Col++) {
-      if (ignoreRowCol(Row, Col)) {
+  for (int Ring = 0; Ring < 11; Ring++) {
+    for (int FEN = 0; FEN < 12; FEN++) {
+      if (ignoreEntry(Ring, FEN)) {
         continue;
       }
-      int Ring = Row;
-      int FEN = Col;
       int GraphKey = Ring * 256 + FEN;
       auto qp = Graphs[GraphKey];
 
-      for (int i= 0; i < 256; i++) {
+      for (int i= 0; i < NumChannels; i++) {
         y0[i] = WThread->Consumer->CDTHistogram[Ring][FEN][0][i];
         y1[i] = WThread->Consumer->CDTHistogram[Ring][FEN][1][i];
       }
@@ -139,32 +123,17 @@ void CDTGraph::updatePlots() {
 
 
 ///\brief Button signals below
-
-void CDTGraph::toggle() {
-  TogglePlots = (TogglePlots+1)%3;
-  updatePlots();
-}
-
-
-void CDTGraph::loglin() {
-  LogScale ^= 1;
-  updatePlots();
-}
-
-
 void CDTGraph::dead() {
 
-  for (int Row = 0; Row < 11; Row++) {
-    for (int Col = 0; Col < 12; Col++) {
-      if (ignoreRowCol(Row, Col)) {
+  for (int Ring = 0; Ring < 11; Ring++) {
+    for (int FEN = 0; FEN < 12; FEN++) {
+      if (ignoreEntry(Ring, FEN)) {
         continue;
       }
 
-      int Ring = Row;
-      int FEN = Col;
       int DeadCathodes{0};
       int DeadAnodes{0};
-      for (int i= 0; i < 256; i++) {
+      for (int i= 0; i < NumChannels; i++) {
         if (WThread->Consumer->CDTHistogram[Ring][FEN][0][i] == 0) {
           DeadCathodes++;
         }
@@ -182,9 +151,4 @@ void CDTGraph::clear() {
   memset(WThread->Consumer->CDTHistogram, 0,
     sizeof(WThread->Consumer->CDTHistogram));
   updatePlots();
-}
-
-
-void CDTGraph::quitProg() {
-  QApplication::quit();
 }

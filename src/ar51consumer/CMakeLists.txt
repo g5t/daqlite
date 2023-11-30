@@ -9,6 +9,7 @@ find_package(qplot REQUIRED)
 set(ar51consumer_src
   ar51consumer.cpp
   ESSConsumer.cpp
+  GraphBase.cpp
   VMM3aGraph.cpp
   CDTGraph.cpp
   WorkerThread.cpp
@@ -17,6 +18,7 @@ set(ar51consumer_src
 
 set(ar51consumer_inc
   ESSConsumer.h
+  GraphBase.h
   VMM3aGraph.h
   CDTGraph.h
   WorkerThread.h

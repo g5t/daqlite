@@ -15,7 +15,6 @@ MainWindow::MainWindow(std::string Broker, std::string Topic,
   std::string Readout, QWidget *parent)
     : QMainWindow(parent) {
 
-
   if (Readout == "VMM") {
     vmmgraph.setupPlot(&layout);
   } else if (Readout == "CDT") {
