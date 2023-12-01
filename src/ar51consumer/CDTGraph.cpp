@@ -42,6 +42,7 @@ void CDTGraph::setupPlot(QGridLayout * Layout) {
 
   QHBoxLayout *hblayout = new QHBoxLayout();
   hblayout->addWidget(btnToggle);
+  hblayout->addWidget(btnToggleLegend);
   hblayout->addWidget(btnLogLin);
   Layout->addLayout(hblayout, 11, 0);
 
@@ -69,15 +70,19 @@ void CDTGraph::addGraph(QGridLayout * Layout, int Ring, int FEN) {
   Graphs[GraphKey] = QCP;
 
   addText(QCP, fmt::format("R{}/F{}", Ring, FEN));
-  //QCP->legend->setVisible(true);
+  QCP->legend->setBorderPen(QPen(Qt::transparent));
+  if (ToggleLegend) {
+    QCP->legend->setVisible(true);
+  }
   QCP->xAxis->setRange(0, NumChannels - 1);
   QCP->yAxis->setRange(0, 5);
   QCP->addGraph();
-  //QCP->graph(0)->setName(title.c_str());
+  QCP->graph(0)->setName("catode");
   QCP->graph(0)->setData(x, y0);
   QCP->graph(0)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
   QCP->graph(0)->setBrush(QBrush(QColor(20,50,255,40)));
   QCP->addGraph();
+  QCP->graph(0)->setName("anode");
   QCP->graph(1)->setData(x, y1);
   QCP->graph(1)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
   QCP->graph(1)->setBrush(QBrush(QColor(255,50,20,40)));
@@ -108,6 +113,12 @@ void CDTGraph::updatePlots() {
       if (TogglePlots == 0 or TogglePlots == 2) {
         qp->graph(1)->setVisible(true);
         qp->graph(1)->setData(x, y1);
+      }
+
+      if (ToggleLegend) {
+        qp->legend->setVisible(true);
+      } else {
+        qp->legend->setVisible(false);
       }
 
       qp->yAxis->rescale();

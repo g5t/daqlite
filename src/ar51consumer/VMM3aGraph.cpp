@@ -45,6 +45,7 @@ void VMM3aGraph::setupPlot(QGridLayout * Layout) {
 
   QHBoxLayout *hblayout = new QHBoxLayout();
   hblayout->addWidget(btnToggle);
+  hblayout->addWidget(btnToggleLegend);
   hblayout->addWidget(btnLogLin);
   QHBoxLayout *hblayout2 = new QHBoxLayout();
   hblayout2->addWidget(btnDead);
@@ -74,17 +75,25 @@ void VMM3aGraph::addGraph(QGridLayout * Layout, int Ring, int Hybrid) {
   Graphs[GraphKey] = QCP;
 
   addText(QCP, fmt::format("R{}/H{}", Ring, Hybrid));
+  QCP->legend->setBorderPen(QPen(Qt::transparent));
+  if (ToggleLegend) {
+    QCP->legend->setVisible(true);
+  }
   QCP->xAxis->setRange(0, 63);
   QCP->yAxis->setRange(0, 5);
   QCP->addGraph();
-  //QCP->graph(0)->setName(title.c_str());
+  QCP->graph(0)->setName("wires");
   QCP->graph(0)->setData(x, y0);
   QCP->graph(0)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
   QCP->graph(0)->setBrush(QBrush(QColor(20,50,255,20)));
+  QCP->graph(0)->setPen(QPen(QColor(0, 0, 255), 0));
+
   QCP->addGraph();
+  QCP->graph(1)->setName("strips");
   QCP->graph(1)->setData(x, y1);
   QCP->graph(1)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
   QCP->graph(1)->setBrush(QBrush(QColor(255,50,20,20)));
+  QCP->graph(1)->setPen(QPen(QColor(190, 50, 20), 0));
   Layout->addWidget(QCP, Ring, Hybrid);
 }
 
@@ -114,6 +123,13 @@ void VMM3aGraph::updatePlots() {
       if (TogglePlots == 0 or TogglePlots == 2) {
         qp->graph(1)->setVisible(true);
         qp->graph(1)->setData(x, y1);
+      }
+
+
+      if (ToggleLegend) {
+        qp->legend->setVisible(true);
+      } else {
+        qp->legend->setVisible(false);
       }
 
       qp->yAxis->rescale();

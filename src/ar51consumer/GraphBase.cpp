@@ -24,6 +24,11 @@ void GraphBase::toggle() {
   updatePlots();
 }
 
+void GraphBase::toggleLegend() {
+  ToggleLegend ^= 1;
+  updatePlots();
+}
+
 void GraphBase::loglin() {
   LogScale ^= 1;
   updatePlots();
