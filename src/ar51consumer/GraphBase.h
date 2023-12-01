@@ -40,11 +40,14 @@ public:
   ///\brief
   virtual void setupPlot(QGridLayout * Layout) = 0;
 
-  /// \brief
+  ///\brief
   virtual void addGraph(QGridLayout * Layout, int Row, int Col) = 0;
 
-  /// \brief
+  ///\brief
   void addText(QCustomPlot * QCP, std::string Text);
+
+  ///\brief
+  void updatePlotPresentation(QCustomPlot * QCP);
 
   WorkerThread *WThread{nullptr}; // needed to access histogram data
   QPushButton *btnToggle{nullptr};

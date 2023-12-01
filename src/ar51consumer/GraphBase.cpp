@@ -19,6 +19,31 @@ void GraphBase::addText(QCustomPlot * QCP, std::string Text) {
 }
 
 
+void GraphBase::updatePlotPresentation(QCustomPlot * QCP) {
+  QCP->graph(0)->setVisible(false);
+  QCP->graph(1)->setVisible(false);
+  if (TogglePlots == 0 or TogglePlots == 1) {
+    QCP->graph(0)->setVisible(true);
+  }
+  if (TogglePlots == 0 or TogglePlots == 2) {
+    QCP->graph(1)->setVisible(true);
+  }
+
+  if (ToggleLegend) {
+    QCP->legend->setVisible(true);
+  } else {
+    QCP->legend->setVisible(false);
+  }
+
+  QCP->yAxis->rescale();
+  if (LogScale) {
+    QCP->yAxis->setScaleType(QCPAxis::stLogarithmic);
+  } else {
+    QCP->yAxis->setScaleType(QCPAxis::stLinear);
+  }
+}
+
+
 void GraphBase::toggle() {
   TogglePlots = (TogglePlots+1)%3;
   updatePlots();

@@ -104,29 +104,11 @@ void CDTGraph::updatePlots() {
         y1[i] = WThread->Consumer->CDTHistogram[Ring][FEN][1][i];
       }
 
-      qp->graph(0)->setVisible(false);
-      qp->graph(1)->setVisible(false);
-      if (TogglePlots == 0 or TogglePlots == 1) {
-        qp->graph(0)->setVisible(true);
-        qp->graph(0)->setData(x, y0);
-      }
-      if (TogglePlots == 0 or TogglePlots == 2) {
-        qp->graph(1)->setVisible(true);
-        qp->graph(1)->setData(x, y1);
-      }
+      qp->graph(0)->setData(x, y0);
+      qp->graph(1)->setData(x, y1);
 
-      if (ToggleLegend) {
-        qp->legend->setVisible(true);
-      } else {
-        qp->legend->setVisible(false);
-      }
+      updatePlotPresentation(qp);
 
-      qp->yAxis->rescale();
-      if (LogScale) {
-        qp->yAxis->setScaleType(QCPAxis::stLogarithmic);
-      } else {
-        qp->yAxis->setScaleType(QCPAxis::stLinear);
-      }
       qp->replot();
     }
   }
