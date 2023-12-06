@@ -82,14 +82,14 @@ void VMM3aGraph::addGraph(QGridLayout * Layout, int Ring, int Hybrid) {
   QCP->xAxis->setRange(0, 63);
   QCP->yAxis->setRange(0, 5);
   QCP->addGraph();
-  QCP->graph(0)->setName("wires");
+  QCP->graph(0)->setName("strips");
   QCP->graph(0)->setData(x, y0);
   QCP->graph(0)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
   QCP->graph(0)->setBrush(QBrush(QColor(20,50,255,20)));
   QCP->graph(0)->setPen(QPen(QColor(0, 0, 255), 0));
 
   QCP->addGraph();
-  QCP->graph(1)->setName("strips");
+  QCP->graph(1)->setName("wires");
   QCP->graph(1)->setData(x, y1);
   QCP->graph(1)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
   QCP->graph(1)->setBrush(QBrush(QColor(255,50,20,20)));
@@ -110,8 +110,8 @@ void VMM3aGraph::updatePlots() {
       auto qp = Graphs[GraphKey];
 
       for (int i= 0; i < NumChannels; i++) {
-        y0[i] = WThread->Consumer->Histogram[Ring][Hybrid][0][i];
-        y1[i] = WThread->Consumer->Histogram[Ring][Hybrid][1][i];
+        y0[i] = WThread->Consumer->Histogram[Ring][Hybrid][0][i]; // strips
+        y1[i] = WThread->Consumer->Histogram[Ring][Hybrid][1][i]; // wires
       }
 
       qp->graph(0)->setData(x, y0);

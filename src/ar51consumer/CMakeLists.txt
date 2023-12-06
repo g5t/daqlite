@@ -11,6 +11,7 @@ set(ar51consumer_src
   ESSConsumer.cpp
   GraphBase.cpp
   VMM3aGraph.cpp
+  #CAENGraph.cpp
   CDTGraph.cpp
   WorkerThread.cpp
   MainWindow.cpp
@@ -20,6 +21,7 @@ set(ar51consumer_inc
   ESSConsumer.h
   GraphBase.h
   VMM3aGraph.h
+  #CAENGraph.h
   CDTGraph.h
   WorkerThread.h
   MainWindow.h
@@ -38,6 +40,7 @@ target_link_libraries(
   PRIVATE RdKafka::rdkafka++
   PRIVATE RdKafka::rdkafka
   PRIVATE QPlot
+  PRIVATE QtColorWidgets
   PRIVATE Qt5::Widgets
 )
 

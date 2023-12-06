@@ -160,6 +160,9 @@ void Custom2DPlot::plotDetectorImage(bool Force) {
       auto yIndex = LogicalGeometry->y(i);
       auto zIndex = LogicalGeometry->z(i);
 
+      // here we could 
+      // x, y, z = pos(i)
+
       if (mProjection == ProjectionXY) {
         // printf("XY: x,y,z %d, %d, %d: count %d\n", xIndex, yIndex, zIndex,
         // HistogramData[i]);

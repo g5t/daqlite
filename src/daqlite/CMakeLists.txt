@@ -2,7 +2,6 @@ include(QtLibraryConfig)
 find_package(RdKafka REQUIRED)
 find_package(qplot REQUIRED)
 
-
 set(daqlite_src
   daqlite.cpp
   Configuration.cpp

@@ -19,6 +19,8 @@ MainWindow::MainWindow(std::string Broker, std::string Topic,
     vmmgraph.setupPlot(&layout);
   } else if (Readout == "CDT") {
     cdtgraph.setupPlot(&layout);
+  //} else if (Readout == "CAEN") {
+    //caengraph.setupPlot(&layout);
   } else {
     qDebug("Unknown readout type %s (Use one of VMM, CDT)", Readout.c_str());
     exit(0);

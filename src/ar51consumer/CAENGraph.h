@@ -8,17 +8,17 @@
 //===----------------------------------------------------------------------===//
 
 #include <GraphBase.h>
-#include <QPlot/QPlot.h>
 
 #pragma once
 
 
-class CDTGraph :public GraphBase {
+class CAENGraph :public GraphBase {
+  Q_OBJECT
 
 public:
 
   ///\brief
-  CDTGraph(){};
+  CAENGraph(){};
 
   ///\brief
   void setupPlot(QGridLayout * Layout);
@@ -30,6 +30,9 @@ public:
   bool ignoreEntry(int Ring, int FEN);
 
   WorkerThread *WThread{nullptr}; // needed to access histogram data
+
+  //QCPColorMap * mColorMap{nullptr};
+  std::map<int, QCPColorMap *> CMGraphs;
 
 public Q_SLOTS:
 

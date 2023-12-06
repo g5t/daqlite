@@ -14,6 +14,8 @@
 #include <CustomTofPlot.h>
 #include <QMainWindow>
 #include <WorkerThread.h>
+//#include <Q3DScatter>
+#include <QtDataVisualisation/Q3DScatter>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -60,6 +62,8 @@ private:
   Custom2DPlot *Plot2DXZ; // xz plots
   Custom2DPlot *Plot2DYZ; // yz plots
   CustomTofPlot *PlotTOF;
+
+  //Q3DScatter scatter;
 
   /// \brief configuration obtained from main()
   Configuration mConfig;
