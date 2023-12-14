@@ -14,8 +14,6 @@
 #include <CustomTofPlot.h>
 #include <QMainWindow>
 #include <WorkerThread.h>
-//#include <Q3DScatter>
-#include <QtDataVisualisation/Q3DScatter>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {

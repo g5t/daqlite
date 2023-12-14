@@ -12,15 +12,14 @@
 
 
 MainWindow::MainWindow(std::string Broker, std::string Topic,
-  std::string Readout, QWidget *parent)
-    : QMainWindow(parent) {
+  std::string Readout, QWidget *parent) : QMainWindow(parent) {
 
   if (Readout == "VMM") {
     vmmgraph.setupPlot(&layout);
   } else if (Readout == "CDT") {
     cdtgraph.setupPlot(&layout);
-  //} else if (Readout == "CAEN") {
-    //caengraph.setupPlot(&layout);
+  } else if (Readout == "CAEN") {
+    caengraph.setupPlot(&layout);
   } else {
     qDebug("Unknown readout type %s (Use one of VMM, CDT)", Readout.c_str());
     exit(0);
@@ -43,5 +42,6 @@ void MainWindow::startConsumer(std::string Broker, std::string Topic) {
   Consumer = new WorkerThread(Broker, Topic);
   vmmgraph.WThread = Consumer;
   cdtgraph.WThread = Consumer;
+  caengraph.WThread = Consumer;
   Consumer->start();
 }

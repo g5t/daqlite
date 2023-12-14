@@ -13,7 +13,6 @@
 
 
 class CAENGraph :public GraphBase {
-  Q_OBJECT
 
 public:
 
@@ -31,8 +30,11 @@ public:
 
   WorkerThread *WThread{nullptr}; // needed to access histogram data
 
-  //QCPColorMap * mColorMap{nullptr};
   std::map<int, QCPColorMap *> CMGraphs;
+
+  int phase{0}; // debug
+  int xDim{64};
+  int yDim{64};
 
 public Q_SLOTS:
 

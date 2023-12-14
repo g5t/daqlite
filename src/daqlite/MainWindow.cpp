@@ -8,7 +8,6 @@
 #include "ui_MainWindow.h"
 #include <MainWindow.h>
 #include <string.h>
-#include <QtGraphs>
 
 
 void MainWindow::setupPlots() {
@@ -109,18 +108,6 @@ void MainWindow::handleKafkaData(int ElapsedCountMS) {
   ui->lblDiscardedPixelsText->setText(QString::number(EventDiscardRate));
 
   KafkaConsumerThread->mutex.lock();
-
-  QApplication app(argc, argv);
-
-  // Q3DScatter scatter;
-  // scatter.setMinimumSize(QSize(256, 256));
-  scatter.setResizeMode(QQuickWidget::SizeRootObjectToView);
-  QScatter3DSeries *series = new QScatter3DSeries;
-  QScatterDataArray data;
-  data << QVector3D(0.5f, 0.5f, 0.5f) << QVector3D(-0.3f, -0.5f, -0.4f) << QVector3D(0.0f, -0.3f, 0.2f);
-  series->dataProxy()->addItems(data);
-  scatter.addSeries(series);
-  scatter.show();
 
   if (plottype == tof2d) {
     PlotTOF2D->addData(Consumer->mPixelIDsPlot, Consumer->mTOFsPlot);

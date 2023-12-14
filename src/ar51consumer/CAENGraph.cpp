@@ -38,13 +38,13 @@ void CAENGraph::setupPlot(QGridLayout * Layout) {
   QPushButton *btnClear = new QPushButton("Clear");
 
   QHBoxLayout *hblayout = new QHBoxLayout();
-  hblayout->addWidget(btnToggle);
-  hblayout->addWidget(btnToggleLegend);
-  hblayout->addWidget(btnLogLin);
+  //hblayout->addWidget(btnToggle);
+  //hblayout->addWidget(btnToggleLegend);
+  //hblayout->addWidget(btnLogLin);
   Layout->addLayout(hblayout, 11, 0);
 
   QHBoxLayout *hblayout2 = new QHBoxLayout();
-  hblayout2->addWidget(btnDead);
+  //hblayout2->addWidget(btnDead);
   hblayout2->addWidget(btnClear);
   hblayout2->addWidget(btnQuit);
   Layout->addLayout(hblayout2, 11, 1);
@@ -62,57 +62,78 @@ void CAENGraph::setupPlot(QGridLayout * Layout) {
 
   /// \brief
 void CAENGraph::addGraph(QGridLayout * Layout, int Ring, int FEN) {
-  printf("add graph\n");
-  QCPColorMap * QCM = new QCPColorMap(xAxis, yAxis);
+  auto qcp = new QCustomPlot();
   int GraphKey = Ring * 256 + FEN;
-  CMGraphs[GraphKey] = QCM;
+  Graphs[GraphKey] = qcp;
 
-  // addText(QCP, fmt::format("R{}/F{}", Ring, FEN));
-  // QCP->legend->setBorderPen(QPen(Qt::transparent));
-  // if (ToggleLegend) {
-  //   QCP->legend->setVisible(true);
-  // }
-  // QCP->xAxis->setRange(0, NumChannels - 1);
-  // QCP->yAxis->setRange(0, 5);
-  // QCP->addGraph();
-  // QCP->graph(0)->setName("catode");
-  // QCP->graph(0)->setData(x, y0);
-  // QCP->graph(0)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
-  // QCP->graph(0)->setBrush(QBrush(QColor(20,50,255,40)));
-  // QCP->addGraph();
-  // QCP->graph(0)->setName("anode");
-  // QCP->graph(1)->setData(x, y1);
-  // QCP->graph(1)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
-  // QCP->graph(1)->setBrush(QBrush(QColor(255,50,20,40)));
+  Layout->addWidget(qcp, Ring, FEN);
 
-  //addWidget(PlotTOF2D, 0, 0, 1, 1);
-  //Layout->addWidget(QCP, Ring, Hybrid);
-  //Layout->addWidget(QCM, Ring, FEN, 1, 1);
-  //Layout->addWidget(QCM);
+  //
+  QCPColorMap * qcm = new QCPColorMap(qcp->xAxis, qcp->yAxis);
+  CMGraphs[GraphKey] = qcm;
+
+  qcm->data()->setSize(xDim, yDim);
+  qcm->data()->setRange(QCPRange(0, 511), QCPRange(0, 511));
+
+  double x, y, z;
+  for (int xIndex=0; xIndex<xDim; ++xIndex)
+  {
+    for (int yIndex=0; yIndex<yDim; ++yIndex)
+    {
+      qcm->data()->cellToCoord(xIndex, yIndex, &x, &y);
+      double r = 3*qSqrt(x*x+y*y)+1e-2;
+      z = 2*x*(qCos(r+2)/r-qSin(r+2)/r); // the B field strength of dipole radiation (modulo physical constants)
+      qcm->data()->setCell(xIndex, yIndex, z);
+    }
+  }
+
+  QCPColorScale *colorScale = new QCPColorScale(qcp);
+  //qcp->plotLayout()->addElement(0, 1, colorScale);
+  //colorScale->setType(QCPAxis::atRight);
+  qcm->setColorScale(colorScale);
+  //colorScale->axis()->setLabel("Magnetic Field Strength");
+  qcm->setGradient(QCPColorGradient::gpPolar);
+  qcm->rescaleDataRange();
+  qcp->rescaleAxes();
+
+  //addText(qcp, fmt::format("R{}/F{}", Ring, FEN));
 }
 
 
 void CAENGraph::updatePlots() {
-  printf("update plot\n");
+  //printf("update plot\n");
   for (int Ring = 0; Ring < 4; Ring++) {
     for (int FEN = 0; FEN < 4; FEN++) {
       if (ignoreEntry(Ring, FEN)) {
         continue;
       }
       int GraphKey = Ring * 256 + FEN;
-      auto qp = CMGraphs[GraphKey];
+      auto qcp = Graphs[GraphKey];
+      auto qcm = CMGraphs[GraphKey];
 
       // for (int i= 0; i < NumChannels; i++) {
       //   y0[i] = WThread->Consumer->CDTHistogram[Ring][FEN][0][i];
       //   y1[i] = WThread->Consumer->CDTHistogram[Ring][FEN][1][i];
       // }
 
-      //qp->graph(0)->setData(x, y0);
-      //qp->graph(1)->setData(x, y1);
+
+      phase += 1;
+
+      double x, y, z;
+      for (int xIndex=0; xIndex<xDim; ++xIndex)
+      {
+        for (int yIndex=0; yIndex<yDim; ++yIndex)
+        {
+          qcm->data()->cellToCoord(xIndex, yIndex, &x, &y);
+          double r = 3*qSqrt(x*x+y*y)+1e-2;
+          z = 2*x*(qCos(r+2+ phase/10)/r-qSin(r+2)/r); // the B field strength of dipole radiation (modulo physical constants)
+          qcm->data()->setCell(xIndex, yIndex, z);
+        }
+      }
 
       //updatePlotPresentation(qp);
 
-      replot();
+      qcp->replot();
     }
   }
 }

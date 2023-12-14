@@ -17,7 +17,7 @@
 #pragma once
 
 
-class GraphBase : public QCustomPlot {
+class GraphBase : public QObject {
   Q_OBJECT
 
 public:

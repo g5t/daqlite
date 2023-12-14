@@ -11,7 +11,7 @@
 #include <QGridLayout>
 #include <QMainWindow>
 #include <QPlot/QPlot.h>
-//#include <CAENGraph.h>
+#include <CAENGraph.h>
 #include <CDTGraph.h>
 #include <VMM3aGraph.h>
 #include <WorkerThread.h>
@@ -49,5 +49,5 @@ private:
 
   VMM3aGraph vmmgraph{};
   CDTGraph cdtgraph{};
-  //CAENGraph caengraph{};
+  CAENGraph caengraph{};
 };

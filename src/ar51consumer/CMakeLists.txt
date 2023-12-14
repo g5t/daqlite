@@ -11,7 +11,7 @@ set(ar51consumer_src
   ESSConsumer.cpp
   GraphBase.cpp
   VMM3aGraph.cpp
-  #CAENGraph.cpp
+  CAENGraph.cpp
   CDTGraph.cpp
   WorkerThread.cpp
   MainWindow.cpp
@@ -21,7 +21,7 @@ set(ar51consumer_inc
   ESSConsumer.h
   GraphBase.h
   VMM3aGraph.h
-  #CAENGraph.h
+  CAENGraph.h
   CDTGraph.h
   WorkerThread.h
   MainWindow.h
