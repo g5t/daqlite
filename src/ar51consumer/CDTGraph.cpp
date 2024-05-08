@@ -82,7 +82,7 @@ void CDTGraph::addGraph(QGridLayout * Layout, int Ring, int FEN) {
   QCP->graph(0)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
   QCP->graph(0)->setBrush(QBrush(QColor(20,50,255,40)));
   QCP->addGraph();
-  QCP->graph(0)->setName("anode");
+  QCP->graph(1)->setName("anode");
   QCP->graph(1)->setData(x, y1);
   QCP->graph(1)->setLineStyle(QCPGraph::LineStyle::lsStepLeft);
   QCP->graph(1)->setBrush(QBrush(QColor(255,50,20,40)));

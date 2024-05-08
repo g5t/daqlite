@@ -12,10 +12,7 @@
 
 
 bool VMM3aGraph::ignoreEntry(int Ring, int Hybrid) {
-  if ((Hybrid > 4) or (Ring > 2)) {
-    return true;
-  }
-  if (Ring == 2 and Hybrid == 4) {
+  if ((Hybrid > 4) or (Ring > 4)) {
     return true;
   }
   return false;
@@ -30,7 +27,7 @@ void VMM3aGraph::setupPlot(QGridLayout * Layout) {
     y1.push_back(0);
   }
 
-  for (int Ring = 0; Ring < 3; Ring++) {
+  for (int Ring = 0; Ring < 4; Ring++) {
     for (int Hybrid = 0; Hybrid < 5; Hybrid++) {
       if (ignoreEntry(Ring, Hybrid)) {
         continue;
@@ -101,7 +98,7 @@ void VMM3aGraph::addGraph(QGridLayout * Layout, int Ring, int Hybrid) {
 /// Update plot: get new data, toggle log/lin scale,
 /// toggle histograms first/second/both, rescale
 void VMM3aGraph::updatePlots() {
-  for (int Ring = 0; Ring < 3; Ring++) {
+  for (int Ring = 0; Ring < 4; Ring++) {
     for (int Hybrid = 0; Hybrid < 5; Hybrid++) {
       if (ignoreEntry(Ring, Hybrid)) {
         continue;

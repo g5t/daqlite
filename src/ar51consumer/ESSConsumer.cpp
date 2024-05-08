@@ -67,9 +67,9 @@ void ESSConsumer::parseVMM3aData(uint8_t * Readout, int Size) {
     int Hybrid = vmd->VMM >> 1;
     int Asic = vmd->VMM & 1;
     int Channel = vmd->Channel;
-    //printf("Ring %u, FEN %u, Hybrid %d, ASIC %d, Channel %d\n",
-    //       Ring, FEN, Hybrid, Asic, Channel);
-    Histogram[Ring][Hybrid][Asic][Channel]++;
+    // printf("Ring %u, FEN %u, Hybrid %d, ASIC %d, Channel %d\n",
+    //        Ring, FEN, Hybrid, Asic, Channel);
+    Histogram[(Ring<<1) + FEN][Hybrid][Asic][Channel]++;
     BytesLeft -= sizeof(vmm3a_readout);
     Readout += sizeof(vmm3a_readout);
   }
@@ -129,6 +129,9 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
   int Type = Header->CookieAndType >> 28;
 
   uint8_t * DataPtr = (uint8_t * )Header + 30;
+  if (Header->Version == 1) {
+    DataPtr += 2;
+  }
   int DataLength = Header->TotalLength - sizeof(struct PacketHeaderV0);
 
   // Dispatch technology specific
