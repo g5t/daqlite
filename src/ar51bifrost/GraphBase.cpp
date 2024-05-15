@@ -11,9 +11,9 @@
 
 void GraphBase::addText(QCustomPlot * QCP, std::string Text) {
   QCPItemText *textLabel = new QCPItemText(QCP);
-  textLabel->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
+  textLabel->setPositionAlignment(Qt::AlignTop|Qt::AlignRight);
   textLabel->position->setType(QCPItemPosition::ptAxisRectRatio);
-  textLabel->position->setCoords(0.9, 0); // top right
+  textLabel->position->setCoords(0.99, 0); // top right
   textLabel->setText(QString(Text.c_str()));
   textLabel->setFont(QFont("Helvetica", 10, QFont::Normal)); // or Bold
 }

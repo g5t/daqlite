@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <ESSConsumer.h>
+#include "ESSConsumer.h"
 #include <QThread>
 #include <utility>
 
@@ -16,8 +16,8 @@ class WorkerThread : public QThread {
   Q_OBJECT
 
 public:
-  WorkerThread(std::string Broker, std::string Topic) {
-    Consumer = new ESSConsumer(std::move(Broker), std::move(Topic));
+  WorkerThread(ESSConsumer::data_t * data, std::string Broker, std::string Topic) {
+    Consumer = new ESSConsumer(data, std::move(Broker), std::move(Topic));
   };
 
   //~WorkerThread(){};

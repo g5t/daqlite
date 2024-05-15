@@ -5,7 +5,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include <WorkerThread.h>
+#include "WorkerThread.h"
 
 void WorkerThread::run() {
   qDebug("Entering main consumer loop\n");

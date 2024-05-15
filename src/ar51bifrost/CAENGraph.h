@@ -32,9 +32,7 @@ public:
 
   std::map<int, QCPColorMap *> CMGraphs;
 
-  int phase{0}; // debug
-  int xDim{64};
-  int yDim{64};
+  int phase{10}; // debug
 
 public Q_SLOTS:
 
@@ -42,7 +40,4 @@ public Q_SLOTS:
   void dead(); // deadchannels
   void clear(); // clear histogram data
 
-private:
-  QVector<double> x, y0, y1;
-  int NumChannels{256};
 };

@@ -5,7 +5,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include <ESSConsumer.h>
+#include "ESSConsumer.h"
 #include <algorithm>
 #include <fmt/format.h>
 #include <iostream>
@@ -13,12 +13,21 @@
 #include <utility>
 #include <vector>
 
-ESSConsumer::ESSConsumer(std::string Broker, std::string Topic) :
-  Broker(std::move(Broker)), Topic(std::move(Topic)) {
+static double frame_time(uint32_t pulse_hi, uint32_t pulse_lo, uint32_t prev_hi, uint32_t prev_lo, uint32_t high, uint32_t low){
+    if (high > pulse_hi || (high == pulse_hi && low > pulse_lo)){
+        return static_cast<double>(high - pulse_hi) + (static_cast<int>(low) - static_cast<int>(pulse_lo)) / 1e9;
+    }
+    if (high > prev_hi || (high == prev_hi && low > prev_lo)){
+        return static_cast<double>(high - prev_hi) + (static_cast<int>(low) - static_cast<int>(prev_lo)) / 1e9;
+    }
+    return 0.;
+}
+
+ESSConsumer::ESSConsumer(data_t * data, std::string Broker, std::string Topic) :
+  Broker(std::move(Broker)), Topic(std::move(Topic)), histograms(data) {
 
   mConsumer = subscribeTopic();
   assert(mConsumer != nullptr);
-
 }
 
 RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
@@ -57,7 +66,7 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
 }
 
 /// \brief Example parser for CAEN Data
-uint32_t ESSConsumer::parseCAENData(uint8_t * Readout, int Size) {
+uint32_t ESSConsumer::parseCAENData(uint8_t * Readout, int Size, uint32_t hi, uint32_t lo, uint32_t p_hi, uint32_t p_lo) {
   uint32_t processed{0};
   int BytesLeft = Size;
   while (BytesLeft >= static_cast<int>(sizeof(caen_readout))) {
@@ -66,7 +75,8 @@ uint32_t ESSConsumer::parseCAENData(uint8_t * Readout, int Size) {
       printf("FEN %u, Length %u, HighTime %u, LowTime %u, Flags %u, Group %u\n",
              crd->FEN, crd->Length, crd->HighTime, crd->LowTime, crd->Flags_OM, crd->Group);
     } else {
-      histograms.add(crd->Fiber, crd->Group, crd->A, crd->B);
+      auto time = frame_time(hi, lo, p_hi, p_lo, crd->HighTime, crd->LowTime);
+      histograms->add(crd->Fiber, crd->Group, crd->A, crd->B, time);
     }
     BytesLeft -= sizeof(caen_readout);
     Readout += sizeof(caen_readout);
@@ -105,6 +115,10 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
   }
 
   auto Type = Header->CookieAndType >> 28;
+  auto pulse_hi = Header->PulseHigh;
+  auto pulse_lo = Header->PulseLow;
+  auto prev_hi = Header->PrevPulseHigh;
+  auto prev_lo = Header->PrevPulseLow;
 
   uint8_t * DataPtr = (uint8_t * )Header + 30;
   if (Header->Version == 1) {
@@ -115,7 +129,7 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
   // Dispatch technology specific
   if (3 == Type){
       printf("CAEN based readout\n");
-      return parseCAENData(DataPtr, static_cast<int>(DataLength));
+      return parseCAENData(DataPtr, static_cast<int>(DataLength), pulse_hi, pulse_lo, prev_hi, prev_lo);
   } else {
       fmt::print("Unregistered readout Type {}\n", Type);
   }

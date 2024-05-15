@@ -25,22 +25,22 @@ class MainWindow : public QMainWindow {
 
 public:
   MainWindow(std::string Broker, std::string Topic, QWidget *parent = nullptr);
-  ~MainWindow();
+  // ~MainWindow();
 
   /// \brief spin up a thread for consuming topic
   void startConsumer(std::string Broker, std::string Topic);
 
   /// \brief intial setup
-  void setupPlottingWidgets(int Row, int Col);
+  // void setupPlottingWidgets(int Row, int Col);
 
   /// \brief Use keyboard shortcuts to affect plotting
   //void keyPressEvent(QKeyEvent *event);
 
-  void quitProg();
+  // void quitProg();
 
 private:
   /// \brief
-  WorkerThread *Consumer;
+  WorkerThread *Consumer{};
 
   QGridLayout layout;
 

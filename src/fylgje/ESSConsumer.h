@@ -12,10 +12,11 @@
 
 #include "ar51_readout_data_generated.h"
 #include <librdkafka/rdkafkacpp.h>
-#include "bifrost.h"
+#include "data_manager.h"
 
 class ESSConsumer {
 public:
+  using data_t = ::bifrost::data::Manager;
   enum Status {Continue, Update, Halt};
 
   // Data format for the common ESS readout header
@@ -50,7 +51,7 @@ public:
 
 
   /// \brief Constructor needs the configured Broker and Topic
-  ESSConsumer(std::string Broker, std::string Topic);
+  ESSConsumer(data_t * data, std::string Broker, std::string Topic);
 
   /// \brief wrapper function for librdkafka consumer
   RdKafka::Message *consume();
@@ -66,9 +67,7 @@ public:
   uint32_t processAR51Data(RdKafka::Message *Msg);
 
   ///
-  uint32_t parseCAENData(uint8_t * Readout, int Size);
-
-  bifrostHistograms histograms{};
+  uint32_t parseCAENData(uint8_t * Readout, int Size, uint32_t pulse_high, uint32_t pulse_low, uint32_t prev_high, uint32_t prev_low);
 
 private:
   std::string Broker;
@@ -83,4 +82,6 @@ private:
   //RdKafka::Conf *mTConf;
   RdKafka::KafkaConsumer *mConsumer;
   //RdKafka::Topic *mTopic;
+
+  data_t * histograms;
 };

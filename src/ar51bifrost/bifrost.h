@@ -35,7 +35,7 @@ public:
   }
 
   static constexpr int ARCS = 5;
-  static constexpr int TRIPLETS = 15;
+  static constexpr int TRIPLETS = 9;
   static constexpr int RANGE = 1 << 15;
   static constexpr int SHIFT2D = 6;
   static constexpr int SHIFT1D = 5;
