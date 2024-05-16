@@ -68,6 +68,8 @@ private:
 
     void setup();
     void setup_consumer(std::string broker, std::string topic);
+
+    void set_intensity_limits();
 private slots:
     void on_resetButton_pressed();
 
@@ -95,9 +97,16 @@ private:
     Ui::MainWindow *ui;
     bool _triplet_fixed{false};
     bool _type_fixed{false};
-    int _fixed_arc{1};
-    int _fixed_triplet{1};
+    int _fixed_arc{0};
+    int _fixed_triplet{0};
     int_t _fixed_type{int_t::unknown};
+    std::map<int_t, int> minima{{int_t::a, 0}, {int_t::b, 0}, {int_t::p, 0}, {int_t::x, 0}, {int_t::t, 0},
+                              {int_t::ab, 0}, {int_t::xt, 0}, {int_t::xp, 0}, {int_t::pt, 0}};
+    std::map<int_t, int> maxima{{int_t::a, 1}, {int_t::b, 1}, {int_t::p, 1}, {int_t::x, 1}, {int_t::t, 1},
+                                {int_t::ab, 1}, {int_t::xt, 1}, {int_t::xp, 1}, {int_t::pt, 1}};
+
+    std::string broker;
+    std::string topic;
 
     ::bifrost::data::Manager * data;
     PlotManager * plots;

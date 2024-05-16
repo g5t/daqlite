@@ -4,10 +4,12 @@
 #include <QPlot/qcustomplot/qcustomplot.h>
 
 #include "data_manager.h"
+#include <iostream>
 
 class PlotManager{
 public:
     using data_t = ::bifrost::data::Manager;
+    using type_t = ::bifrost::data::Type;
     using layout_t = QGridLayout;
     enum class Dim {none, one, two};
 
@@ -15,62 +17,72 @@ public:
         dims[0] = Dim::none;
     }
 
-    void make_single(Dim d){
+    void make_single(Dim d, type_t t){
         if (layout->rowCount() != 1 || layout->columnCount() != 1 || d != dims[0]){
-            qDeleteAll(layout->children());
-            if (Dim::one == d) return make_1D(0, 0);
-            if (Dim::two == d) return make_2D(0, 0);
+          std::cout << "make_single: switching layout/dimensions " << std::endl;
+          std::cout << layout->columnCount() << " " << layout->rowCount() << std::endl;
+          empty_layout();
+          std::cout << layout->columnCount() << " " << layout->rowCount() << std::endl;
+
+          if (Dim::one == d) return make_1D(0, 0, false, t);
+          if (Dim::two == d) return make_2D(0, 0, false, t);
+          std::cout << layout->columnCount() << " " << layout->rowCount() << std::endl;
         }
     }
 
-    void make_all_same(Dim t){
-        if (layout->rowCount() != 3 || layout->columnCount() != 3){
-            qDeleteAll(layout->children());
-        }
+    void make_all_same(Dim d, type_t t){
+//        if (layout->rowCount() != 3 || layout->columnCount() != 3){
+//          empty_layout();
+//        }
+        empty_layout();
         for (int i=0; i<3; ++i) {
             for (int j=0; j<3; ++j) {
                 // if the plot exists but is the wrong type, remove it.
-                if (layout->itemAtPosition(i, j) && t !=dims[key(i, j)]){
-                    layout->removeItem(layout->itemAtPosition(i, j));
+                if (layout->itemAtPosition(i, j) && d !=dims[key(i, j)]){
+                  remove(i, j);
                 }
                 // if the plot doesn't exist create it
                 if (!layout->itemAtPosition(i, j)) {
-                    if (Dim::one == t){
-                        make_1D(i, j, (i>0) & (j>1));
+                    if (Dim::one == d){
+                        make_1D(i, j, false, t);
                     } else {
-                        make_2D(i, j);
+                        make_2D(i, j, false, t);
                     }
                 }
             }
         }
     }
 
-    void make_multi(){
+    void make_multi(type_t * ts){
         /*
          * 1 1 1
          * 2 2 -
          * 2 2 -
          */
-        if (layout->rowCount() != 3 || layout->columnCount() != 3){
-            qDeleteAll(layout->children());
-        }
+        empty_layout();
         for (int i=0; i<3; ++i) {
             for (int j=0; j<3; ++j) {
                 Dim t{i == 0 || j > 1 ? Dim::one : Dim::two};
                 // if the plot exists but is the wrong type, remove it.
                 if (layout->itemAtPosition(i, j) && t !=dims[key(i, j)]){
-                    layout->removeItem(layout->itemAtPosition(i, j));
+                  remove(i, j);
                 }
                 // if the plot doesn't exist create it
                 if (!layout->itemAtPosition(i, j)) {
                     if (Dim::one == t){
-                        make_1D(i, j, (i>0) & (j>1));
+                        make_1D(i, j, (i>0) & (j>1), ts[i*3 + j]);
                     } else {
-                        make_2D(i, j);
+                        make_2D(i, j, false, ts[i*3 + j]);
                     }
                 }
             }
         }
+    }
+
+    void plot(int i, int j, const std::vector<double> * x, const std::vector<double> * y){
+        QVector<double> q_x(x->begin(), x->end());
+        QVector<double> q_y(y->begin(), y->end());
+        plot(i, j, &q_x, &q_y);
     }
 
     void plot(int i, int j, const QVector<double> * x, const QVector<double> * y){
@@ -79,6 +91,8 @@ public:
         if (!dims.count(k) || dims.at(k) != Dim::one) return;
         auto g = lines.at(k);
         g->setData(*x, *y);
+        auto p = plots.at(k);
+        p->rescaleAxes();
     }
     void plot(int i, int j, const QCPColorMapData * data){
         auto k = key(i, j);
@@ -87,6 +101,43 @@ public:
         auto im = images.at(k);
         // Why does setData _require_ a mutable pointer?
         im->setData(const_cast<QCPColorMapData *>(data), true);
+        auto p = plots.at(k);
+        p->rescaleAxes();
+        im->rescaleDataRange();
+    }
+
+    void scale(const std::map<type_t, int> & min, const std::map<type_t, int> & max, bool is_linear = true){
+      for (auto [k, p]: plots){
+        auto t = types.at(k);
+        if (dims[k] == Dim::one){
+          p->yAxis->setScaleType(is_linear ? QCPAxis::stLinear : QCPAxis::stLogarithmic);
+          p->rescaleAxes();
+          p->yAxis->setRange(min.count(t) ? min.at(t) : 0, max.count(t) ? max.at(t) : 1);
+          p->yAxis->scaleRange(1.1, p->yAxis->range().center());
+        }
+        if (dims[k] == Dim::two){
+          auto m = images.at(k);
+          m->setDataScaleType(is_linear ? QCPAxis::stLinear : QCPAxis::stLogarithmic);
+          m->rescaleDataRange();
+          m->setDataRange(QCPRange(min.count(t) ? min.at(t) : 0, max.count(t) ? max.at(t) : 1));
+        }
+      }
+    }
+    void scale(double min, double max, bool is_linear = true){
+        for (auto [k, p]: plots){
+          if (dims[k] == Dim::one){
+            p->yAxis->setScaleType(is_linear ? QCPAxis::stLinear : QCPAxis::stLogarithmic);
+            p->rescaleAxes();
+            p->yAxis->setRange(min, max);
+            p->yAxis->scaleRange(1.1, p->yAxis->range().center());
+          }
+          if (dims[k] == Dim::two){
+            auto m = images.at(k);
+            m->setDataScaleType(is_linear ? QCPAxis::stLinear : QCPAxis::stLogarithmic);
+            m->rescaleDataRange();
+            m->setDataRange(QCPRange(min, max));
+          }
+        }
     }
 
 private:
@@ -94,7 +145,7 @@ private:
         return i * n_ + j;
     }
 
-    void make_plot(int i, int j){
+    void make_plot(int i, int j, type_t t){
         auto item = layout->itemAtPosition(i, j);
         if (!item){
             auto p = new QCustomPlot();
@@ -104,19 +155,28 @@ private:
             p->xAxis->setTickPen(QPen(Qt::NoPen));
             layout->addWidget(p, i, j);
             plots[key(i, j)] = p;
+            types[key(i, j)] = t;
         }
     }
-    void make_1D(int i, int j, bool flip=false){
+    void make_1D(int i, int j, bool flip, type_t t){
         dims[key(i, j)] = Dim::one;
-        make_plot(i, j);
+        make_plot(i, j, t);
         auto p = plots[key(i, j)];
         auto g = new QCPGraph(flip ? p->yAxis : p->xAxis, flip ? p->xAxis : p->yAxis);
         // styling of the displayed line
         lines[key(i, j)] = g;
+
+        p->yAxis->setTicks(true);
+        p->xAxis->setTicks(true);
+        p->yAxis->setTickLabels(true);
+        p->xAxis->setTickLabels(true);
+        p->axisRect()->setupFullAxesBox();
+
+        //p->setInteractions(QCP::iRangeDrag| QCP::iRangeZoom | QCP::iSelectPlottables);
     }
-    void make_2D(int i, int j, bool flip=false){
+    void make_2D(int i, int j, bool flip, type_t t){
         dims[key(i, j)] = Dim::two;
-        make_plot(i, j);
+        make_plot(i, j, t);
         auto p = plots[key(i, j)];
         auto m = new QCPColorMap(flip ? p->yAxis : p->xAxis, flip ? p->xAxis : p->yAxis);
         m->data()->setSize(n2, n2);
@@ -127,6 +187,8 @@ private:
         m->setGradient(QCPColorGradient::gpGrayscale);
         m->rescaleDataRange();
         p->rescaleAxes();
+
+        p->axisRect()->setupFullAxesBox();
 
         images[key(i, j)] = m;
     }
@@ -142,4 +204,37 @@ private:
     std::map<int, QCPColorMap *> images;
     std::map<int, QCPGraph *> lines;
     std::map<int, Dim> dims;
+    std::map<int, type_t> types;
+
+    void clear(){
+        qDeleteAll(layout->children());
+        plots.clear();
+        images.clear();
+        lines.clear();
+        dims.clear();
+        types.clear();
+    }
+
+    void remove(int i, int j){
+      auto item = layout->itemAtPosition(i, j);
+      if (item){
+        layout->removeItem(item);
+        delete item->widget();
+        delete item;
+      }
+      auto k = key(i, j);
+      if (plots.count(k)) plots.erase(k);
+      if (images.count(k)) images.erase(k);
+      if (lines.count(k)) lines.erase(k);
+      if (dims.count(k)) dims.erase(k);
+      if (types.count(k)) types.erase(k);
+    }
+
+    void empty_layout(){
+      for (int i=0; i<layout->rowCount(); ++i){
+        for (int j=0; j<layout->columnCount(); ++j){
+          remove(i, j);
+        }
+      }
+    }
 };

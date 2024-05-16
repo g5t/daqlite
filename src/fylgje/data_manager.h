@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <vector>
 #include <QVector>
 #include <QPlot/qcustomplot/qcustomplot.h>
 
@@ -45,9 +46,9 @@ namespace bifrost::data {
 
     class Manager{
     public:
-        using AX = QVector<double>;
+        using AX = std::vector<double>;
         using axis_key_t = Type;
-        using D1 = QVector<double>;
+        using D1 = std::vector<double>;
         using D2 = QCPColorMapData;
         using data_key_t = std::tuple<int, int, Type>; // arc, triplet, plot_t
     private:
@@ -113,7 +114,8 @@ namespace bifrost::data {
         ~Manager() = default;
 
         void clear(){
-            for (auto [k, x]: data_1d) x->fill(0);
+//            for (auto [k, x]: data_1d) x->fill(0);
+            for (auto [k, x]: data_1d) std::fill(x->begin(), x->end(), 0);
             for (auto [k, x]: data_2d) x->fill(0);
         }
         bool add(int arc, int triplet, int a, int b, double time);
@@ -123,6 +125,12 @@ namespace bifrost::data {
         [[nodiscard]] double max(int arc, int triplet) const;
         [[nodiscard]] double max(int arc, Type t) const;
         [[nodiscard]] double max(int arc, int triplet, Type t) const;
+
+      [[nodiscard]] double min() const;
+      [[nodiscard]] double min(int arc) const;
+      [[nodiscard]] double min(int arc, int triplet) const;
+      [[nodiscard]] double min(int arc, Type t) const;
+      [[nodiscard]] double min(int arc, int triplet, Type t) const;
 
         [[nodiscard]] D1 * data_1D(int arc, int triplet, Type t) const;
         [[nodiscard]] D2 * data_2D(int arc, int triplet, Type t) const;
@@ -136,5 +144,7 @@ namespace bifrost::data {
         bool add_2D(int arc, int triplet, int a, int b, double time);
         [[nodiscard]] double max_1D(int arc, int triplet, Type t) const;
         [[nodiscard]] double max_2D(int arc, int triplet, Type t) const;
+      [[nodiscard]] double min_1D(int arc, int triplet, Type t) const;
+      [[nodiscard]] double min_2D(int arc, int triplet, Type t) const;
     };
 }

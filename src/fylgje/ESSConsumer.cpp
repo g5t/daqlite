@@ -104,13 +104,7 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
     return 0;
   }
 
-
-  // Then print details of the data
-  // printf("OQ %u, SEQ %u, length %u ", Header->OutputQueue, Header->SeqNum,
-  //          Header->TotalLength);
-
   if (MsgSize == sizeof(struct PacketHeaderV0)) {
-    //printf("Heartbeat\n");
     return 0;
   }
 
@@ -124,11 +118,11 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
   if (Header->Version == 1) {
     DataPtr += 2;
   }
+  //TODO Is this correct for Version 1 headers too?
   auto DataLength = Header->TotalLength - sizeof(struct PacketHeaderV0);
 
   // Dispatch technology specific
   if (3 == Type){
-      printf("CAEN based readout\n");
       return parseCAENData(DataPtr, static_cast<int>(DataLength), pulse_hi, pulse_lo, prev_hi, prev_lo);
   } else {
       fmt::print("Unregistered readout Type {}\n", Type);

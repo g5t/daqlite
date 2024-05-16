@@ -34,10 +34,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->int__x_Radio, &QRadioButton::clicked, this, &MainWindow::set_int_x);
     connect(ui->int__B_Radio, &QRadioButton::clicked, this, &MainWindow::set_int_b);
 
+    _fixed_arc = 0;
     ui->arcRadio1->setChecked(true);
-    set_arc_1();
+    _fixed_triplet = 0;
     ui->tripletBox->setChecked(false);
     ui->tripRadio1->setChecked(true);
+    _fixed_type = int_t::ab;
     ui->intTypeBox->setChecked(true);
     ui->int_AB_Radio->setChecked(true);
 
@@ -47,16 +49,19 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::setup(){
     data = new ::bifrost::data::Manager(5, 9);
     plots = new PlotManager(data, ui->plotGrid, 3, 3);
-//    setup_consumer("", "");
+
+    broker = "localhost:9092";
+    topic = "bifrost_detector_samples";
+    setup_consumer(broker, topic);
 //
 //    /// Update timer
 //    auto *timer = new QTimer(this);
 //    connect(timer, &QTimer::timeout, this, &MainWindow::plot);
 //    timer->start(3000);
 }
-void MainWindow::setup_consumer(std::string broker, std::string topic){
+void MainWindow::setup_consumer(std::string b, std::string t){
     delete consumer;
-    consumer = new WorkerThread(data, std::move(broker), std::move(topic));
+    consumer = new WorkerThread(data, std::move(b), std::move(t));
     // caengraph.WThread = consumer;
     consumer->start();
 }
@@ -69,27 +74,35 @@ MainWindow::~MainWindow()
 
 void MainWindow::set_arc(int n){
     _fixed_arc = n;
+    plot();
 }
 
 
 void MainWindow::set_triplet(int n){
     _fixed_triplet = n;
+    plot();
 }
 
 void MainWindow::set_int(int_t t){
     _fixed_type = t;
+    plot();
 }
 
 void MainWindow::plot(){
-    _triplet_fixed = ui->tripletBox->isChecked();
-    _type_fixed = ui->intTypeBox->isChecked();
-    if (_triplet_fixed && _type_fixed) return plot_single(_fixed_arc, _fixed_triplet, _fixed_type);
-    if (_triplet_fixed) return plot_one_triplet(_fixed_arc, _fixed_triplet);
-    if (_type_fixed) return plot_one_type(_fixed_arc, _fixed_type);
+  set_intensity_limits();
+  _triplet_fixed = ui->tripletBox->isChecked();
+  _type_fixed = ui->intTypeBox->isChecked();
+  if (_triplet_fixed && _type_fixed) {
+    plot_single(_fixed_arc, _fixed_triplet, _fixed_type);
+  } else if (_triplet_fixed) {
+    plot_one_triplet(_fixed_arc, _fixed_triplet);
+  } else if (_type_fixed) {
+    plot_one_type(_fixed_arc, _fixed_type);
+  }
+  plots->scale(minima, maxima, !ui->scaleButton->isChecked());
 }
 
 void MainWindow::plot_single(int arc, int triplet, int_t t){
-    std::cout << "plot single doesn't work properly, this should be unreachable" << std::endl;
     PlotManager::Dim d{PlotManager::Dim::none};
     if (int_t::a == t || int_t::b == t || int_t::x == t || int_t::p == t || int_t::t == t){
         d = PlotManager::Dim::one;
@@ -97,7 +110,7 @@ void MainWindow::plot_single(int arc, int triplet, int_t t){
     if (int_t::ab == t || int_t::xt == t || int_t::pt == t || int_t::xp == t){
         d = PlotManager::Dim::two;
     }
-    plots->make_single(d);
+    plots->make_single(d, t);
     if (PlotManager::Dim::one == d){
         plots->plot(0, 0, data->independent_axis(t), data->data_1D(arc, triplet, t));
     }
@@ -110,11 +123,10 @@ void MainWindow::plot_one_type(int arc, int_t t){
     PlotManager::Dim d{PlotManager::Dim::none};
     if (int_t::a == t || int_t::b == t || int_t::x == t || int_t::p == t || int_t::t == t){
         d = PlotManager::Dim::one;
-    }
-    if (int_t::ab == t || int_t::xt == t || int_t::pt == t || int_t::xp == t){
+    } else if (int_t::ab == t || int_t::xt == t || int_t::pt == t || int_t::xp == t){
         d = PlotManager::Dim::two;
     }
-    plots->make_all_same(d);
+    plots->make_all_same(d, t);
     if (PlotManager::Dim::one == d){
         for (int i=0; i<3; ++i) {
             for (int j=0; j<3; ++j) {
@@ -131,17 +143,19 @@ void MainWindow::plot_one_type(int arc, int_t t){
     }
 }
 void MainWindow::plot_one_triplet(int arc, int triplet){
-    plots->make_multi();
-    plots->plot(0, 0, data->independent_axis(int_t::x), data->data_1D(arc, triplet, int_t::x));
-    plots->plot(0, 1, data->independent_axis(int_t::a), data->data_1D(arc, triplet, int_t::a));
-    plots->plot(0, 2, data->independent_axis(int_t::p), data->data_1D(arc, triplet, int_t::p));
-    plots->plot(1, 2, data->independent_axis(int_t::b), data->data_1D(arc, triplet, int_t::b));
-    plots->plot(2, 2, data->independent_axis(int_t::t), data->data_1D(arc, triplet, int_t::t));
+    int_t ts[]{int_t::x, int_t::a, int_t::p, int_t::xp, int_t::ab, int_t::b, int_t::xt, int_t::pt, int_t::t};
+    plots->make_multi(ts);
 
-    plots->plot(1, 0, data->data_2D(arc, triplet, int_t::xp));
-    plots->plot(1, 1, data->data_2D(arc, triplet, int_t::ab));
-    plots->plot(2, 0, data->data_2D(arc, triplet, int_t::xt));
-    plots->plot(2, 1, data->data_2D(arc, triplet, int_t::pt));
+    plots->plot(0, 0, data->independent_axis(ts[0]), data->data_1D(arc, triplet, ts[0]));
+    plots->plot(0, 1, data->independent_axis(ts[1]), data->data_1D(arc, triplet, ts[1]));
+    plots->plot(0, 2, data->independent_axis(ts[2]), data->data_1D(arc, triplet, ts[2]));
+    plots->plot(1, 2, data->independent_axis(ts[5]), data->data_1D(arc, triplet, ts[5]));
+    plots->plot(2, 2, data->independent_axis(ts[8]), data->data_1D(arc, triplet, ts[8]));
+
+    plots->plot(1, 0, data->data_2D(arc, triplet, ts[3]));
+    plots->plot(1, 1, data->data_2D(arc, triplet, ts[4]));
+    plots->plot(2, 0, data->data_2D(arc, triplet, ts[6]));
+    plots->plot(2, 1, data->data_2D(arc, triplet, ts[7]));
 }
 
 
@@ -166,11 +180,18 @@ void MainWindow::on_pauseButton_toggled(bool checked)
 }
 
 
-void MainWindow::on_autoscaleButton_toggled(bool checked)
+void MainWindow::on_autoscaleButton_toggled(bool check)
 {
-    ui->intensityMaxSpin->setReadOnly(checked);
-    ui->intensityMinSpin->setReadOnly(checked);
-    std::cout << "autoscale is now " << (checked ? "enabled" : "disabled") << std::endl;
+  ui->intMax_a->setReadOnly(check);
+  ui->intMax_b->setReadOnly(check);
+  ui->intMax_p->setReadOnly(check);
+  ui->intMax_x->setReadOnly(check);
+  ui->intMax_t->setReadOnly(check);
+  ui->intMax_ab->setReadOnly(check);
+  ui->intMax_xt->setReadOnly(check);
+  ui->intMax_px->setReadOnly(check);
+  ui->intMax_pt->setReadOnly(check);
+  if (check) set_intensity_limits();
 }
 
 
@@ -194,25 +215,55 @@ void MainWindow::on_colormapComboBox_currentTextChanged(const QString &arg1)
 
 void MainWindow::on_intensityMinSpin_valueChanged(int arg1)
 {
-    std::cout << "The intensity minimum is now " << arg1 << std::endl;
+    //std::cout << "The intensity minimum is now " << arg1 << std::endl;
 }
 
 
 void MainWindow::on_intensityMaxSpin_valueChanged(int arg1)
 {
-    std::cout << "The intensity maximum is now " << arg1 << std::endl;
+    //std::cout << "The intensity maximum is now " << arg1 << std::endl;
 }
 
 
 void MainWindow::on_intTypeBox_toggled(bool arg1)
 {
-    if (arg1) ui->tripletBox->setChecked(false);
-    _type_fixed = arg1;
+//  ui->tripletBox->setChecked(!arg1);
+  _type_fixed = arg1;
 }
 
 
 void MainWindow::on_tripletBox_toggled(bool arg)
 {
-    if (arg) ui->intTypeBox->setChecked(false);
-    _triplet_fixed = arg;
+//  ui->intTypeBox->setChecked(!arg);
+  _triplet_fixed = arg;
+}
+
+void MainWindow::set_intensity_limits() {
+  int_t ts[]{int_t::a, int_t::b, int_t::x, int_t::p, int_t::t, int_t::ab, int_t::xt, int_t::pt, int_t::xp};
+  if (ui->autoscaleButton->isChecked()) {
+    for (auto t: ts){
+      auto m = static_cast<int>(data->max(_fixed_arc, t));
+      maxima[t] = m ? m : 1;
+    }
+    ui->intMax_a->setValue(maxima[int_t::a]);
+    ui->intMax_b->setValue(maxima[int_t::b]);
+    ui->intMax_x->setValue(maxima[int_t::x]);
+    ui->intMax_p->setValue(maxima[int_t::p]);
+    ui->intMax_t->setValue(maxima[int_t::t]);
+    ui->intMax_ab->setValue(maxima[int_t::ab]);
+    ui->intMax_xt->setValue(maxima[int_t::xt]);
+    ui->intMax_pt->setValue(maxima[int_t::pt]);
+    ui->intMax_px->setValue(maxima[int_t::xp]);
+  } else {
+    maxima[int_t::a] = ui->intMax_a->value();
+    maxima[int_t::b] = ui->intMax_b->value();
+    maxima[int_t::x] = ui->intMax_x->value();
+    maxima[int_t::p] = ui->intMax_p->value();
+    maxima[int_t::t] = ui->intMax_t->value();
+    maxima[int_t::ab] = ui->intMax_ab->value();
+    maxima[int_t::xt] = ui->intMax_xt->value();
+    maxima[int_t::pt] = ui->intMax_pt->value();
+    maxima[int_t::xp] = ui->intMax_px->value();
+  }
+
 }
