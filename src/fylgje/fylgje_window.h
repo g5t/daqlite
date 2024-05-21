@@ -70,6 +70,10 @@ private:
     void setup_consumer(std::string broker, std::string topic);
 
     void set_intensity_limits();
+
+    void cycle_arc();
+    void cycle_arc_toggle(bool);
+
 private slots:
     void on_resetButton_pressed();
 
@@ -84,10 +88,6 @@ private slots:
     void on_colormapComboBox_currentIndexChanged(int index);
 
     void on_colormapComboBox_currentTextChanged(const QString &arg1);
-
-    void on_intensityMinSpin_valueChanged(int arg1);
-
-    void on_intensityMaxSpin_valueChanged(int arg1);
 
     void on_intTypeBox_toggled(bool arg1);
 

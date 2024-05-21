@@ -34,6 +34,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->int__x_Radio, &QRadioButton::clicked, this, &MainWindow::set_int_x);
     connect(ui->int__B_Radio, &QRadioButton::clicked, this, &MainWindow::set_int_b);
 
+    connect(ui->arcCycleCheck, &QCheckBox::clicked, this, &MainWindow::cycle_arc_toggle);
+
     _fixed_arc = 0;
     ui->arcRadio1->setChecked(true);
     _fixed_triplet = 0;
@@ -54,10 +56,10 @@ void MainWindow::setup(){
     topic = "bifrost_detector_samples";
     setup_consumer(broker, topic);
 //
-//    /// Update timer
-//    auto *timer = new QTimer(this);
-//    connect(timer, &QTimer::timeout, this, &MainWindow::plot);
-//    timer->start(3000);
+    /// Update timer
+    auto *timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, &MainWindow::plot);
+    timer->start(100);
 }
 void MainWindow::setup_consumer(std::string b, std::string t){
     delete consumer;
@@ -77,6 +79,24 @@ void MainWindow::set_arc(int n){
     plot();
 }
 
+void MainWindow::cycle_arc() {
+    if (!ui->arcCycleCheck->isChecked()) return;
+    _fixed_arc = (_fixed_arc + 1) % 5;
+    switch (_fixed_arc){
+        case 0: ui->arcRadio1->setChecked(true); break;
+        case 1: ui->arcRadio2->setChecked(true); break;
+        case 2: ui->arcRadio3->setChecked(true); break;
+        case 3: ui->arcRadio4->setChecked(true); break;
+        case 4: ui->arcRadio5->setChecked(true); break;
+        default: std::cout << "Error cycling arc value" << std::endl;
+    }
+    plot();
+    if (ui->arcCycleCheck->isChecked())
+        QTimer::singleShot(static_cast<int>(ui->arcPeriodSpin->value() * 1000), this, &MainWindow::cycle_arc);
+}
+void MainWindow::cycle_arc_toggle(bool checked){
+    if (checked) cycle_arc();
+}
 
 void MainWindow::set_triplet(int n){
     _fixed_triplet = n;
@@ -210,18 +230,6 @@ void MainWindow::on_colormapComboBox_currentIndexChanged(int index)
 void MainWindow::on_colormapComboBox_currentTextChanged(const QString &arg1)
 {
     std::cout << "the colormap selector is now set to " << arg1.toStdString() << std::endl;
-}
-
-
-void MainWindow::on_intensityMinSpin_valueChanged(int arg1)
-{
-    //std::cout << "The intensity minimum is now " << arg1 << std::endl;
-}
-
-
-void MainWindow::on_intensityMaxSpin_valueChanged(int arg1)
-{
-    //std::cout << "The intensity maximum is now " << arg1 << std::endl;
 }
 
 
