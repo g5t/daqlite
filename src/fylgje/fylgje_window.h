@@ -51,6 +51,18 @@ public:
     void set_int_xt(){set_int(int_t::xt);}
     void set_int_Pt(){set_int(int_t::pt);}
 
+    void set_bins_a_1d(int n){data->set_bins_1d(int_t::a, 1<<n); set_intensity_limits();}
+    void set_bins_b_1d(int n){data->set_bins_1d(int_t::b, 1<<n); set_intensity_limits();}
+    void set_bins_p_1d(int n){data->set_bins_1d(int_t::p, 1<<n); set_intensity_limits();}
+    void set_bins_x_1d(int n){data->set_bins_1d(int_t::x, 1<<n); set_intensity_limits();}
+    void set_bins_t_1d(int n){data->set_bins_1d(int_t::t, 1<<n); set_intensity_limits();}
+    void set_bins_a_2d(int n){data->set_bins_2d(int_t::a, 1<<n); set_intensity_limits();}
+    void set_bins_b_2d(int n){data->set_bins_2d(int_t::b, 1<<n); set_intensity_limits();}
+    void set_bins_p_2d(int n){data->set_bins_2d(int_t::p, 1<<n); set_intensity_limits();}
+    void set_bins_x_2d(int n){data->set_bins_2d(int_t::x, 1<<n); set_intensity_limits();}
+    void set_bins_t_2d(int n){data->set_bins_2d(int_t::t, 1<<n); set_intensity_limits();}
+
+
     // gateway, uses private flags to determine which plot type is called
     void plot();
 
@@ -74,11 +86,9 @@ private:
     void cycle_arc();
     void cycle_arc_toggle(bool);
 
+    void reset();
+
 private slots:
-    void on_resetButton_pressed();
-
-    void on_resetButton_released();
-
     void on_pauseButton_toggled(bool checked);
 
     void on_autoscaleButton_toggled(bool checked);

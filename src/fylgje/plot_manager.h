@@ -8,25 +8,23 @@
 
 class PlotManager{
 public:
-    using data_t = ::bifrost::data::Manager;
+    //using data_t = ::bifrost::data::Manager;
     using type_t = ::bifrost::data::Type;
     using layout_t = QGridLayout;
     enum class Dim {none, one, two};
 
-    PlotManager(data_t * h, layout_t * l, int n1, int n2): histograms(h), layout(l), n1(n1), n2(n2) {
+    PlotManager(layout_t * l, int n1, int n2): layout(l), n1(n1), n2(n2) {
         dims[0] = Dim::none;
     }
 
     void make_single(Dim d, type_t t){
         if (layout->rowCount() != 1 || layout->columnCount() != 1 || d != dims[0]){
-          std::cout << "make_single: switching layout/dimensions " << std::endl;
-          std::cout << layout->columnCount() << " " << layout->rowCount() << std::endl;
           empty_layout();
-          std::cout << layout->columnCount() << " " << layout->rowCount() << std::endl;
-
+          // why is this _always_ 3x3?
+          // std::cout << layout->columnCount() << " " << layout->rowCount() << std::endl;
           if (Dim::one == d) return make_1D(0, 0, false, t);
           if (Dim::two == d) return make_2D(0, 0, false, t);
-          std::cout << layout->columnCount() << " " << layout->rowCount() << std::endl;
+          // std::cout << layout->columnCount() << " " << layout->rowCount() << std::endl;
         }
     }
 
@@ -79,9 +77,9 @@ public:
         }
     }
 
-    void plot(int i, int j, const std::vector<double> * x, const std::vector<double> * y){
-        QVector<double> q_x(x->begin(), x->end());
-        QVector<double> q_y(y->begin(), y->end());
+    void plot(int i, int j, const std::vector<double> & x, const std::vector<double> & y){
+        QVector<double> q_x(x.begin(), x.end());
+        QVector<double> q_y(y.begin(), y.end());
         plot(i, j, &q_x, &q_y);
     }
 
@@ -94,58 +92,59 @@ public:
         auto p = plots.at(k);
         p->rescaleAxes();
     }
-    void plot(int i, int j, const QCPColorMapData * data){
+    void plot(int i, int j, const QCPColorMapData & data){
         auto k = key(i, j);
         if (!dims.count(k) || dims.at(k) != Dim::two) return;
         if (!images.count(k)) return;
         auto im = images.at(k);
         // Why does setData _require_ a mutable pointer?
-        im->setData(const_cast<QCPColorMapData *>(data), true);
+        im->setData(const_cast<QCPColorMapData *>(&data), true);
         auto p = plots.at(k);
         p->rescaleAxes();
         im->rescaleDataRange();
     }
 
-    void scale(const std::map<type_t, int> & min, const std::map<type_t, int> & max, bool is_linear = true){
-      for (auto [k, p]: plots){
-        auto t = types.at(k);
-        if (dims[k] == Dim::one){
-          p->yAxis->setScaleType(is_linear ? QCPAxis::stLinear : QCPAxis::stLogarithmic);
-          p->rescaleAxes();
-          p->yAxis->setRange(min.count(t) ? min.at(t) : 0, max.count(t) ? max.at(t) : 1);
-          p->yAxis->scaleRange(1.1, p->yAxis->range().center());
-        }
-        if (dims[k] == Dim::two){
-          auto m = images.at(k);
-          m->setDataScaleType(is_linear ? QCPAxis::stLinear : QCPAxis::stLogarithmic);
-          m->rescaleDataRange();
-          m->setDataRange(QCPRange(min.count(t) ? min.at(t) : 0, max.count(t) ? max.at(t) : 1));
-        }
-      }
+  void scale(const std::map<type_t, int> & min, const std::map<type_t, int> & max, bool is_linear = true){
+    for (auto [k, d]: dims){
+      auto lower = min.count(types.at(k)) ? min.at(types.at(k)) : 0;
+      auto upper = max.count(types.at(k)) ? max.at(types.at(k)) : 1;
+      inner_scale(k, lower, upper, is_linear);
     }
-    void scale(double min, double max, bool is_linear = true){
-        for (auto [k, p]: plots){
-          if (dims[k] == Dim::one){
-            p->yAxis->setScaleType(is_linear ? QCPAxis::stLinear : QCPAxis::stLogarithmic);
-            p->rescaleAxes();
-            p->yAxis->setRange(min, max);
-            p->yAxis->scaleRange(1.1, p->yAxis->range().center());
-          }
-          if (dims[k] == Dim::two){
-            auto m = images.at(k);
-            m->setDataScaleType(is_linear ? QCPAxis::stLinear : QCPAxis::stLogarithmic);
-            m->rescaleDataRange();
-            m->setDataRange(QCPRange(min, max));
-          }
-        }
+  }
+
+  void scale(double min, double max, bool is_linear = true){
+    for (auto [k, p]: dims){
+      inner_scale(k, min, max, is_linear);
     }
+  }
+
+  void scale(int i, int j, double min, double max, bool is_linear = true){
+    inner_scale(key(i, j), min, max, is_linear);
+  }
 
 private:
-    [[nodiscard]] inline int key(int i, int j) const {
+  void inner_scale(int k, double min, double max, bool is_linear){
+    if (dims[k] == Dim::one){
+      auto p = plots.at(k);
+      QCPAxis * ax{flipped[k] ? p->xAxis : p->yAxis};
+      ax->setScaleType(is_linear ? QCPAxis::stLinear : QCPAxis::stLogarithmic);
+      p->rescaleAxes();
+      ax->setRange(min, max);
+      ax->scaleRange(1.1, p->xAxis->range().center());
+    }
+    if (dims[k] == Dim::two){
+      auto m = images.at(k);
+      m->setDataScaleType(is_linear ? QCPAxis::stLinear : QCPAxis::stLogarithmic);
+      m->rescaleDataRange();
+      m->setDataRange(QCPRange(min, max));
+    }
+  }
+
+  [[nodiscard]] inline int key(int i, int j) const {
         return i * n_ + j;
     }
 
-    void make_plot(int i, int j, type_t t){
+    void make_plot(int i, int j, bool flip, type_t t){
         auto item = layout->itemAtPosition(i, j);
         if (!item){
             auto p = new QCustomPlot();
@@ -156,11 +155,12 @@ private:
             layout->addWidget(p, i, j);
             plots[key(i, j)] = p;
             types[key(i, j)] = t;
+            flipped[key(i, j)] = flip;
         }
     }
     void make_1D(int i, int j, bool flip, type_t t){
         dims[key(i, j)] = Dim::one;
-        make_plot(i, j, t);
+        make_plot(i, j, flip, t);
         auto p = plots[key(i, j)];
         auto g = new QCPGraph(flip ? p->yAxis : p->xAxis, flip ? p->xAxis : p->yAxis);
         // styling of the displayed line
@@ -172,11 +172,13 @@ private:
         p->xAxis->setTickLabels(true);
         p->axisRect()->setupFullAxesBox();
 
+        g->setLineStyle(QCPGraph::LineStyle::lsStepCenter);
+
         //p->setInteractions(QCP::iRangeDrag| QCP::iRangeZoom | QCP::iSelectPlottables);
     }
     void make_2D(int i, int j, bool flip, type_t t){
         dims[key(i, j)] = Dim::two;
-        make_plot(i, j, t);
+        make_plot(i, j, flip, t);
         auto p = plots[key(i, j)];
         auto m = new QCPColorMap(flip ? p->yAxis : p->xAxis, flip ? p->xAxis : p->yAxis);
         m->data()->setSize(n2, n2);
@@ -193,8 +195,9 @@ private:
         images[key(i, j)] = m;
     }
 
+
 private:
-    data_t * histograms;
+    //data_t * histograms;
     layout_t * layout{};
     int n1;
     int n2;
@@ -205,6 +208,7 @@ private:
     std::map<int, QCPGraph *> lines;
     std::map<int, Dim> dims;
     std::map<int, type_t> types;
+    std::map<int, bool> flipped;
 
     void clear(){
         qDeleteAll(layout->children());
@@ -213,6 +217,7 @@ private:
         lines.clear();
         dims.clear();
         types.clear();
+        flipped.clear();
     }
 
     void remove(int i, int j){
@@ -228,6 +233,7 @@ private:
       if (lines.count(k)) lines.erase(k);
       if (dims.count(k)) dims.erase(k);
       if (types.count(k)) types.erase(k);
+      if (flipped.count(k)) flipped.erase(k);
     }
 
     void empty_layout(){

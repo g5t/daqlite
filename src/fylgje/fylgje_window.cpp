@@ -36,6 +36,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->arcCycleCheck, &QCheckBox::clicked, this, &MainWindow::cycle_arc_toggle);
 
+    connect(ui->bins_a_1d, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::set_bins_a_1d);
+    connect(ui->bins_b_1d, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::set_bins_b_1d);
+    connect(ui->bins_p_1d, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::set_bins_p_1d);
+    connect(ui->bins_x_1d, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::set_bins_x_1d);
+    connect(ui->bins_t_1d, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::set_bins_t_1d);
+    connect(ui->bins_a_2d, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::set_bins_a_2d);
+    connect(ui->bins_b_2d, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::set_bins_b_2d);
+    connect(ui->bins_p_2d, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::set_bins_p_2d);
+    connect(ui->bins_x_2d, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::set_bins_x_2d);
+    connect(ui->bins_t_2d, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::set_bins_t_2d);
+
+
     _fixed_arc = 0;
     ui->arcRadio1->setChecked(true);
     _fixed_triplet = 0;
@@ -45,12 +57,14 @@ MainWindow::MainWindow(QWidget *parent)
     ui->intTypeBox->setChecked(true);
     ui->int_AB_Radio->setChecked(true);
 
+    connect(ui->resetButton, &QPushButton::pressed, this, &MainWindow::reset);
+
     setup();
 }
 
 void MainWindow::setup(){
     data = new ::bifrost::data::Manager(5, 9);
-    plots = new PlotManager(data, ui->plotGrid, 3, 3);
+    plots = new PlotManager(ui->plotGrid, 3, 3);
 
     broker = "localhost:9092";
     topic = "bifrost_detector_samples";
@@ -132,7 +146,7 @@ void MainWindow::plot_single(int arc, int triplet, int_t t){
     }
     plots->make_single(d, t);
     if (PlotManager::Dim::one == d){
-        plots->plot(0, 0, data->independent_axis(t), data->data_1D(arc, triplet, t));
+        plots->plot(0, 0, data->axis(t), data->data_1D(arc, triplet, t));
     }
     if (PlotManager::Dim::two == d){
         plots->plot(0, 0, data->data_2D(arc, triplet, t));
@@ -150,7 +164,7 @@ void MainWindow::plot_one_type(int arc, int_t t){
     if (PlotManager::Dim::one == d){
         for (int i=0; i<3; ++i) {
             for (int j=0; j<3; ++j) {
-                plots->plot(i, j, data->independent_axis(t), data->data_1D(arc, i*3+j, t));
+                plots->plot(i, j, data->axis(t), data->data_1D(arc, i*3+j, t));
             }
         }
     }
@@ -166,11 +180,11 @@ void MainWindow::plot_one_triplet(int arc, int triplet){
     int_t ts[]{int_t::x, int_t::a, int_t::p, int_t::xp, int_t::ab, int_t::b, int_t::xt, int_t::pt, int_t::t};
     plots->make_multi(ts);
 
-    plots->plot(0, 0, data->independent_axis(ts[0]), data->data_1D(arc, triplet, ts[0]));
-    plots->plot(0, 1, data->independent_axis(ts[1]), data->data_1D(arc, triplet, ts[1]));
-    plots->plot(0, 2, data->independent_axis(ts[2]), data->data_1D(arc, triplet, ts[2]));
-    plots->plot(1, 2, data->independent_axis(ts[5]), data->data_1D(arc, triplet, ts[5]));
-    plots->plot(2, 2, data->independent_axis(ts[8]), data->data_1D(arc, triplet, ts[8]));
+    plots->plot(0, 0, data->axis(ts[0]), data->data_1D(arc, triplet, ts[0]));
+    plots->plot(0, 1, data->axis(ts[1]), data->data_1D(arc, triplet, ts[1]));
+    plots->plot(0, 2, data->axis(ts[2]), data->data_1D(arc, triplet, ts[2]));
+    plots->plot(1, 2, data->axis(ts[5]), data->data_1D(arc, triplet, ts[5]));
+    plots->plot(2, 2, data->axis(ts[8]), data->data_1D(arc, triplet, ts[8]));
 
     plots->plot(1, 0, data->data_2D(arc, triplet, ts[3]));
     plots->plot(1, 1, data->data_2D(arc, triplet, ts[4]));
@@ -178,18 +192,8 @@ void MainWindow::plot_one_triplet(int arc, int triplet){
     plots->plot(2, 1, data->data_2D(arc, triplet, ts[7]));
 }
 
-
-
-void MainWindow::on_resetButton_pressed()
-{
-    std::cout << "reset button pressed, erase buffers now!" << std::endl;
-    plot();
-}
-
-
-void MainWindow::on_resetButton_released()
-{
-    std::cout << "reset button released, re-enable filling buffers now!" << std::endl;
+void MainWindow::reset(){
+  data->clear();
 }
 
 
@@ -247,9 +251,8 @@ void MainWindow::on_tripletBox_toggled(bool arg)
 }
 
 void MainWindow::set_intensity_limits() {
-  int_t ts[]{int_t::a, int_t::b, int_t::x, int_t::p, int_t::t, int_t::ab, int_t::xt, int_t::pt, int_t::xp};
   if (ui->autoscaleButton->isChecked()) {
-    for (auto t: ts){
+    for (auto t: ::bifrost::data::TYPEND){
       auto m = static_cast<int>(data->max(_fixed_arc, t));
       maxima[t] = m ? m : 1;
     }
