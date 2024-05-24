@@ -44,8 +44,6 @@ MainWindow::MainWindow(QWidget *parent)
   connect(ui->int__x_Radio, &QRadioButton::clicked, this, &MainWindow::set_int_x);
   connect(ui->int__B_Radio, &QRadioButton::clicked, this, &MainWindow::set_int_b);
 
-  connect(ui->arcCycleCheck, &QCheckBox::clicked, this, &MainWindow::cycle_arc_toggle);
-
   _fixed_arc = 0;
   ui->arcRadio1->setChecked(true);
   _fixed_triplet = 0;
@@ -61,6 +59,10 @@ MainWindow::MainWindow(QWidget *parent)
   connect(ui->intTypeBox, &QGroupBox::toggled, this, &MainWindow::update_intensity_limits);
   connect(ui->tripletBox, &QGroupBox::toggled, this, &MainWindow::update_intensity_limits);
   connect(ui->pauseButton, &QPushButton::toggled, this, &MainWindow::pause_toggled);
+
+  connect(ui->arcCycleCheck, &QCheckBox::clicked, this, &MainWindow::cycle);
+  connect(ui->tripletCycleCheck, &QCheckBox::clicked, this, &MainWindow::cycle);
+  connect(ui->typeCycleCheck, &QCheckBox::clicked, this, &MainWindow::cycle);
 
   setup_add_bin_boxes();
   setup_intensity_limits();
@@ -148,44 +150,130 @@ MainWindow::~MainWindow()
 }
 
 
-void MainWindow::set_arc(int n){
-    _fixed_arc = n;
-    update_intensity_limits();
-    plot();
+void MainWindow::cycle() {
+  if (is_paused()) return;
+  // entrypoint
+  auto type_index = type_order_index(_fixed_type);
+  using fylgje::Cycles;
+  auto arc = ui->arcCycleCheck->isChecked();
+  auto triplet = ui->tripletCycleCheck->isChecked();
+  auto type = ui->typeCycleCheck->isChecked();
+  auto index = 4 * type + 2 * triplet + arc;
+  switch (index){
+    case 1: cycle_one = Cycles<1>({5}, {_fixed_arc}); break;
+    case 2: cycle_one = Cycles<1>({9}, {_fixed_triplet}); break;
+    case 4: cycle_one = Cycles<1>({9}, {type_index}); break;
+    case 3: cycle_two = Cycles<2>({5, 9}, {_fixed_arc, _fixed_triplet}); break;
+    case 5: cycle_two = Cycles<2>({5, 9}, {_fixed_arc, type_index}); break;
+    case 6: cycle_two = Cycles<2>({9, 9}, {_fixed_triplet, type_index}); break;
+    case 7: cycle_three = Cycles<3>({5, 9, 9}, {_fixed_arc, _fixed_triplet, type_index}); break;
+    default: break;
+  }
+  if (ui->arcCycleCheck->isChecked() || ui->tripletCycleCheck->isChecked() || ui->typeCycleCheck->isChecked()) {
+    cycle_any();
+  }
+}
+
+void MainWindow::cycle_any(){
+  if (is_paused()) return;
+  auto arc = ui->arcCycleCheck->isChecked();
+  auto triplet = ui->tripletCycleCheck->isChecked();
+  auto type = ui->typeCycleCheck->isChecked();
+  auto index = 4 * type + 2 * triplet + arc;
+  switch (index){
+    case 1: cycle_arc(); break;
+    case 2: cycle_triplet(); break;
+    case 3: cycle_arc_triplet(); break;
+    case 4: cycle_type(); break;
+    case 5: cycle_arc_type(); break;
+    case 6: cycle_triplet_type(); break;
+    case 7: cycle_arc_triplet_type(); break;
+    default: std::cout << "Error cycling with "
+    << (arc ? "arc" : "")
+    << (triplet ? "triplet" : "")
+    << (index ? "index" : "")
+    << ((index | triplet | arc) ? "" : "nothing")
+    << " checked" << std::endl;
+  }
+  set_arc_radio(_fixed_arc);
+  set_triplet_radio(_fixed_triplet);
+  set_type_radio(_fixed_type);
+  if (ui->arcCycleCheck->isChecked() || ui->tripletCycleCheck->isChecked() || ui->typeCycleCheck->isChecked()){
+    QTimer::singleShot(static_cast<int>(ui->arcPeriodSpin->value() * 1000), this, &MainWindow::cycle_any);
+  }
+}
+
+void MainWindow::set_arc_radio(int arc){
+  QRadioButton* radios[]{ui->arcRadio1, ui->arcRadio2, ui->arcRadio3, ui->arcRadio4, ui->arcRadio5};
+  radios[arc]->setChecked(true);
+}
+void MainWindow::set_triplet_radio(int triplet){
+  QRadioButton* radios[]{ui->tripRadio1, ui->tripRadio2, ui->tripRadio3,
+                         ui->tripRadio4, ui->tripRadio5, ui->tripRadio6,
+                         ui->tripRadio7, ui->tripRadio8, ui->tripRadio9};
+  radios[triplet]->setChecked(true);
+}
+void MainWindow::set_type_radio(MainWindow::int_t type) {
+  QRadioButton* radios[]{ui->int__x_Radio, ui->int__A_Radio, ui->int__P_Radio,
+                         ui->int_xP_Radio, ui->int_AB_Radio, ui->int__B_Radio,
+                         ui->int_xt_Radio, ui->int_Pt_Radio, ui->int__t_Radio};
+  radios[type_order_index(type)]->setChecked(true);
 }
 
 void MainWindow::cycle_arc() {
-    if (!ui->arcCycleCheck->isChecked()) return;
-    _fixed_arc = (_fixed_arc + 1) % 5;
-    switch (_fixed_arc){
-        case 0: ui->arcRadio1->setChecked(true); break;
-        case 1: ui->arcRadio2->setChecked(true); break;
-        case 2: ui->arcRadio3->setChecked(true); break;
-        case 3: ui->arcRadio4->setChecked(true); break;
-        case 4: ui->arcRadio5->setChecked(true); break;
-        default: std::cout << "Error cycling arc value" << std::endl;
-    }
-    plot();
-    if (ui->arcCycleCheck->isChecked())
-        QTimer::singleShot(static_cast<int>(ui->arcPeriodSpin->value() * 1000), this, &MainWindow::cycle_arc);
+  cycle_one->next();
+  set_arc(cycle_one->at(0));
 }
-void MainWindow::cycle_arc_toggle(bool checked){
-    if (checked) cycle_arc();
+void MainWindow::cycle_triplet() {
+  cycle_one->next();
+  set_triplet(cycle_one->at(0));
+}
+void MainWindow::cycle_type(){
+  cycle_one->next();
+  set_int(type_order[cycle_one->at(0)]);
+}
+void MainWindow::cycle_arc_triplet(){
+  cycle_two->next();
+  set_arc(cycle_two->at(0), false);
+  set_triplet(cycle_two->at(1));
+}
+void MainWindow::cycle_arc_type(){
+  cycle_two->next();
+  set_arc(cycle_two->at(0), false);
+  set_int(type_order[cycle_two->at(1)]);
+}
+void MainWindow::cycle_triplet_type(){
+  cycle_two->next();
+  set_triplet(cycle_two->at(0), false);
+  set_int(type_order[cycle_two->at(1)]);
+}
+void MainWindow::cycle_arc_triplet_type(){
+  cycle_three->next();
+  set_arc(cycle_three->at(0), false);
+  set_triplet(cycle_three->at(1), false);
+  set_int(type_order[cycle_three->at(2)]);
 }
 
-void MainWindow::set_triplet(int n){
-    _fixed_triplet = n;
-    update_intensity_limits();
-    plot();
+void MainWindow::set_arc(int n, bool plot_now){
+  _fixed_arc = n;
+  update_intensity_limits();
+  if (plot_now) plot();
 }
 
-void MainWindow::set_int(int_t t){
-    _fixed_type = t;
-    update_intensity_limits();
-    plot();
+void MainWindow::set_triplet(int n, bool plot_now){
+  _fixed_triplet = n;
+  update_intensity_limits();
+  if (plot_now) plot();
+}
+
+void MainWindow::set_int(int_t t, bool plot_now){
+  _fixed_type = t;
+  update_intensity_limits();
+  if (plot_now) plot();
 }
 
 void MainWindow::plot(){
+  if (is_paused()) return;
   set_intensity_limits();
   _triplet_fixed = ui->tripletBox->isChecked();
   _type_fixed = ui->intTypeBox->isChecked();
@@ -249,21 +337,20 @@ void MainWindow::plot_one_type(int arc, int_t t){
     }
 }
 void MainWindow::plot_one_triplet(int arc, int triplet){
-  int_t ts[]{int_t::x, int_t::a, int_t::p, int_t::xp, int_t::ab, int_t::b, int_t::xt, int_t::pt, int_t::t};
-  plots->make_multi(ts);
+  plots->make_multi(type_order);
 
   int i[]{0,0,0,1,1,1,2,2,2};
   int j[]{0,1,2,0,1,2,0,1,2};
   auto is_log = ui->scaleButton->isChecked();
   for (int t: {0, 1, 2, 5, 8}){
-    auto key = make_key(arc, triplet, ts[t]);
-    plots->plot(i[t], j[t], data->axis(ts[t]), data->data_1D(arc, triplet, ts[t]), 0.0, 1.0*max[key], is_log);
+    auto key = make_key(arc, triplet, type_order[t]);
+    plots->plot(i[t], j[t], data->axis(type_order[t]), data->data_1D(arc, triplet, type_order[t]), 0.0, 1.0*max[key], is_log);
   }
   auto gradient = ui->colormapComboBox->currentText().toStdString();
   auto is_inverted = ui->colormapInvertedCheck->isChecked();
   for (int t: {3, 4, 6, 7}){
-    auto key = make_key(arc, triplet, ts[t]);
-    plots->plot(i[t], j[t], data->data_2D(arc, triplet, ts[t]), 0.0, 1.0*max[key], is_log, gradient, is_inverted);
+    auto key = make_key(arc, triplet, type_order[t]);
+    plots->plot(i[t], j[t], data->data_2D(arc, triplet, type_order[t]), 0.0, 1.0*max[key], is_log, gradient, is_inverted);
   }
 }
 
@@ -274,15 +361,14 @@ void MainWindow::reset(){
 
 void MainWindow::pause_toggled(bool checked)
 {
-  std::cout << "pause button is now " << (checked ? "on" : "off") << std::endl;
-  if (!checked) plot();
-  std::cout << "Intensity limits" << std::endl;
-  for (auto [key, value]: max){
-    auto [arc, triplet, type] = key;
-    std::stringstream stype;
-    stype << type;
-    fmt::print("{:1d} {:1d} {:6s} ({}, {})\n", arc, triplet, stype.str(), 0, value);
+  if (!checked) {
+    // check if the cycle should (re)start
+    cycle();
   }
+}
+
+bool MainWindow::is_paused(){
+  return ui->pauseButton->isChecked();
 }
 
 

@@ -51,7 +51,7 @@ public:
         }
     }
 
-    void make_multi(type_t * ts){
+    void make_multi(std::array<type_t, 9> ts){
         /*
          * 1 1 1
          * 2 2 -

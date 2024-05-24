@@ -4,11 +4,13 @@
 #include <QMainWindow>
 #include <QGridLayout>
 #include <QPlot/qcustomplot/qcustomplot.h>
+#include <optional>
 
 #include "WorkerThread.h"
 #include "plot_manager.h"
 #include "data_manager.h"
 #include "two_spin_box.h"
+#include "cycles.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -72,9 +74,9 @@ private:
   static inline key_t make_key(int arc, int triplet, int_t type){
     return std::make_tuple(arc, triplet, type);
   }
-  void set_arc(int n);
-  void set_triplet(int n);
-  void set_int(int_t t);
+  void set_arc(int n, bool plot_now=true);
+  void set_triplet(int n, bool plot_now=true);
+  void set_int(int_t t, bool plot_now=true);
 
   // ensure there is only 1 full-size canvas, draw the fully specified plot
   void plot_single(int arc, int triplet, int_t int_type);
@@ -103,13 +105,25 @@ private:
   void auto_intensity_limits_singular();
   void update_intensity_limits();
 
+  void set_arc_radio(int arc);
+  void set_triplet_radio(int triplet);
+  void set_type_radio(int_t type);
+
+  void cycle();
+  void cycle_any();
   void cycle_arc();
-  void cycle_arc_toggle(bool);
+  void cycle_triplet();
+  void cycle_type();
+  void cycle_arc_triplet();
+  void cycle_arc_type();
+  void cycle_triplet_type();
+  void cycle_arc_triplet_type();
 
   void reset();
 
   void autoscale_toggled(bool checked);
   void pause_toggled(bool checked);
+  bool is_paused();
 
 private:
     Ui::MainWindow *ui;
@@ -117,7 +131,7 @@ private:
     bool _type_fixed{false};
     int _fixed_arc{0};
     int _fixed_triplet{0};
-    int_t _fixed_type{int_t::unknown};
+    int_t _fixed_type{int_t::ab}; // should match the default in fylgje_window.ui
 
     std::map<std::pair<int_t, int>, TwoSpinBox *> bin_boxes{};
     std::map<key_t, int> max;
@@ -130,5 +144,20 @@ private:
     ::bifrost::data::Manager * data;
     PlotManager * plots;
     WorkerThread * consumer{};
+
+    std::optional<fylgje::Cycles<1>> cycle_one;
+    std::optional<fylgje::Cycles<2>> cycle_two;
+    std::optional<fylgje::Cycles<3>> cycle_three;
+
+    std::array<int_t, 9> type_order{int_t::x, int_t::a, int_t::p, int_t::xp, int_t::ab, int_t::b, int_t::xt, int_t::pt, int_t::t};
+    int type_order_index(int_t t){
+      auto b = type_order.begin();
+      auto e = type_order.end();
+      auto i = std::distance(b, std::find(b, e, t));
+      if (i < 0 || i >= 9){
+        throw std::out_of_range("The index is out of range");
+      }
+      return static_cast<int>(i);
+    }
 };
 #endif // MAINWINDOW_H
