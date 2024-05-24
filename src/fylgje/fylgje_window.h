@@ -8,6 +8,7 @@
 #include "WorkerThread.h"
 #include "plot_manager.h"
 #include "data_manager.h"
+#include "two_spin_box.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -20,6 +21,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
     using int_t = ::bifrost::data::Type;
+    using key_t = std::tuple<int, int, int_t>;
 
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -51,57 +53,63 @@ public:
     void set_int_xt(){set_int(int_t::xt);}
     void set_int_Pt(){set_int(int_t::pt);}
 
-    void set_bins_a_1d(int n){data->set_bins_1d(int_t::a, 1<<n); set_intensity_limits();}
-    void set_bins_b_1d(int n){data->set_bins_1d(int_t::b, 1<<n); set_intensity_limits();}
-    void set_bins_p_1d(int n){data->set_bins_1d(int_t::p, 1<<n); set_intensity_limits();}
-    void set_bins_x_1d(int n){data->set_bins_1d(int_t::x, 1<<n); set_intensity_limits();}
-    void set_bins_t_1d(int n){data->set_bins_1d(int_t::t, 1<<n); set_intensity_limits();}
-    void set_bins_a_2d(int n){data->set_bins_2d(int_t::a, 1<<n); set_intensity_limits();}
-    void set_bins_b_2d(int n){data->set_bins_2d(int_t::b, 1<<n); set_intensity_limits();}
-    void set_bins_p_2d(int n){data->set_bins_2d(int_t::p, 1<<n); set_intensity_limits();}
-    void set_bins_x_2d(int n){data->set_bins_2d(int_t::x, 1<<n); set_intensity_limits();}
-    void set_bins_t_2d(int n){data->set_bins_2d(int_t::t, 1<<n); set_intensity_limits();}
+    void set_bins_a_1d(int m){data->set_bins_1d(int_t::a, m); set_intensity_limits();}
+    void set_bins_b_1d(int m){data->set_bins_1d(int_t::b, m); set_intensity_limits();}
+    void set_bins_p_1d(int m){data->set_bins_1d(int_t::p, m); set_intensity_limits();}
+    void set_bins_x_1d(int m){data->set_bins_1d(int_t::x, m); set_intensity_limits();}
+    void set_bins_t_1d(int m){data->set_bins_1d(int_t::t, m); set_intensity_limits();}
+    void set_bins_a_2d(int m){data->set_bins_2d(int_t::a, m); set_intensity_limits();}
+    void set_bins_b_2d(int m){data->set_bins_2d(int_t::b, m); set_intensity_limits();}
+    void set_bins_p_2d(int m){data->set_bins_2d(int_t::p, m); set_intensity_limits();}
+    void set_bins_x_2d(int m){data->set_bins_2d(int_t::x, m); set_intensity_limits();}
+    void set_bins_t_2d(int m){data->set_bins_2d(int_t::t, m); set_intensity_limits();}
 
 
     // gateway, uses private flags to determine which plot type is called
     void plot();
 
 private:
-    void set_arc(int n);
-    void set_triplet(int n);
-    void set_int(int_t t);
+  static inline key_t make_key(int arc, int triplet, int_t type){
+    return std::make_tuple(arc, triplet, type);
+  }
+  void set_arc(int n);
+  void set_triplet(int n);
+  void set_int(int_t t);
 
-    // ensure there is only 1 full-size canvas, draw the fully specified plot
-    void plot_single(int arc, int triplet, int_t int_type);
-    // plot all triplets for the specified intensity plot type
-    void plot_one_type(int arc, int_t int_type);
-    // plot all intensity plots for the specified triplet
-    void plot_one_triplet(int arc, int triplet);
+  // ensure there is only 1 full-size canvas, draw the fully specified plot
+  void plot_single(int arc, int triplet, int_t int_type);
+  // plot all triplets for the specified intensity plot type
+  void plot_one_type(int arc, int_t int_type);
+  // plot all intensity plots for the specified triplet
+  void plot_one_triplet(int arc, int triplet);
 
-    void setup();
-    void setup_consumer(std::string broker, std::string topic);
+  void setup();
+  void setup_add_bin_boxes();
+  void setup_intensity_limits();
+  void setup_gradient_list();
+  void setup_consumer(std::string broker, std::string topic);
 
-    void set_intensity_limits();
+  void set_intensity_limits();
+  void get_intensity_limits();
+  void auto_intensity_limits();
+  void set_intensity_limits_triplets();
+  void get_intensity_limits_triplets();
+  void auto_intensity_limits_triplets();
+  void set_intensity_limits_types();
+  void get_intensity_limits_types();
+  void auto_intensity_limits_types();
+  void set_intensity_limits_singular();
+  void get_intensity_limits_singular();
+  void auto_intensity_limits_singular();
+  void update_intensity_limits();
 
-    void cycle_arc();
-    void cycle_arc_toggle(bool);
+  void cycle_arc();
+  void cycle_arc_toggle(bool);
 
-    void reset();
+  void reset();
 
-private slots:
-    void on_pauseButton_toggled(bool checked);
-
-    void on_autoscaleButton_toggled(bool checked);
-
-    void on_scaleButton_toggled(bool checked);
-
-    void on_colormapComboBox_currentIndexChanged(int index);
-
-    void on_colormapComboBox_currentTextChanged(const QString &arg1);
-
-    void on_intTypeBox_toggled(bool arg1);
-
-    void on_tripletBox_toggled(bool arg);
+  void autoscale_toggled(bool checked);
+  void pause_toggled(bool checked);
 
 private:
     Ui::MainWindow *ui;
@@ -110,10 +118,11 @@ private:
     int _fixed_arc{0};
     int _fixed_triplet{0};
     int_t _fixed_type{int_t::unknown};
-    std::map<int_t, int> minima{{int_t::a, 0}, {int_t::b, 0}, {int_t::p, 0}, {int_t::x, 0}, {int_t::t, 0},
-                              {int_t::ab, 0}, {int_t::xt, 0}, {int_t::xp, 0}, {int_t::pt, 0}};
-    std::map<int_t, int> maxima{{int_t::a, 1}, {int_t::b, 1}, {int_t::p, 1}, {int_t::x, 1}, {int_t::t, 1},
-                                {int_t::ab, 1}, {int_t::xt, 1}, {int_t::xp, 1}, {int_t::pt, 1}};
+
+    std::map<std::pair<int_t, int>, TwoSpinBox *> bin_boxes{};
+    std::map<key_t, int> max;
+
+    std::vector<QSpinBox*> maxBox;
 
     std::string broker;
     std::string topic;

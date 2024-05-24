@@ -202,24 +202,28 @@ bifrost::data::Manager::D1 bifrost::data::Manager::data_1D(int arc, int triplet,
           for (int j=0; j < r; ++j){
             d[i] += full.at(i*r + j);
           }
+          d[i] /= r;
         }
       }
     }
     return d;
 }
 
-bifrost::data::Manager::D2 bifrost::data::Manager::data_2D(int arc, int triplet, bifrost::data::Type t) const {
+bifrost::data::Manager::D2 * bifrost::data::Manager::data_2D(int arc, int triplet, bifrost::data::Type t) const {
     auto key = std::make_tuple(arc, triplet, t);
     // translate 2d to 1d axes
     auto [nx, ny] = bins_2D(t);
-    auto d = bifrost::data::Manager::D2(nx, ny, QCPRange(0, nx-1), QCPRange(0, ny-1));
-    d.fill(0);
+    int bx{BIN2D/nx/2}, by{BIN2D/ny/2};
+    double norm{static_cast<double>(BIN2D)*static_cast<double>(BIN2D)/static_cast<double>(nx)/static_cast<double>(ny)};
+
+    auto d = new ::bifrost::data::Manager::D2(nx, ny, QCPRange(bx, BIN2D-bx), QCPRange(by, BIN2D-by));
+    d->fill(0);
     if (data.count(key)){
       auto full = data.at(key);
       if (nx == BIN2D && ny == BIN2D){
         for (int ix=0; ix < nx; ++ix){
           for (int iy=0; iy < ny; ++iy){
-            d.setCell(ix, iy, full.at(ix * BIN2D + iy));
+            d->setCell(ix, iy, full.at(ix * BIN2D + iy));
           }
         }
       } else {
@@ -234,7 +238,7 @@ bifrost::data::Manager::D2 bifrost::data::Manager::data_2D(int arc, int triplet,
                 tmp += full.at(z);
               }
             }
-            d.setCell(ix, iy, tmp);
+            d->setCell(ix, iy, tmp/norm);
           }
         }
       }
@@ -260,6 +264,7 @@ int bifrost::data::Manager::max_1D(int arc, int triplet, bifrost::data::Type t) 
         for (int j=0; j < r; ++j){
           tmp += full.at(i*r + j);
         }
+        tmp = tmp ? tmp/r ? tmp/r : 1 : 0;
         if (tmp > value) value = tmp;
       }
     }
@@ -271,6 +276,7 @@ int bifrost::data::Manager::max_2D(int arc, int triplet, bifrost::data::Type t) 
   auto key = std::make_tuple(arc, triplet, t);
   auto [nx, ny] = bins_2D(t);
   int value{-1};
+  double norm{static_cast<double>(BIN2D)*static_cast<double>(BIN2D)/static_cast<double>(nx)/static_cast<double>(ny)};
   if (data.count(key)){
     auto full = data.at(key);
     if (nx == BIN2D && ny == BIN2D){
@@ -296,7 +302,7 @@ int bifrost::data::Manager::max_2D(int arc, int triplet, bifrost::data::Type t) 
       }
     }
   }
-  return value;
+  return static_cast<int>(std::ceil(value/norm));
 }
 
 
@@ -317,6 +323,7 @@ int bifrost::data::Manager::min_1D(int arc, int triplet, bifrost::data::Type t) 
         for (int j=0; j < r; ++j){
           tmp += full.at(i*r + j);
         }
+        tmp = tmp ? tmp/r ? tmp/r : 1 : 0;
         if (tmp < value) value = tmp;
       }
     }
@@ -327,7 +334,8 @@ int bifrost::data::Manager::min_1D(int arc, int triplet, bifrost::data::Type t) 
 int bifrost::data::Manager::min_2D(int arc, int triplet, bifrost::data::Type t) const {
   auto key = std::make_tuple(arc, triplet, t);
   auto [nx, ny] = bins_2D(t);
-  int value{max_2D(arc, triplet, t)};
+  double norm{static_cast<double>(BIN2D)*static_cast<double>(BIN2D)/static_cast<double>(nx)/static_cast<double>(ny)};
+  auto value = max_2D(arc, triplet, t) * norm;
   if (data.count(key)){
     auto full = data.at(key);
     if (nx == BIN2D && ny == BIN2D){
@@ -353,7 +361,7 @@ int bifrost::data::Manager::min_2D(int arc, int triplet, bifrost::data::Type t) 
       }
     }
   }
-  return value;
+  return static_cast<int>(std::ceil(value/norm));
 }
 
 
@@ -364,4 +372,21 @@ bool bifrost::data::is_1D(bifrost::data::Type t) {
 bool bifrost::data::is_2D(bifrost::data::Type t) {
   using bifrost::data::TYPE2D;
   return std::find(std::begin(TYPE2D), std::end(TYPE2D), t) != std::end(TYPE2D);
+}
+
+std::ostream & operator<<(std::ostream & os, ::bifrost::data::Type type){
+  using ::bifrost::data::Type;
+  switch (type){
+    case Type::a: {os << "I(A)";  break;}
+    case Type::x: {os << "I(x)";  break;}
+    case Type::p: {os << "I(p)";  break;}
+    case Type::xp: {os << "I(x,p)";  break;}
+    case Type::ab: {os << "I(A,B)";  break;}
+    case Type::b: {os << "I(B)";  break;}
+    case Type::xt: {os << "I(x,t)";  break;}
+    case Type::pt: {os << "I(p,t)";  break;}
+    case Type::t: {os << "I(t)";  break;}
+    default: os << "unknown Type";
+  }
+  return os;
 }

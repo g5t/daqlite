@@ -77,68 +77,91 @@ public:
         }
     }
 
-    void plot(int i, int j, const std::vector<double> & x, const std::vector<double> & y){
+    void plot(int i, int j, const std::vector<double> & x, const std::vector<double> & y, double min, double max, bool is_log){
         QVector<double> q_x(x.begin(), x.end());
         QVector<double> q_y(y.begin(), y.end());
-        plot(i, j, &q_x, &q_y);
+        plot(i, j, &q_x, &q_y, min, max, is_log);
     }
 
-    void plot(int i, int j, const QVector<double> * x, const QVector<double> * y){
-        // 1-D data plotting
-        auto k = key(i, j);
-        if (!dims.count(k) || dims.at(k) != Dim::one) return;
-        auto g = lines.at(k);
-        g->setData(*x, *y);
-        auto p = plots.at(k);
-        p->rescaleAxes();
+    void plot(int i, int j, const QVector<double> * x, const QVector<double> * y, double min, double max, bool is_log){
+      // 1-D data plotting
+      auto k = key(i, j);
+      if (!dims.count(k) || dims.at(k) != Dim::one) return;
+      auto g = lines.at(k);
+      g->setData(*x, *y);
+      auto p = plots.at(k);
+      QCPAxis * independent{flipped[k] ? p->yAxis : p->xAxis};
+      independent->setRange(x->front(), x->back());
+      // apply scaling
+      QCPAxis * ax{flipped[k] ? p->xAxis : p->yAxis};
+      ax->setScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
+      ax->setRange(min - (max - min) / 40, max + (max - min) / 20);
     }
-    void plot(int i, int j, const QCPColorMapData & data){
-        auto k = key(i, j);
-        if (!dims.count(k) || dims.at(k) != Dim::two) return;
-        if (!images.count(k)) return;
-        auto im = images.at(k);
-        // Why does setData _require_ a mutable pointer?
-        im->setData(const_cast<QCPColorMapData *>(&data), true);
-        auto p = plots.at(k);
-        p->rescaleAxes();
-        im->rescaleDataRange();
-    }
-
-  void scale(const std::map<type_t, int> & min, const std::map<type_t, int> & max, bool is_linear = true){
-    for (auto [k, d]: dims){
-      auto lower = min.count(types.at(k)) ? min.at(types.at(k)) : 0;
-      auto upper = max.count(types.at(k)) ? max.at(types.at(k)) : 1;
-      inner_scale(k, lower, upper, is_linear);
-    }
+//    void plot(int i, int j, const QCPColorMapData & data, double min, double max, bool is_log){
+//      auto k = key(i, j);
+//      if (!dims.count(k) || dims.at(k) != Dim::two) return;
+//      if (!images.count(k)) return;
+//      auto im = images.at(k);
+//      // Why does setData _require_ a mutable pointer?
+//      im->setData(const_cast<QCPColorMapData *>(&data), true);
+//      auto p = plots.at(k);
+//      p->rescaleAxes();
+//      im->setDataScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
+////      im->rescaleDataRange();
+//      im->setDataRange(QCPRange(min, max));
+//    }
+  void plot(int i, int j, QCPColorMapData * data, double min, double max, bool is_log, std::string_view gradient, bool is_inverted){
+    auto k = key(i, j);
+    if (!dims.count(k) || dims.at(k) != Dim::two) return;
+    if (!images.count(k)) return;
+    auto im = images.at(k);
+//    im->setInterpolate(false);
+//    im->setTightBoundary(false);
+    // Why does setData _require_ a mutable pointer?
+    im->setData(data);
+    auto p = plots.at(k);
+    p->xAxis->setRange(0, ::bifrost::data::BIN2D);
+    p->yAxis->setRange(0, ::bifrost::data::BIN2D);
+    im->setGradient(named_colormap(gradient, is_inverted));
+    im->setDataScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
+    im->setDataRange(QCPRange(min, max));
   }
 
-  void scale(double min, double max, bool is_linear = true){
-    for (auto [k, p]: dims){
-      inner_scale(k, min, max, is_linear);
-    }
-  }
-
-  void scale(int i, int j, double min, double max, bool is_linear = true){
-    inner_scale(key(i, j), min, max, is_linear);
-  }
+//  void scale(const std::map<type_t, int> & min, const std::map<type_t, int> & max, bool is_linear = true){
+//    for (auto [k, d]: dims){
+//      auto lower = min.count(types.at(k)) ? min.at(types.at(k)) : 0;
+//      auto upper = max.count(types.at(k)) ? max.at(types.at(k)) : 1;
+//      inner_scale(k, lower, upper, is_linear);
+//    }
+//  }
+//
+//  void scale(double min, double max, bool is_linear = true){
+//    for (auto [k, p]: dims){
+//      inner_scale(k, min, max, is_linear);
+//    }
+//  }
+//
+//  void scale(int i, int j, double min, double max, bool is_linear = true){
+//    inner_scale(key(i, j), min, max, is_linear);
+//  }
 
 private:
-  void inner_scale(int k, double min, double max, bool is_linear){
-    if (dims[k] == Dim::one){
-      auto p = plots.at(k);
-      QCPAxis * ax{flipped[k] ? p->xAxis : p->yAxis};
-      ax->setScaleType(is_linear ? QCPAxis::stLinear : QCPAxis::stLogarithmic);
-      p->rescaleAxes();
-      ax->setRange(min, max);
-      ax->scaleRange(1.1, p->xAxis->range().center());
-    }
-    if (dims[k] == Dim::two){
-      auto m = images.at(k);
-      m->setDataScaleType(is_linear ? QCPAxis::stLinear : QCPAxis::stLogarithmic);
-      m->rescaleDataRange();
-      m->setDataRange(QCPRange(min, max));
-    }
-  }
+//  void inner_scale(int k, double min, double max, bool is_log){
+//    if (dims[k] == Dim::one){
+//      auto p = plots.at(k);
+//      QCPAxis * ax{flipped[k] ? p->xAxis : p->yAxis};
+//      ax->setScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
+//      p->rescaleAxes();
+//      ax->setRange(min, max);
+//      ax->scaleRange(1.1, ax->range().center());
+//    }
+//    if (dims[k] == Dim::two){
+//      auto m = images.at(k);
+//      m->setDataScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
+//      m->rescaleDataRange();
+//      m->setDataRange(QCPRange(min, max));
+//    }
+//  }
 
   [[nodiscard]] inline int key(int i, int j) const {
         return i * n_ + j;
@@ -177,22 +200,25 @@ private:
         //p->setInteractions(QCP::iRangeDrag| QCP::iRangeZoom | QCP::iSelectPlottables);
     }
     void make_2D(int i, int j, bool flip, type_t t){
-        dims[key(i, j)] = Dim::two;
-        make_plot(i, j, flip, t);
-        auto p = plots[key(i, j)];
-        auto m = new QCPColorMap(flip ? p->yAxis : p->xAxis, flip ? p->xAxis : p->yAxis);
-        m->data()->setSize(n2, n2);
-        m->data()->setRange(QCPRange(0, n2-1), QCPRange(0, n2-1));
+      dims[key(i, j)] = Dim::two;
+      make_plot(i, j, flip, t);
+      auto p = plots[key(i, j)];
+      p->xAxis->setRange(0, n2);
+      p->yAxis->setRange(0, n2);
+      p->axisRect()->setupFullAxesBox();
 
-        auto s = new QCPColorScale(p);
-        m->setColorScale(s);
-        m->setGradient(QCPColorGradient::gpGrayscale);
-        m->rescaleDataRange();
-        p->rescaleAxes();
+      auto m = new QCPColorMap(flip ? p->yAxis : p->xAxis, flip ? p->xAxis : p->yAxis);
+      m->data()->setSize(n2, n2);
+      m->data()->setRange(QCPRange(0, n2-1), QCPRange(0, n2-1));
+      m->setTightBoundary(false);
+      m->setInterpolate(false);
 
-        p->axisRect()->setupFullAxesBox();
+      auto s = new QCPColorScale(p);
+      m->setColorScale(s);
+      m->setGradient(QCPColorGradient::gpGrayscale);
+      m->rescaleDataRange();
 
-        images[key(i, j)] = m;
+      images[key(i, j)] = m;
     }
 
 
@@ -242,5 +268,28 @@ private:
           remove(i, j);
         }
       }
+    }
+
+    QCPColorGradient named_colormap(std::string_view name, bool invert){
+      auto grad = QCPColorGradient();
+      auto preset = QCPColorGradient::gpGrayscale;
+      if (name == "gray" || name == "grey"){
+        preset=QCPColorGradient::gpGrayscale;
+      } else if (name == "hot"){
+        preset=QCPColorGradient::gpHot;
+      } else if (name == "cold"){
+        preset=QCPColorGradient::gpCold;
+      } else if (name == "night"){
+        preset=QCPColorGradient::gpNight;
+      } else if (name == "candy") {
+        preset=QCPColorGradient::gpCandy;
+      } else if (name == "geography") {
+        preset=QCPColorGradient::gpGeography;
+      } else if (name == "thermal") {
+        preset=QCPColorGradient::gpThermal;
+      }
+      grad.loadPreset(preset);
+      if (invert) grad=grad.inverted();
+      return grad;
     }
 };

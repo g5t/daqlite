@@ -13,8 +13,6 @@
 #include <utility>
 #include <vector>
 
-static int min_ticks{100'000'000};
-static int max_ticks{-100'000'000};
 /**
  * @brief Convert packet header and data times to seconds since reference time
  * @param pulse_hi Latest header reference time integer seconds since epoch
@@ -31,10 +29,6 @@ static double frame_time(uint32_t pulse_hi, uint32_t pulse_lo, uint32_t prev_hi,
     // if the cast to int is not done before subtraction.
     const int ticks = 88'052'500;
     auto diff = static_cast<int>(low)-static_cast<int>(l);
-//    bool changed{false};
-//    if (diff < min_ticks) { min_ticks = diff; changed=true; }
-//    if (diff > max_ticks) { max_ticks = diff; changed=true; }
-//    if (changed) std::cout << "\rticks (" << min_ticks << ", " << max_ticks << ")" << std::flush;
     return static_cast<double>(high-h) + static_cast<double>(diff) / ticks;
   };
   double time{0.};
@@ -88,8 +82,6 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
   return ret;
 }
 
-static double min_time{1};
-static double max_time{0};
 
 /// \brief Example parser for CAEN Data
 uint32_t ESSConsumer::parseCAENData(uint8_t * Readout, int Size, uint32_t hi, uint32_t lo, uint32_t p_hi, uint32_t p_lo) {
@@ -102,10 +94,6 @@ uint32_t ESSConsumer::parseCAENData(uint8_t * Readout, int Size, uint32_t hi, ui
              crd->FEN, crd->Length, crd->HighTime, crd->LowTime, crd->Flags_OM, crd->Group);
     } else {
       auto time = frame_time(hi, lo, p_hi, p_lo, crd->HighTime, crd->LowTime);
-//      bool changed{false};
-//      if (time < min_time) { min_time = time; changed=true; }
-//      if (time > max_time) { max_time = time; changed=true; }
-//      if (changed) std::cout << "\rtime (" << min_time << ", " << max_time << ")" << std::flush;
       histograms->add(crd->Fiber, crd->Group, crd->A, crd->B, time);
     }
     BytesLeft -= sizeof(caen_readout);

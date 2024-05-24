@@ -94,7 +94,7 @@ namespace bifrost::data {
       [[nodiscard]] double min(int arc, int triplet, Type t) const;
 
       [[nodiscard]] D1 data_1D(int arc, int triplet, Type t) const;
-      [[nodiscard]] D2 data_2D(int arc, int triplet, Type t) const;
+      [[nodiscard]] D2 * data_2D(int arc, int triplet, Type t) const;
 
       [[nodiscard]] AX axis(Type t) const {
         int bins{0};
@@ -156,3 +156,5 @@ namespace bifrost::data {
 
     };
 }
+
+std::ostream & operator<<(std::ostream & os, ::bifrost::data::Type type);

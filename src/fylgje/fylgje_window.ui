@@ -3,14 +3,14 @@
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
   <property name="windowModality">
-   <enum>Qt::NonModal</enum>
+   <enum>Qt::WindowModality::NonModal</enum>
   </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>1036</width>
-    <height>751</height>
+    <height>824</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
    <bool>false</bool>
   </property>
   <property name="tabShape">
-   <enum>QTabWidget::Rounded</enum>
+   <enum>QTabWidget::TabShape::Rounded</enum>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_5">
@@ -57,7 +57,7 @@
        </sizepolicy>
       </property>
       <property name="frameShape">
-       <enum>QFrame::NoFrame</enum>
+       <enum>QFrame::Shape::NoFrame</enum>
       </property>
       <layout class="QGridLayout" name="gridLayout_6">
        <property name="leftMargin">
@@ -183,7 +183,7 @@
           </sizepolicy>
          </property>
          <property name="frameShape">
-          <enum>QFrame::NoFrame</enum>
+          <enum>QFrame::Shape::NoFrame</enum>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout">
           <item>
@@ -194,162 +194,207 @@
            </widget>
           </item>
           <item>
-           <layout class="QGridLayout" name="gridLayout">
-            <property name="sizeConstraint">
-             <enum>QLayout::SetMaximumSize</enum>
+           <widget class="QFrame" name="intMaxFrame">
+            <property name="frameShape">
+             <enum>QFrame::Shape::NoFrame</enum>
             </property>
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <item row="1" column="2">
-             <widget class="QSpinBox" name="intMax_b">
-              <property name="toolTip">
-               <string>I(b) max</string>
-              </property>
-              <property name="maximum">
-               <number>2147483647</number>
-              </property>
-              <property name="stepType">
-               <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
-              </property>
-              <property name="value">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QSpinBox" name="intMax_a">
-              <property name="toolTip">
-               <string>I(a) max</string>
-              </property>
-              <property name="maximum">
-               <number>2147483647</number>
-              </property>
-              <property name="stepType">
-               <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
-              </property>
-              <property name="value">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QSpinBox" name="intMax_pt">
-              <property name="toolTip">
-               <string>I(p, t) max</string>
-              </property>
-              <property name="maximum">
-               <number>2147483647</number>
-              </property>
-              <property name="stepType">
-               <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
-              </property>
-              <property name="value">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QSpinBox" name="intMax_px">
-              <property name="toolTip">
-               <string>I(p, t) max</string>
-              </property>
-              <property name="maximum">
-               <number>2147483647</number>
-              </property>
-              <property name="stepType">
-               <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
-              </property>
-              <property name="value">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QSpinBox" name="intMax_p">
-              <property name="toolTip">
-               <string>I(p) max</string>
-              </property>
-              <property name="maximum">
-               <number>2147483647</number>
-              </property>
-              <property name="stepType">
-               <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
-              </property>
-              <property name="value">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QSpinBox" name="intMax_xt">
-              <property name="toolTip">
-               <string>I(x, t) max</string>
-              </property>
-              <property name="maximum">
-               <number>2147483647</number>
-              </property>
-              <property name="stepType">
-               <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
-              </property>
-              <property name="value">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QSpinBox" name="intMax_ab">
-              <property name="toolTip">
-               <string>I(a,b) max</string>
-              </property>
-              <property name="maximum">
-               <number>2147483647</number>
-              </property>
-              <property name="stepType">
-               <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
-              </property>
-              <property name="value">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QSpinBox" name="intMax_t">
-              <property name="toolTip">
-               <string>I(t) max</string>
-              </property>
-              <property name="maximum">
-               <number>2147483647</number>
-              </property>
-              <property name="stepType">
-               <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
-              </property>
-              <property name="value">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QSpinBox" name="intMax_x">
-              <property name="toolTip">
-               <string>I(x) max</string>
-              </property>
-              <property name="maximum">
-               <number>2147483647</number>
-              </property>
-              <property name="stepType">
-               <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
-              </property>
-              <property name="value">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-           </layout>
+            <layout class="QGridLayout" name="gridLayout">
+             <property name="sizeConstraint">
+              <enum>QLayout::SizeConstraint::SetMaximumSize</enum>
+             </property>
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <item row="1" column="2">
+              <widget class="QSpinBox" name="intMax12">
+               <property name="toolTip">
+                <string>I(b) max</string>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+               <property name="stepType">
+                <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QSpinBox" name="intMax01">
+               <property name="toolTip">
+                <string>I(a) max</string>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+               <property name="stepType">
+                <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QSpinBox" name="intMax21">
+               <property name="toolTip">
+                <string>I(p, t) max</string>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+               <property name="stepType">
+                <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QSpinBox" name="intMax10">
+               <property name="toolTip">
+                <string>I(p, t) max</string>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+               <property name="stepType">
+                <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="2">
+              <widget class="QSpinBox" name="intMax02">
+               <property name="toolTip">
+                <string>I(p) max</string>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+               <property name="stepType">
+                <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QSpinBox" name="intMax20">
+               <property name="toolTip">
+                <string>I(x, t) max</string>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+               <property name="stepType">
+                <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QSpinBox" name="intMax11">
+               <property name="toolTip">
+                <string>I(a,b) max</string>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+               <property name="stepType">
+                <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="2">
+              <widget class="QSpinBox" name="intMax22">
+               <property name="toolTip">
+                <string>I(t) max</string>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+               <property name="stepType">
+                <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QSpinBox" name="intMax00">
+               <property name="toolTip">
+                <string>I(x) max</string>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+               <property name="stepType">
+                <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </item>
           <item>
            <layout class="QGridLayout" name="intensityLayout">
-            <item row="1" column="2">
+            <item row="1" column="0">
+             <widget class="QComboBox" name="colormapComboBox">
+              <property name="toolTip">
+               <string>Colormap</string>
+              </property>
+              <property name="currentIndex">
+               <number>3</number>
+              </property>
+              <item>
+               <property name="text">
+                <string>grey</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>hot</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>cold</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>night</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>candy</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>thermal</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="1" column="3">
              <widget class="QPushButton" name="autoscaleButton">
               <property name="toolTip">
                <string>Toggle manual limits</string>
@@ -368,7 +413,7 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
+            <item row="1" column="2">
              <widget class="QPushButton" name="scaleButton">
               <property name="toolTip">
                <string>Toggle from linear to log scaling</string>
@@ -381,249 +426,48 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="0">
-             <widget class="QComboBox" name="colormapComboBox">
-              <property name="toolTip">
-               <string>Colormap</string>
+            <item row="1" column="1">
+             <widget class="QCheckBox" name="colormapInvertedCheck">
+              <property name="text">
+               <string>Inverted</string>
               </property>
-              <item>
-               <property name="text">
-                <string>Map1</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Map2</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Map3</string>
-               </property>
-              </item>
              </widget>
             </item>
            </layout>
           </item>
           <item>
-           <widget class="QFrame" name="frame_4">
+           <widget class="QFrame" name="binsFrame">
             <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
+             <enum>QFrame::Shape::StyledPanel</enum>
             </property>
             <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
+             <enum>QFrame::Shadow::Raised</enum>
             </property>
             <layout class="QGridLayout" name="gridLayout_2">
-             <item row="3" column="1">
-              <widget class="QSpinBox" name="bins_x_1d">
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>10</number>
-               </property>
-               <property name="value">
-                <number>10</number>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="0">
-              <widget class="QLabel" name="label_9">
-               <property name="text">
-                <string>p</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_4">
-               <property name="text">
-                <string>A</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="2">
-              <widget class="QSpinBox" name="bins_b_2d">
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>9</number>
-               </property>
-               <property name="value">
-                <number>9</number>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="2">
-              <widget class="QSpinBox" name="bins_p_2d">
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>9</number>
-               </property>
-               <property name="value">
-                <number>9</number>
-               </property>
-              </widget>
-             </item>
              <item row="0" column="1">
-              <widget class="QLabel" name="label_5">
+              <widget class="QLabel" name="bins1DLabel">
                <property name="text">
                 <string>1D</string>
                </property>
                <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="2">
-              <widget class="QSpinBox" name="bins_x_2d">
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>9</number>
-               </property>
-               <property name="value">
-                <number>9</number>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QSpinBox" name="bins_b_1d">
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>10</number>
-               </property>
-               <property name="value">
-                <number>10</number>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="2">
-              <widget class="QSpinBox" name="bins_a_2d">
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>9</number>
-               </property>
-               <property name="singleStep">
-                <number>1</number>
-               </property>
-               <property name="value">
-                <number>9</number>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="label_8">
-               <property name="text">
-                <string>x</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="1">
-              <widget class="QSpinBox" name="bins_p_1d">
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>10</number>
-               </property>
-               <property name="value">
-                <number>10</number>
+                <set>Qt::AlignmentFlag::AlignCenter</set>
                </property>
               </widget>
              </item>
              <item row="0" column="2">
-              <widget class="QLabel" name="label_6">
+              <widget class="QLabel" name="bins2DLabel">
                <property name="text">
                 <string>2D</string>
                </property>
                <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="label_7">
-               <property name="text">
-                <string>B</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QSpinBox" name="bins_a_1d">
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>10</number>
-               </property>
-               <property name="value">
-                <number>10</number>
-               </property>
-               <property name="displayIntegerBase">
-                <number>10</number>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="0">
-              <widget class="QLabel" name="label_10">
-               <property name="text">
-                <string>t</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="1">
-              <widget class="QSpinBox" name="bins_t_1d">
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>10</number>
-               </property>
-               <property name="value">
-                <number>10</number>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="2">
-              <widget class="QSpinBox" name="bins_t_2d">
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>9</number>
-               </property>
-               <property name="value">
-                <number>9</number>
+                <set>Qt::AlignmentFlag::AlignCenter</set>
                </property>
               </widget>
              </item>
              <item row="0" column="0">
-              <widget class="QLabel" name="label_11">
+              <widget class="QLabel" name="binsLabel">
                <property name="text">
-                <string>log2(bins)</string>
+                <string>Bins</string>
                </property>
               </widget>
              </item>
@@ -636,7 +480,7 @@
        <item row="5" column="1">
         <spacer name="verticalSpacer_2">
          <property name="orientation">
-          <enum>Qt::Vertical</enum>
+          <enum>Qt::Orientation::Vertical</enum>
          </property>
          <property name="sizeHint" stdset="0">
           <size>
@@ -655,7 +499,7 @@
           </sizepolicy>
          </property>
          <property name="frameShape">
-          <enum>QFrame::NoFrame</enum>
+          <enum>QFrame::Shape::NoFrame</enum>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <property name="spacing">
@@ -736,7 +580,7 @@
           </sizepolicy>
          </property>
          <property name="frameShape">
-          <enum>QFrame::NoFrame</enum>
+          <enum>QFrame::Shape::NoFrame</enum>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
           <item row="0" column="0">
@@ -872,14 +716,14 @@
             <string>Period</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="arcPeriodSpin">
            <property name="buttonSymbols">
-            <enum>QAbstractSpinBox::UpDownArrows</enum>
+            <enum>QAbstractSpinBox::ButtonSymbols::UpDownArrows</enum>
            </property>
            <property name="decimals">
             <number>1</number>
@@ -894,7 +738,7 @@
             <double>0.200000000000000</double>
            </property>
            <property name="stepType">
-            <enum>QAbstractSpinBox::DefaultStepType</enum>
+            <enum>QAbstractSpinBox::StepType::DefaultStepType</enum>
            </property>
            <property name="value">
             <double>1.000000000000000</double>
@@ -911,7 +755,7 @@
          <item>
           <widget class="QCheckBox" name="arcCycleCheck">
            <property name="layoutDirection">
-            <enum>Qt::LeftToRight</enum>
+            <enum>Qt::LayoutDirection::LeftToRight</enum>
            </property>
            <property name="text">
             <string>Arc</string>
@@ -948,7 +792,7 @@
      <x>0</x>
      <y>0</y>
      <width>1036</width>
-     <height>20</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFylgje">
