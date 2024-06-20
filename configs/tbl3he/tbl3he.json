@@ -1,0 +1,31 @@
+{
+  "kafka" : {
+    "broker" : "172.30.242.20:9092",
+    "topic" : "tbl3he_detector",
+
+    "message.max.bytes" : "10000000",
+    "fetch.message.max.bytes" : "10000000",
+    "replica.fetch.max.bytes" : "10000000",
+    "enable.auto.commit" : "false",
+    "enable.auto.offset.store" : "false"
+  },
+
+  "geometry" : {
+    "xdim" : 100,
+    "ydim" : 8,
+    "zdim" : 1,
+    "offset" : 0
+  },
+
+  "plot": {
+    "plot_type" : "pixels",
+    "window_title" : "TBL3HE - full instrument",
+    "plot_title" : "pixels",
+    "clear_periodic" : false,
+    "clear_interval_seconds" : 30,
+    "interpolate_pixels" : false,
+    "color_gradient" : "hot",
+    "invert_gradient" : false,
+    "log_scale" : true
+  }
+}
