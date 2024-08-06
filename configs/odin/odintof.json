@@ -18,9 +18,9 @@
   },
 
   "tof" : {
-    "scale" : 1,
-    "max_value" : 70000,
-    "bin_size" : 512
+    "scale" : 1000,
+    "max_value" : 100000,
+    "bin_size" : 1024
   },
 
   "plot": {
