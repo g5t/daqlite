@@ -1,4 +1,4 @@
-// Copyright (C) 2022 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2022-2024 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file CustomAMOR2DTOFPlot.h
@@ -8,20 +8,22 @@
 
 #pragma once
 
+#include <AbstractPlot.h>
+#include <ESSConsumer.h>
 #include <Configuration.h>
 #include <QPlot/QPlot.h>
 #include <chrono>
 #include <logical_geometry/ESSGeometry.h>
 
-class CustomAMOR2DTOFPlot : public QCustomPlot {
+class CustomAMOR2DTOFPlot : public AbstractPlot {
   Q_OBJECT
 public:
   /// \brief plot needs the configurable plotting options
-  CustomAMOR2DTOFPlot(Configuration &Config);
+  CustomAMOR2DTOFPlot(Configuration &Config, ESSConsumer &Consumer);
 
   /// \brief adds histogram data, clears periodically then calls
   /// plotDetectorImage()
-  void addData(std::vector<uint32_t> &Pixels, std::vector<uint32_t> &TOFs);
+  void updateData() override;
 
   /// \brief Support for different gradients
   QCPColorGradient getColorGradient(std::string GradientName);
@@ -32,13 +34,12 @@ public:
   /// \brief rotate through gradient names
   std::string getNextColorGradient(std::string GradientName);
 
-  /// \brief clears histogram data
-  void clearDetectorImage(std::vector<uint32_t> &PixelIDs,
-      std::vector<uint32_t> &TOFs);
+  /// \brief clears histogram data (overridden from AbstractPlot)
+  void clearDetectorImage() override;
 
   /// \brief updates the image
   /// \param Force forces updates of histogram data with zero count
-  void plotDetectorImage(bool Force);
+  void plotDetectorImage(bool Force) override;
 
 public slots:
   void showPointToolTip(QMouseEvent *event);

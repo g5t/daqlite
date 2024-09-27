@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2021 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2020 - 2024 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file Custom2DPlot.h
@@ -8,22 +8,24 @@
 
 #pragma once
 
+#include <AbstractPlot.h>
+#include <ESSConsumer.h>
 #include <Configuration.h>
 #include <QPlot/QPlot.h>
 #include <chrono>
 #include <logical_geometry/ESSGeometry.h>
 
-class Custom2DPlot : public QCustomPlot {
+class Custom2DPlot : public AbstractPlot {
   Q_OBJECT
 public:
   enum Projection {ProjectionXY, ProjectionXZ, ProjectionYZ};
 
   /// \brief plot needs the configurable plotting options
-  Custom2DPlot(Configuration &Config, Projection Proj);
+  Custom2DPlot(Configuration &Config, ESSConsumer&, Projection Proj);
 
   /// \brief adds histogram data, clears periodically then calls
   /// plotDetectorImage()
-  void addData(std::vector<uint32_t> &Histogram);
+  void updateData() override;
 
   /// \brief Support for different gradients
   QCPColorGradient getColorGradient(std::string GradientName);
@@ -35,11 +37,11 @@ public:
   std::string getNextColorGradient(std::string GradientName);
 
   /// \brief clears histogram data
-  void clearDetectorImage();
+  void clearDetectorImage() override;
 
   /// \brief updates the image
   /// \param Force forces updates of histogram data with zero count
-  void plotDetectorImage(bool Force);
+  void plotDetectorImage(bool Force) override;
 
 public slots:
   void showPointToolTip(QMouseEvent *event);

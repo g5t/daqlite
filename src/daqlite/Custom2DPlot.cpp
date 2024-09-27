@@ -12,8 +12,9 @@
 #include <fmt/format.h>
 #include <string>
 
-Custom2DPlot::Custom2DPlot(Configuration &Config, Projection Proj)
-    : mConfig(Config), mProjection(Proj) {
+Custom2DPlot::Custom2DPlot(Configuration &Config, ESSConsumer &Consumer,
+                           Projection Proj)
+    : AbstractPlot(PIXEL, Consumer), mConfig(Config), mProjection(Proj) {
 
   // Register callback functions for events
   connect(this, SIGNAL(mouseMove(QMouseEvent *)), this,
@@ -144,7 +145,6 @@ std::string Custom2DPlot::getNextColorGradient(std::string GradientName) {
 
 void Custom2DPlot::clearDetectorImage() {
   std::fill(HistogramData.begin(), HistogramData.end(), 0);
-  addData(HistogramData);
   plotDetectorImage(true);
 }
 
@@ -160,7 +160,7 @@ void Custom2DPlot::plotDetectorImage(bool Force) {
       auto yIndex = LogicalGeometry->y(i);
       auto zIndex = LogicalGeometry->z(i);
 
-      // here we could 
+      // here we could
       // x, y, z = pos(i)
 
       if (mProjection == ProjectionXY) {
@@ -186,17 +186,19 @@ void Custom2DPlot::plotDetectorImage(bool Force) {
   replot();
 }
 
-void Custom2DPlot::addData(std::vector<uint32_t> &Histogram) {
+void Custom2DPlot::updateData() {
   auto t2 = std::chrono::high_resolution_clock::now();
   std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
 
-  // Periodically clear the histogram
-  //
+  // update histogram data from consumer of worker thread
+  std::vector<uint32_t> Histogram = mConsumer.readResetHistogram();
+
   int64_t nsBetweenClear = 1000000000LL * mConfig.Plot.ClearEverySeconds;
   if (mConfig.Plot.ClearPeriodic and (elapsed.count() >= nsBetweenClear)) {
     t1 = std::chrono::high_resolution_clock::now();
     std::fill(HistogramData.begin(), HistogramData.end(), 0);
-    plotDetectorImage(true);
+    plotDetectorImage(true); // Periodically clear the histogram
+    //
   }
 
   // Accumulate counts, PixelId 0 does not exist

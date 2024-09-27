@@ -1,20 +1,23 @@
 // Copyright (C) 2020 - 2021 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
-/// \file CustomTofPlot.cpp
+/// \file HistogramPlot.cpp
 ///
 //===----------------------------------------------------------------------===//
 
-#include <CustomTofPlot.h>
+#include <HistogramPlot.h>
 #include <QPlot/qcustomplot/qcustomplot.h>
 #include <WorkerThread.h>
 #include <algorithm>
 #include <assert.h>
+#include <cstddef>
+#include <cstdint>
 #include <fmt/format.h>
 #include <string>
+#include <vector>
 
-CustomTofPlot::CustomTofPlot(Configuration &Config, ESSConsumer &Consumer)
-    : AbstractPlot(TOF, Consumer), mConfig(Config) {
+HistogramPlot::HistogramPlot(Configuration &Config, ESSConsumer &Consumer)
+    : AbstractPlot(HISTOGRAM, Consumer), mConfig(Config) {
 
   // Register callback functions for events
   connect(this, SIGNAL(mouseMove(QMouseEvent *)), this,
@@ -25,7 +28,7 @@ CustomTofPlot::CustomTofPlot(Configuration &Config, ESSConsumer &Consumer)
 
   LogicalGeometry = new ESSGeometry(geom.XDim, geom.YDim, geom.ZDim, 1);
 
-  HistogramTofData.resize(mConfig.TOF.BinSize);
+  HistogramYAxisValues.resize(mConfig.TOF.BinSize);
 
   // this will also allow rescaling the color scale by dragging/zooming
   setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
@@ -52,7 +55,7 @@ CustomTofPlot::CustomTofPlot(Configuration &Config, ESSConsumer &Consumer)
     xAxis->setLabel(mConfig.Plot.XAxis.c_str());
   }
 
-  yAxis->setLabel("Counts");
+  yAxis->setLabel("Value Sum");
   xAxis->setRange(0, 50000);
 
   setCustomParameters();
@@ -60,7 +63,7 @@ CustomTofPlot::CustomTofPlot(Configuration &Config, ESSConsumer &Consumer)
   t1 = std::chrono::high_resolution_clock::now();
 }
 
-void CustomTofPlot::setCustomParameters() {
+void HistogramPlot::setCustomParameters() {
   if (mConfig.Plot.LogScale) {
     yAxis->setScaleType(QCPAxis::stLogarithmic);
   } else {
@@ -68,18 +71,21 @@ void CustomTofPlot::setCustomParameters() {
   }
 }
 
-void CustomTofPlot::plotDetectorImage(bool Force) {
+void HistogramPlot::plotDetectorImage(bool Force) {
   setCustomParameters();
   mGraph->data()->clear();
-  uint32_t MaxY{0};
-  for (unsigned int i = 0; i < HistogramTofData.size(); i++) {
-    if ((HistogramTofData[i] != 0) or (Force)) {
-      uint32_t x = i * mConfig.TOF.MaxValue / mConfig.TOF.BinSize;
-      uint32_t y = HistogramTofData[i];
-      if (y > MaxY) {
-        MaxY = y;
+  uint32_t MaxY{1};
+
+  for (unsigned int i = 0; i < HistogramXAxisValues.size(); i++) {
+    if ((HistogramXAxisValues[i] != 0) or (Force)) {
+      if (HistogramYAxisValues[i] > MaxY) {
+        // Calculate the maximum Y value for scaling
+        MaxY = HistogramYAxisValues[i];
       }
-      mGraph->addData(x, y);
+
+      double ScaledXValue = static_cast<double>(HistogramXAxisValues[i]) / mConfig.TOF.Scale;
+
+      mGraph->addData(ScaledXValue, HistogramYAxisValues[i]);
     }
   }
 
@@ -93,36 +99,49 @@ void CustomTofPlot::plotDetectorImage(bool Force) {
   replot();
 }
 
-void CustomTofPlot::updateData() {
+void HistogramPlot::updateData() {
   // printf("addData (TOF) Histogram size %lu\n", Histogram.size());
   auto t2 = std::chrono::high_resolution_clock::now();
   std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
 
-  // Get histogram data from Consumer and clear it
-  std::vector<uint32_t> Histogram = mConsumer.readResetHistogram();
+  std::vector<uint32_t> YAxisValues = mConsumer.readResetHistogram();
+  HistogramXAxisValues = mConsumer.getTofs();
 
-  // Periodically clear the histogram
+  if (YAxisValues.size() != HistogramXAxisValues.size()) {
+    fmt::print("HistogramPlot::updateData() - TOF and Count vectors are not "
+               "the same size\n");
+    return;
+  }
+
+  // Periodically clear the histogram data sets
+  //
   int64_t nsBetweenClear = 1000000000LL * mConfig.Plot.ClearEverySeconds;
   if (mConfig.Plot.ClearPeriodic and (elapsed.count() >= nsBetweenClear)) {
-    std::fill(HistogramTofData.begin(), HistogramTofData.end(), 0);
+    std::fill(HistogramYAxisValues.begin(), HistogramYAxisValues.end(), 0);
+    std::fill(HistogramXAxisValues.begin(), HistogramXAxisValues.end(), 0);
     t1 = std::chrono::high_resolution_clock::now();
   }
 
-  // Accumulate counts, PixelId 0 does not exist
-  for (unsigned int i = 1; i < Histogram.size(); i++) {
-    HistogramTofData[i] += Histogram[i];
+  if (HistogramYAxisValues.size() < YAxisValues.size()) {
+    HistogramYAxisValues.resize(YAxisValues.size());
   }
+
+  // Accumulate counts, PixelId 0 does not exist
+  for (unsigned int i = 1; i < YAxisValues.size(); i++) {
+    HistogramYAxisValues[i] += YAxisValues[i];
+  }
+
   plotDetectorImage(false);
   return;
 }
 
-void CustomTofPlot::clearDetectorImage() {
-  std::fill(HistogramTofData.begin(), HistogramTofData.end(), 0);
+void HistogramPlot::clearDetectorImage() {
+  std::fill(HistogramYAxisValues.begin(), HistogramYAxisValues.end(), 0);
   plotDetectorImage(true);
 }
 
 // MouseOver, display coordinate and data in tooltip
-void CustomTofPlot::showPointToolTip(QMouseEvent *event) {
+void HistogramPlot::showPointToolTip(QMouseEvent *event) {
   int x = this->xAxis->pixelToCoord(event->pos().x());
 
   // Calculate x coord width of the graphical representation of the column
@@ -137,5 +156,5 @@ void CustomTofPlot::showPointToolTip(QMouseEvent *event) {
   // Get the count value from the data store
   double count = mGraph->data()->at(xCoordDataIndex)->mainValue();
 
-  setToolTip(QString("Tof: %1 Count: %2").arg(xCoordTofValue).arg(count));
+  setToolTip(QString("Tof: %1 Value: %2").arg(xCoordTofValue).arg(count));
 }
