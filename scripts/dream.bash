@@ -13,11 +13,12 @@ else
     DAQLITE_CONFIG="../configs"
 fi
 
-$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/dream/dream_tof.json $KAFKA_CONFIG &
-$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/dream/dream.json $KAFKA_CONFIG &
+# Not used with daqlite deployment - uncomment if needed
+# $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/dream/dream_tof.json $KAFKA_CONFIG &
+# $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/dream/dream.json $KAFKA_CONFIG &
 $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/dream/dream_bwe.json $KAFKA_CONFIG &
 $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/dream/dream_fwe.json $KAFKA_CONFIG &
 $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/dream/dream_mantle.json $KAFKA_CONFIG &
 $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/dream/dream_hr.json $KAFKA_CONFIG &
 $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/dream/dream_sans.json $KAFKA_CONFIG &
-$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/dream/dream_beam_monitor.json $KAFKA_CONFIG &
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/dream/dream_cbm.json $KAFKA_CONFIG

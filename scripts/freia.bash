@@ -2,7 +2,19 @@
 
 BROKER=${DAQLITE_BROKER:-}
 
-../build/bin/daqlite $BROKER -f ../configs/freia/freia.json &
-../build/bin/daqlite $BROKER -f ../configs/freia/freiamon_ch0.json &
-#../build/bin/daqlite $BROKER -f ../configs/freia/freiamon_ch1.json &
-../build/bin/daqlite $BROKER -f ../configs/freia/freiatof.json
+KAFKA_CONFIG=""
+
+# Check if we are in production environment and set KAFKA_CONFIG accordingly
+# or set dev environment variables
+if [ "$DAQLITE_PRODUCTION" = "true" ]; then
+    KAFKA_CONFIG="-k $DAQLITE_CONFIG/kafka-config-daqlite.json"
+else
+    DAQLITE_HOME="../build"
+    DAQLITE_CONFIG="../configs"
+fi
+
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/freia/freia.json $KAFKA_CONFIG &
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/freia/freiatof.json $KAFKA_CONFIG
+# Beam monitor setup not used in daqlite deployment
+# $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/freia/freiamon_ch0.json $KAFKA_CONFIG &
+# $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/freia/freiamon_ch1.json $KAFKA_CONFIG &

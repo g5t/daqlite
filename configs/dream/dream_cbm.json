@@ -33,7 +33,7 @@
     "color_gradient" : "hot",
     "invert_gradient" : false,
     "log_scale" : false,
-    "window_height" : 900,
-    "window_width" : 1920
+    "window_height" : 1000,
+    "window_width" : 1400
    }
 }
