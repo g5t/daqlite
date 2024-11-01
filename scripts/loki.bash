@@ -13,8 +13,12 @@ else
     DAQLITE_CONFIG="../configs"
 fi
 
-$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/loki.json $KAFKA_CONFIG &
-$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/lokitof.json $KAFKA_CONFIG
-# Beam monitor setup not used in daqlite deployment
-# $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/lokimon_ch0.json &
-# $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/lokimon_ch1.json
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/loki_bank0.json $KAFKA_CONFIG &
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/loki_bank1.json $KAFKA_CONFIG &
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/loki_bank2.json $KAFKA_CONFIG &
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/loki_bank3.json $KAFKA_CONFIG &
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/loki_bank4.json $KAFKA_CONFIG &
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/loki_bank5.json $KAFKA_CONFIG &
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/loki_bank6.json $KAFKA_CONFIG &
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/loki_bank7.json $KAFKA_CONFIG &
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/loki_bank8.json $KAFKA_CONFIG &
