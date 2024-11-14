@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Configuration.h"
 #include "ar51_readout_data_generated.h"
 #include <librdkafka/rdkafkacpp.h>
 #include "data_manager.h"
@@ -18,6 +19,7 @@ class ESSConsumer {
 public:
   using data_t = ::bifrost::data::Manager;
   enum Status {Continue, Update, Halt};
+  enum Start {Beginning, End, Time};
 
   // Data format for the common ESS readout header
   struct PacketHeaderV0 {
@@ -51,7 +53,7 @@ public:
 
 
   /// \brief Constructor needs the configured Broker and Topic
-  ESSConsumer(data_t * data, std::string Broker, std::string Topic);
+  ESSConsumer(data_t * data, Configuration & configuration, std::vector<std::pair<std::string, std::string>> &KafkaConfig);
 
   /// \brief wrapper function for librdkafka consumer
   RdKafka::Message *consume();
@@ -69,19 +71,17 @@ public:
   ///
   uint32_t parseCAENData(uint8_t * Readout, int Size, uint32_t pulse_high, uint32_t pulse_low, uint32_t prev_high, uint32_t prev_low);
 
-private:
-  std::string Broker;
-  std::string Topic;
-  std::string MessageMaxBytes{"10000000"};
-  std::string FetchMessageMaxBytes{"10000000"};
-  std::string ReplicaFetchMaxBytes{"10000000"};
-  std::string EnableAutoCommit{"false"};
-  std::string EnableAutoOffsetStore{"false"};
+  static std::string randomGroupString(size_t length);
 
-  //RdKafka::Conf *mConf;
-  //RdKafka::Conf *mTConf;
+private:
+  Configuration & configuration;
+
   RdKafka::KafkaConsumer *mConsumer;
-  //RdKafka::Topic *mTopic;
 
   data_t * histograms;
+
+  /// \brief loadable Kafka-specific configuration
+  std::vector<std::pair<std::string, std::string>> &mKafkaConfig;
+
+  void set_consumer_offset(Start start, int64_t ms_since_utc_epoch);
 };

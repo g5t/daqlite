@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fmt/format.h>
+#include <sstream>
 #include "data_manager.h"
 
 
@@ -63,15 +65,19 @@ bool bifrost::data::Manager::add_1D(int arc, int triplet, int a, int b, double t
       return false;
   }
   for (auto [t, h]: {t_a, t_b, t_p, t_x, t_t}) {
-    auto key = std::make_tuple(arc, triplet, t);
-    if (!data.count(key)) {
-      std::cout << "arc" << arc << "triplet" << triplet << "does not exist in data" << std::endl;
+    auto this_key = this->key(arc, triplet, t);
+    if (!data.count(this_key)) {
+      std::stringstream ss;
+      ss << t;
+      fmt::print("arc={}, triplet={}, type={} does not exist in managed data\n", arc, triplet, ss.str());
       return false;
     }
-    if (static_cast<size_t>(h) < data.at(key).size()){
-      data.at(key).at(h) += 1;
+    if (static_cast<size_t>(h) < data.at(this_key).size()){
+      data.at(this_key).at(h) += 1;
     } else {
-      std::cout << "arc " << arc << " triplet " << triplet << " a " << a << " b " << b << " time " << time << "gives an out of bounds index " << h << std::endl;
+      std::stringstream ss;
+      ss << t;
+      fmt::print("arc={}, triplet={}, type={} at a={}, b={} time={} given out of bound index {}\n", arc, triplet, ss.str(), a, b, time, h);
     }
   }
   return true;
@@ -86,16 +92,20 @@ bool bifrost::data::Manager::add_2D(int arc, int triplet, int full_a, int full_b
   if (a < 0 || b < 0 || p < 0 || x < 0 || t < 0) return false;
   std::vector<std::tuple<Type, int, int>> t_i_j {{Type::ab, a, b}, {Type::pt, p, t}, {Type::xt, x, t}, {Type::xp, x, p}};
   for (auto [y, i, j]: t_i_j){
-    auto key = std::make_tuple(arc, triplet, y);
-    if (!data.count(key)) {
-      std::cout << "arc" << arc << "triplet" << triplet << "does not exist in data" << std::endl;
+    auto this_key = this->key(arc, triplet, y);
+    if (!data.count(this_key)) {
+      std::stringstream ss;
+      ss << y;
+      fmt::print("arc={}, triplet={}, type={} does not exist in managed data\n", arc, triplet, ss.str());
       return false;
     }
     auto ij = i * BIN2D + j;
-    if (static_cast<size_t>(ij) < data.at(key).size()){
-      data.at(key).at(ij) += 1;
+    if (static_cast<size_t>(ij) < data.at(this_key).size()){
+      data.at(this_key).at(ij) += 1;
     } else {
-      std::cout << "arc " << arc << " triplet " << triplet << " a " << full_a << " b " << full_b << " time " << full_t << "gives an out of bounds index " << i << " " << j << std::endl;
+      std::stringstream ss;
+      ss << y;
+      fmt::print("arc={}, triplet={}, type={} at a={}, b={} time={} given out of bound index ({}, {})\n", arc, triplet, ss.str(), full_a, full_b, time, i, j);
     }
   }
   return true;
@@ -139,7 +149,11 @@ double bifrost::data::Manager::max(int arc, Type type) const {
 }
 
 double bifrost::data::Manager::max(int arc, int triplet, bifrost::data::Type t) const {
-  return is_1D(t) ? max_1D(arc, triplet, t) : max_2D(arc, triplet, t);
+  return max(key(arc, triplet, t));
+}
+
+double bifrost::data::Manager::max(bifrost::data::key_t k) const {
+  return is_1D(key_type(k)) ? max_1D(k) : max_2D(k);
 }
 
 double bifrost::data::Manager::min() const {
@@ -185,11 +199,15 @@ double bifrost::data::Manager::min(int arc, int triplet, bifrost::data::Type t) 
 
 
 bifrost::data::Manager::D1 bifrost::data::Manager::data_1D(int arc, int triplet, bifrost::data::Type t) const {
-    auto key = std::make_tuple(arc, triplet, t);
+  return data_1D(this->key(arc, triplet, t));
+}
+
+bifrost::data::Manager::D1 bifrost::data::Manager::data_1D(bifrost::data::key_t k) const {
     auto d = bifrost::data::Manager::D1();
-    if (data.count(key) && bins_1d.count(t)){
-      auto full = data.at(key);
-      auto bins = bins_1d.at(t);
+    auto this_type = key_type(k);
+    if (data.count(k) && bins_1d.count(this_type)){
+      auto full = data.at(k);
+      auto bins = bins_1d.at(this_type);
       d.reserve(bins);
       for (int i=0; i<bins; ++i) d.push_back(0.);
       if (BIN1D == bins){
@@ -210,16 +228,20 @@ bifrost::data::Manager::D1 bifrost::data::Manager::data_1D(int arc, int triplet,
 }
 
 bifrost::data::Manager::D2 * bifrost::data::Manager::data_2D(int arc, int triplet, bifrost::data::Type t) const {
-    auto key = std::make_tuple(arc, triplet, t);
+  return data_2D(key(arc, triplet, t));
+}
+
+bifrost::data::Manager::D2 * bifrost::data::Manager::data_2D(bifrost::data::key_t k) const {
     // translate 2d to 1d axes
-    auto [nx, ny] = bins_2D(t);
+    auto this_type = key_type(k);
+    auto [nx, ny] = bins_2D(this_type);
     int bx{BIN2D/nx/2}, by{BIN2D/ny/2};
     double norm{static_cast<double>(BIN2D)*static_cast<double>(BIN2D)/static_cast<double>(nx)/static_cast<double>(ny)};
 
     auto d = new ::bifrost::data::Manager::D2(nx, ny, QCPRange(bx, BIN2D-bx), QCPRange(by, BIN2D-by));
     d->fill(0);
-    if (data.count(key)){
-      auto full = data.at(key);
+    if (data.count(k)){
+      auto full = data.at(k);
       if (nx == BIN2D && ny == BIN2D){
         for (int ix=0; ix < nx; ++ix){
           for (int iy=0; iy < ny; ++iy){
@@ -248,11 +270,14 @@ bifrost::data::Manager::D2 * bifrost::data::Manager::data_2D(int arc, int triple
 
 
 int bifrost::data::Manager::max_1D(int arc, int triplet, bifrost::data::Type t) const {
-  auto key = std::make_tuple(arc, triplet, t);
+  return max_1D(key(arc, triplet, t));
+}
+int bifrost::data::Manager::max_1D(bifrost::data::key_t k) const {
   int value{-1};
-  if (data.count(key) && bins_1d.count(t)){
-    auto full = data.at(key);
-    auto bins = bins_1d.at(t);
+  auto this_type = key_type(k);
+  if (data.count(k) && bins_1d.count(this_type)){
+    auto full = data.at(k);
+    auto bins = bins_1d.at(this_type);
     if (BIN1D == bins){
       for (int i=0; i<BIN1D; ++i){
         if (full.at(i) > value) value = full.at(i);
@@ -273,12 +298,15 @@ int bifrost::data::Manager::max_1D(int arc, int triplet, bifrost::data::Type t) 
 }
 
 int bifrost::data::Manager::max_2D(int arc, int triplet, bifrost::data::Type t) const {
-  auto key = std::make_tuple(arc, triplet, t);
-  auto [nx, ny] = bins_2D(t);
+  return max_2D(key(arc, triplet ,t));
+}
+
+int bifrost::data::Manager::max_2D(bifrost::data::key_t k) const {
+  auto [nx, ny] = bins_2D(key_type(k));
   int value{-1};
   double norm{static_cast<double>(BIN2D)*static_cast<double>(BIN2D)/static_cast<double>(nx)/static_cast<double>(ny)};
-  if (data.count(key)){
-    auto full = data.at(key);
+  if (data.count(k)){
+    auto & full = data.at(k);
     if (nx == BIN2D && ny == BIN2D){
       for (int ix=0; ix < nx; ++ix){
         for (int iy=0; iy < ny; ++iy){
@@ -302,15 +330,15 @@ int bifrost::data::Manager::max_2D(int arc, int triplet, bifrost::data::Type t) 
       }
     }
   }
-  return static_cast<int>(std::ceil(value/norm));
+  return static_cast<int>(std::ceil(static_cast<double>(value)/norm));
 }
 
 
 int bifrost::data::Manager::min_1D(int arc, int triplet, bifrost::data::Type t) const {
-  auto key = std::make_tuple(arc, triplet, t);
+  auto this_key = this->key(arc, triplet, t);
   int value{max_1D(arc, triplet, t)};
-  if (data.count(key) && bins_1d.count(t)){
-    auto full = data.at(key);
+  if (data.count(this_key) && bins_1d.count(t)){
+    auto full = data.at(this_key);
     auto bins = bins_1d.at(t);
     if (BIN1D == bins){
       for (int i=0; i<BIN1D; ++i){
@@ -332,12 +360,12 @@ int bifrost::data::Manager::min_1D(int arc, int triplet, bifrost::data::Type t) 
 }
 
 int bifrost::data::Manager::min_2D(int arc, int triplet, bifrost::data::Type t) const {
-  auto key = std::make_tuple(arc, triplet, t);
+  auto this_key = this->key(arc, triplet, t);
   auto [nx, ny] = bins_2D(t);
   double norm{static_cast<double>(BIN2D)*static_cast<double>(BIN2D)/static_cast<double>(nx)/static_cast<double>(ny)};
   auto value = max_2D(arc, triplet, t) * norm;
-  if (data.count(key)){
-    auto full = data.at(key);
+  if (data.count(this_key)){
+    auto full = data.at(this_key);
     if (nx == BIN2D && ny == BIN2D){
       for (int ix=0; ix < nx; ++ix){
         for (int iy=0; iy < ny; ++iy){
@@ -361,7 +389,7 @@ int bifrost::data::Manager::min_2D(int arc, int triplet, bifrost::data::Type t) 
       }
     }
   }
-  return static_cast<int>(std::ceil(value/norm));
+  return static_cast<int>(std::ceil(static_cast<double>(value)/norm));
 }
 
 
@@ -390,3 +418,17 @@ std::ostream & operator<<(std::ostream & os, ::bifrost::data::Type type){
   }
   return os;
 }
+//
+//bool bifrost::data::key_less(const bifrost::data::key_t & a, const bifrost::data::key_t & b){
+//  return key_compare(a, b) == -1;
+//}
+//
+//int bifrost::data::key_compare(const bifrost::data::key_t & a, const bifrost::data::key_t & b){
+//  if (std::get<0>(a) < std::get<0>(b)) return -1;
+//  if (std::get<0>(a) > std::get<0>(b)) return 1;
+//  if (std::get<1>(a) < std::get<1>(b)) return -1;
+//  if (std::get<1>(a) > std::get<1>(b)) return 1;
+//  if (std::get<2>(a) < std::get<2>(b)) return -1;
+//  if (std::get<2>(a) > std::get<2>(b)) return 1;
+//  return 0;
+//}

@@ -1,84 +1,54 @@
-cmake_minimum_required(VERSION 3.5)
-
-project(fylgje VERSION 0.1 LANGUAGES CXX)
-
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets PrintSupport)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets PrintSupport)
-
+include(QtLibraryConfig)
 find_package(RdKafka REQUIRED)
 find_package(qplot REQUIRED)
 
+set(fylgje_src
+  fylgje_main.cpp
+  fylgje_window.cpp
+  WorkerThread.cpp
+  KafkaConfig.cpp
+  ESSConsumer.cpp
+  data_manager.cpp
+  Configuration.cpp
+  )
 
-set(PROJECT_SOURCES
-        fylgje_main.cpp
-        fylgje_window.cpp
-        WorkerThread.cpp
-        ESSConsumer.cpp
-        data_manager.cpp
-        fylgje_window.h
-        fylgje_window.ui
+set(fylgje_inc
+  Configuration.h
+  ESSConsumer.h
+  KafkaConfig.h
+  fylgje_window.h
+  plot_manager.h
+  two_spin_box.h
+  data_manager.h
+  datastore_bifrost.h
+  WorkerThread.h
+  JsonFile.h
+  )
+
+set(fylgje_ui
+  fylgje_window.ui
+  )
+
+set(CMAKE_AUTOUIC ON)
+
+add_executable(
+  fylgje
+  ${fylgje_src}
+  ${fylgje_inc}
+  ${fylgje_ui}
 )
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(fylgje
-        MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
-    )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET fylgje APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
-else()
-    if(ANDROID)
-        add_library(fylgje SHARED
-            ${PROJECT_SOURCES}
-        )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-    else()
-        add_executable(fylgje
-            ${PROJECT_SOURCES}
-        )
-    endif()
-endif()
+target_link_libraries(
+  fylgje
+  PUBLIC fmt::fmt
+  PRIVATE RdKafka::rdkafka++
+  PRIVATE RdKafka::rdkafka
+  PRIVATE QPlot
+  PRIVATE QtColorWidgets
+  PRIVATE Qt5::Widgets
+)
 
 target_link_libraries(fylgje
-        PUBLIC fmt::fmt
-        PRIVATE RdKafka::rdkafka++
-        PRIVATE RdKafka::rdkafka
-        PRIVATE QPlot
-        PRIVATE QtColorWidgets
-        PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
-)
-
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
-if(${QT_VERSION} VERSION_LESS 6.1.0)
-  set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.fylgje)
-endif()
-set_target_properties(fylgje PROPERTIES
-    ${BUNDLE_ID_OPTION}
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
-)
-
-include(GNUInstallDirs)
-install(TARGETS fylgje
-    BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
-
-if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(fylgje)
-endif()
+  PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
+target_link_libraries(fylgje
+  PRIVATE $<$<AND:$<CXX_COMPILER_ID:AppleClang>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,11.0>>:c++fs>)

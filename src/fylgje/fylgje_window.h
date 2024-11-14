@@ -11,6 +11,7 @@
 #include "data_manager.h"
 #include "two_spin_box.h"
 #include "cycles.h"
+#include "Configuration.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -23,10 +24,12 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
     using int_t = ::bifrost::data::Type;
-    using key_t = std::tuple<int, int, int_t>;
-
+//    using key_t = std::tuple<int, int, int_t>;
+    using key_t = ::bifrost::data::key_t;
+    using intensity_map_t = ::bifrost::data::map_t<int>;
+    enum class Time {Fixed, Historical, Live};
 public:
-    MainWindow(QWidget *parent = nullptr);
+    MainWindow(Configuration & Config, QWidget *parent = nullptr);
     ~MainWindow();
 
     void set_arc_1(){set_arc(0);}
@@ -66,14 +69,16 @@ public:
     void set_bins_x_2d(int m){data->set_bins_2d(int_t::x, m); set_intensity_limits();}
     void set_bins_t_2d(int m){data->set_bins_2d(int_t::t, m); set_intensity_limits();}
 
+    void set_time_live();
+    void set_time_historical();
+    void set_time_fixed();
 
     // gateway, uses private flags to determine which plot type is called
     void plot();
 
+    void timer_callback_window_update();
+
 private:
-  static inline key_t make_key(int arc, int triplet, int_t type){
-    return std::make_tuple(arc, triplet, type);
-  }
   void set_arc(int n, bool plot_now=true);
   void set_triplet(int n, bool plot_now=true);
   void set_int(int_t t, bool plot_now=true);
@@ -85,11 +90,13 @@ private:
   // plot all intensity plots for the specified triplet
   void plot_one_triplet(int arc, int triplet);
 
+  void initialize();
   void setup();
   void setup_add_bin_boxes();
+  void setup_time_limits();
   void setup_intensity_limits();
   void setup_gradient_list();
-  void setup_consumer(std::string broker, std::string topic);
+  void setup_consumer();
 
   void set_intensity_limits();
   void get_intensity_limits();
@@ -134,7 +141,8 @@ private:
     int_t _fixed_type{int_t::ab}; // should match the default in fylgje_window.ui
 
     std::map<std::pair<int_t, int>, TwoSpinBox *> bin_boxes{};
-    std::map<key_t, int> max;
+//    std::map<key_t, int> max;
+    intensity_map_t max;
 
     std::vector<QSpinBox*> maxBox;
 
@@ -144,6 +152,11 @@ private:
     ::bifrost::data::Manager * data;
     PlotManager * plots;
     WorkerThread * consumer{};
+
+    /// \brief configuration obtained from main()
+    Configuration configuration;
+
+    Time time_status{Time::Live};
 
     std::optional<fylgje::Cycles<1>> cycle_one;
     std::optional<fylgje::Cycles<2>> cycle_two;

@@ -40,11 +40,13 @@ static double frame_time(uint32_t pulse_hi, uint32_t pulse_lo, uint32_t prev_hi,
   return time;
 }
 
-ESSConsumer::ESSConsumer(data_t * data, std::string Broker, std::string Topic) :
-  Broker(std::move(Broker)), Topic(std::move(Topic)), histograms(data) {
+ESSConsumer::ESSConsumer(data_t * data, Configuration & config, std::vector<std::pair<std::string, std::string>> &KafkaConfig) :
+  configuration(config), histograms(data), mKafkaConfig(KafkaConfig) {
 
   mConsumer = subscribeTopic();
   assert(mConsumer != nullptr);
+  // if ... something is set in the gui, then seek the consumer offset before consuming
+  set_consumer_offset(End, -1);
 }
 
 RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
@@ -58,14 +60,17 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
   std::string ErrStr;
   /// \todo figure out good values for these
   /// \todo some may be obsolete
-  mConf->set("metadata.broker.list", Broker, ErrStr);
-  mConf->set("message.max.bytes", MessageMaxBytes, ErrStr);
-  mConf->set("fetch.message.max.bytes", FetchMessageMaxBytes, ErrStr);
-  mConf->set("replica.fetch.max.bytes", ReplicaFetchMaxBytes, ErrStr);
-  std::string GroupId = fmt::format("Groupid (pid) {}", getpid());
-  mConf->set("group.id", GroupId, ErrStr);
-  mConf->set("enable.auto.commit", EnableAutoCommit, ErrStr);
-  mConf->set("enable.auto.offset.store", EnableAutoOffsetStore, ErrStr);
+  mConf->set("metadata.broker.list", configuration.Kafka.Broker, ErrStr);
+  mConf->set("message.max.bytes", configuration.Kafka.MessageMaxBytes, ErrStr);
+  mConf->set("fetch.message.max.bytes", configuration.Kafka.FetchMessagMaxBytes, ErrStr);
+  mConf->set("replica.fetch.max.bytes", configuration.Kafka.ReplicaFetchMaxBytes, ErrStr);
+  mConf->set("group.id", randomGroupString(16u), ErrStr);
+  mConf->set("enable.auto.commit", configuration.Kafka.EnableAutoCommit, ErrStr);
+  mConf->set("enable.auto.offset.store", configuration.Kafka.EnableAutoOffsetStore, ErrStr);
+
+  for (auto &Config : mKafkaConfig) {
+    mConf->set(Config.first, Config.second, ErrStr);
+  }
 
   auto ret = RdKafka::KafkaConsumer::create(mConf, ErrStr);
   if (!ret) {
@@ -73,13 +78,80 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
     return nullptr;
   }
   //
-  // // Start consumer for topic+partition at start offset
-  RdKafka::ErrorCode resp = ret->subscribe({Topic});
-  if (resp != RdKafka::ERR_NO_ERROR) {
-    fmt::print("Failed to subscribe consumer to '{}': {}\n", Topic, err2str(resp));
-  }
+//  // // Start consumer for topic+partition at start offset
+//  std::cout << "Subscribe to topic " << configuration.Kafka.Topic << "\n";
+//  RdKafka::ErrorCode resp = ret->subscribe({configuration.Kafka.Topic});
+//  if (resp != RdKafka::ERR_NO_ERROR) {
+//    fmt::print("Failed to subscribe consumer to '{}': {}\n", configuration.Kafka.Topic, err2str(resp));
+//  }
 
   return ret;
+}
+
+
+void ESSConsumer::set_consumer_offset(ESSConsumer::Start start, int64_t ms_since_utc_epoch) {
+  // set the consumer starting point, using the partition's known offsets ...
+  RdKafka::Topic * only_rkt{nullptr};
+  RdKafka::Metadata * metadataptr;
+
+  auto resp = mConsumer->metadata(true, only_rkt, &metadataptr, 1000);
+  if (resp != RdKafka::ERR_NO_ERROR){
+    fmt::print("Failed retrieving metadata: {}\n", err2str(resp));
+  }
+  int32_t my_partition{0};
+  if (metadataptr == nullptr){
+    fmt::print("metadataptr still NULL\n");
+  } else {
+    auto topic_metadata = metadataptr->topics();
+    fmt::print("Got metadata about on {} topics\n", topic_metadata->size());
+    for (const auto & topic_meta: *topic_metadata){
+      fmt::print(" {} has {} partitions [", topic_meta->topic(), topic_meta->partitions()->size());
+      const auto & partitions = topic_meta->partitions();
+      for (const auto & partition: *partitions){
+        fmt::print(" {},", partition->id());
+      }
+      fmt::print("]\n");
+      if (topic_meta->topic() == configuration.Kafka.Topic){
+        my_partition =  topic_meta->partitions()->front()->id();
+      }
+    }
+  }
+
+  std::vector<std::string> subscriptions;
+  resp = mConsumer->subscription(subscriptions);
+  if (resp != RdKafka::ERR_NO_ERROR){
+    fmt::print("Failed to retrieve subscribed topics: {}\n", err2str(resp));
+  } else {
+    fmt::print("Subscribed to [");
+    for (const auto & sub: subscriptions) fmt::print("{}, ", sub);
+    fmt::print("]\n");
+  }
+
+  int64_t low{0}, high{0};
+  resp = mConsumer->get_watermark_offsets(configuration.Kafka.Topic, my_partition, &low, &high);
+  if (resp != RdKafka::ERR_NO_ERROR) {
+    fmt::print("Failed remembering watermark offsets for {} (partition {}): {}\n", configuration.Kafka.Topic, my_partition, err2str(resp));
+  }
+  if (low == high) {
+    resp = mConsumer->query_watermark_offsets(configuration.Kafka.Topic, my_partition, &low, &high, 1000);
+    if (resp != RdKafka::ERR_NO_ERROR) {
+      fmt::print("Failed retrieving watermark offsets for {} (partition {}): {}\n", configuration.Kafka.Topic, my_partition, err2str(resp));
+    }
+  }
+  fmt::print("Valid offsets for {} (partition: {}) are in range ({}, {})\n", configuration.Kafka.Topic, my_partition, low, high);
+
+  std::vector<RdKafka::TopicPartition*> tps;
+  tps.push_back(RdKafka::TopicPartition::create(configuration.Kafka.Topic, my_partition));
+  tps.front()->set_offset(start == Beginning ? low : start == End ? high : ms_since_utc_epoch);
+  if (start == Time){
+    // now handle converting a time to an offset
+    resp = mConsumer->offsetsForTimes(tps, 1000);
+    if (resp != RdKafka::ERR_NO_ERROR){
+      fmt::print("Failed retrieving soonest offset after {} for {} (partition {}):  {}\n",
+                 ms_since_utc_epoch, configuration.Kafka.Topic, my_partition, err2str(resp));
+    }
+  }
+  mConsumer->assign(tps); // since consumption hasn't started, we seek by assigning the (topic, partition, offset)
 }
 
 
@@ -168,6 +240,21 @@ ESSConsumer::Status ESSConsumer::handleMessage(RdKafka::Message *Message) {
     fmt::print("Consume failed: {}", Message->errstr());
     return Halt;
   }
+}
+
+// Copied from daqlite - modified to not reinstantiate charset 'length' times
+std::string ESSConsumer::randomGroupString(size_t length) {
+  srand(getpid());
+  const char charset[] = "0123456789"
+                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                         "abcdefghijklmnopqrstuvwxyz";
+  const size_t max_index = (sizeof(charset) - 1);
+  auto randchar = [&charset]() -> char {
+    return charset[rand() % max_index];
+  };
+  std::string str(length, 0);
+  std::generate_n(str.begin(), length, randchar);
+  return str;
 }
 
 /// \todo is timeout reasonable?

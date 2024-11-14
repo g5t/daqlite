@@ -4,11 +4,11 @@
 #include "fylgje_window.h"
 #include "./ui_fylgje_window.h"
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+MainWindow::MainWindow(Configuration & Config, QWidget *parent)
+    : QMainWindow(parent), ui(new Ui::MainWindow), configuration(Config)
 {
   ui->setupUi(this);
+  initialize();
 
   maxBox = {ui->intMax00, ui->intMax01, ui->intMax02,
             ui->intMax10, ui->intMax11, ui->intMax12,
@@ -44,6 +44,10 @@ MainWindow::MainWindow(QWidget *parent)
   connect(ui->int__x_Radio, &QRadioButton::clicked, this, &MainWindow::set_int_x);
   connect(ui->int__B_Radio, &QRadioButton::clicked, this, &MainWindow::set_int_b);
 
+  connect(ui->timeLive, &QRadioButton::clicked, this, &MainWindow::set_time_live);
+  connect(ui->timeHistorical, &QRadioButton::clicked, this, &MainWindow::set_time_historical);
+  connect(ui->timeFixed, &QRadioButton::clicked, this, &MainWindow::set_time_fixed);
+
   _fixed_arc = 0;
   ui->arcRadio1->setChecked(true);
   _fixed_triplet = 0;
@@ -65,6 +69,7 @@ MainWindow::MainWindow(QWidget *parent)
   connect(ui->typeCycleCheck, &QCheckBox::clicked, this, &MainWindow::cycle);
 
   setup_add_bin_boxes();
+  setup_time_limits();
   setup_intensity_limits();
   setup_gradient_list();
   setup();
@@ -100,16 +105,40 @@ void MainWindow::setup_add_bin_boxes() {
     }
 }
 
-void MainWindow::setup_intensity_limits() {
-  for (int arc=0; arc<5; ++arc){
-    for (int triplet=0; triplet<9; ++triplet){
-      for (const auto & t: ::bifrost::data::TYPEND){
-        auto key = make_key(arc, triplet, t);
-//        min[key] = 0;
-        max[key] = 1;
-      }
-    }
+void MainWindow::setup_time_limits(){
+  std::string date_time_format{"yyyy.MM.ddThh:mm:ss"};
+  auto now = QDateTime::currentDateTimeUtc();
+  for (auto & dt: {ui->timeBeginning, ui->timeEnding}){
+    dt->setDisplayFormat(date_time_format.c_str());
+    dt->setDateTime(now);
+    dt->setMinimumDateTime(now.addDays(-28));
   }
+}
+
+
+void MainWindow::set_time_live(){
+  time_status = Time::Live;
+  auto now = QDateTime::currentDateTimeUtc();
+  for (auto & dt: {ui->timeBeginning, ui->timeEnding}){
+    dt->setDateTime(now);
+    dt->setEnabled(false);
+  }
+}
+void MainWindow::set_time_historical(){
+  time_status = Time::Historical;
+  for (auto & dt: {ui->timeBeginning, ui->timeEnding}){
+    dt->setEnabled(true);
+  }
+}
+void MainWindow::set_time_fixed(){
+  time_status = Time::Fixed;
+  for (auto & dt: {ui->timeBeginning, ui->timeEnding}){
+    dt->setEnabled(false);
+  }
+}
+
+
+void MainWindow::setup_intensity_limits() {
   auto signal = QOverload<int>::of(&QSpinBox::valueChanged);
   auto slot = &MainWindow::get_intensity_limits;
 //  for (auto sender: minBox) connect(sender, signal, this, slot);
@@ -118,28 +147,54 @@ void MainWindow::setup_intensity_limits() {
 
 void MainWindow::setup_gradient_list(){
   ui->colormapComboBox->clear();
-  for (auto name: {"gray", "hot", "cold", "night", "candy", "geography", "thermal"}){
-    ui->colormapComboBox->addItem(QString(name));
+  std::array<std::string,6> validNames {"gray", "hot", "cold", "night", "candy", "thermal"};
+  for (const auto& name: validNames){
+    ui->colormapComboBox->addItem(QString(name.c_str()));
   }
-  ui->colormapComboBox->setCurrentText(QString("geography"));
+  // set the gradient name based on the configuration
+  auto setting = configuration.Plot.ColorGradient;
+  bool validName{false};
+  for (const auto & name: validNames) if (name == setting){
+    ui->colormapComboBox->setCurrentText(QString(setting.c_str()));
+    validName = true;
+    break;
+  }
+  if (!validName){
+    std::cout << fmt::format("Configuration provided color map name {} is not known", setting);
+  }
+  // set inverted checkbox from the configuration
+  ui->colormapInvertedCheck->clicked(configuration.Plot.InvertGradient);
+  // set the scaling to log, according to the configuration
+  ui->scaleButton->clicked(configuration.Plot.LogScale);
+}
+
+void MainWindow::initialize(){
+  data = new ::bifrost::data::Manager(5, 9);
+  plots = new PlotManager(ui->plotGrid, 3, 3);
+  max.resize(data->key_count());
+  std::fill(max.begin(), max.end(), 0);
 }
 
 void MainWindow::setup(){
-    data = new ::bifrost::data::Manager(5, 9);
-    plots = new PlotManager(ui->plotGrid, 3, 3);
-
-    broker = "localhost:9092";
-    topic = "bifrost_detector_samples";
-    setup_consumer(broker, topic);
+    setup_consumer();
 //
     /// Update timer
     auto *timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, this, &MainWindow::plot);
-    timer->start(100);
+    connect(timer, &QTimer::timeout, this, &MainWindow::timer_callback_window_update);
+    timer->start(1000);
 }
-void MainWindow::setup_consumer(std::string b, std::string t){
+
+
+void MainWindow::timer_callback_window_update() {
+  plot();
+  if (time_status == Time::Live) ui->timeEnding->setDateTime(QDateTime::currentDateTimeUtc());
+}
+
+
+
+void MainWindow::setup_consumer(){
     delete consumer;
-    consumer = new WorkerThread(data, std::move(b), std::move(t));
+    consumer = new WorkerThread(data, configuration);
     // caengraph.WThread = consumer;
     consumer->start();
 }
@@ -296,15 +351,16 @@ void MainWindow::plot_single(int arc, int triplet, int_t t){
         d = PlotManager::Dim::two;
     }
     plots->make_single(d, t);
-    auto key = make_key(arc, triplet, t);
+    auto key = data->key(arc, triplet, t);
     auto is_log = ui->scaleButton->isChecked();
     auto gradient = ui->colormapComboBox->currentText().toStdString();
     auto is_inverted = ui->colormapInvertedCheck->isChecked();
+    auto intensity = 1.0 * max.at(key);
     if (PlotManager::Dim::one == d){
-        plots->plot(0, 0, data->axis(t), data->data_1D(arc, triplet, t), 0.0, 1.0*max[key], is_log);
+        plots->plot(0, 0, data->axis(t), data->data_1D(arc, triplet, t), 0.0, intensity, is_log);
     }
     if (PlotManager::Dim::two == d){
-        plots->plot(0, 0, data->data_2D(arc, triplet, t), 0.0, 1.0*max[key], is_log, gradient, is_inverted);
+        plots->plot(0, 0, data->data_2D(arc, triplet, t), 0.0, intensity, is_log, gradient, is_inverted);
     }
 }
 
@@ -320,8 +376,9 @@ void MainWindow::plot_one_type(int arc, int_t t){
     if (PlotManager::Dim::one == d){
         for (int i=0; i<3; ++i) {
             for (int j=0; j<3; ++j) {
-              auto key = make_key(arc, i*3+j, t);
-              plots->plot(i, j, data->axis(t), data->data_1D(arc, i*3+j, t), 0.0, 1.0*max[key], is_log);
+              auto key = data->key(arc, i*3+j, t);
+              auto intensity = 1.0 * max.at(key);
+              plots->plot(i, j, data->axis(t), data->data_1D(arc, i*3+j, t), 0.0, intensity, is_log);
             }
         }
     }
@@ -330,7 +387,7 @@ void MainWindow::plot_one_type(int arc, int_t t){
       auto is_inverted = ui->colormapInvertedCheck->isChecked();
         for (int i=0; i<3; ++i) {
             for (int j=0; j<3; ++j) {
-              auto key = make_key(arc, i*3+j, t);
+              auto key = data->key(arc, i*3+j, t);
               plots->plot(i, j, data->data_2D(arc, i*3+j, t), 0.0, 1.0*max[key], is_log, gradient, is_inverted);
             }
         }
@@ -343,13 +400,13 @@ void MainWindow::plot_one_triplet(int arc, int triplet){
   int j[]{0,1,2,0,1,2,0,1,2};
   auto is_log = ui->scaleButton->isChecked();
   for (int t: {0, 1, 2, 5, 8}){
-    auto key = make_key(arc, triplet, type_order[t]);
+    auto key = data->key(arc, triplet, type_order[t]);
     plots->plot(i[t], j[t], data->axis(type_order[t]), data->data_1D(arc, triplet, type_order[t]), 0.0, 1.0*max[key], is_log);
   }
   auto gradient = ui->colormapComboBox->currentText().toStdString();
   auto is_inverted = ui->colormapInvertedCheck->isChecked();
   for (int t: {3, 4, 6, 7}){
-    auto key = make_key(arc, triplet, type_order[t]);
+    auto key = data->key(arc, triplet, type_order[t]);
     plots->plot(i[t], j[t], data->data_2D(arc, triplet, type_order[t]), 0.0, 1.0*max[key], is_log, gradient, is_inverted);
   }
 }
@@ -361,10 +418,15 @@ void MainWindow::reset(){
 
 void MainWindow::pause_toggled(bool checked)
 {
-  if (!checked) {
-    // check if the cycle should (re)start
-    cycle();
+  std::cout << "Intensity limits" << std::endl;
+  for (key_t key=0; key < data->key_count(); ++key){
+    auto value = max[key];
+    std::stringstream stype;
+    stype << data->key_type(key);
+    fmt::print("{:1d} {:1d} {:6s} ({}, {})\n", data->key_arc(key), data->key_triplet(key), stype.str(), 0, value);
   }
+  std::cout << "pause button is now " << (checked ? "on" : "off") << std::endl;
+  if (!checked) cycle();
 }
 
 bool MainWindow::is_paused(){
@@ -381,7 +443,7 @@ void MainWindow::autoscale_toggled(bool check)
 
 void MainWindow::set_intensity_limits_triplets(){
   for (int triplet=0; triplet<9; ++triplet){
-    auto key = make_key(_fixed_arc, triplet, _fixed_type);
+    auto key = data->key(_fixed_arc, triplet, _fixed_type);
     maxBox[triplet]->setValue(max.at(key));
 //    minBox[triplet]->setValue(min.at(key));
   }
@@ -389,63 +451,55 @@ void MainWindow::set_intensity_limits_triplets(){
 
 void MainWindow::get_intensity_limits_triplets(){
   for (int triplet=0; triplet<9; ++triplet){
-    auto key = make_key(_fixed_arc, triplet, _fixed_type);
-    max.at(key) = maxBox[triplet]->value();
-//    min.at(key) = minBox[triplet]->value();
+    auto key = data->key(_fixed_arc, triplet, _fixed_type);
+    max[key] = maxBox[triplet]->value();
   }
 }
 
 void MainWindow::auto_intensity_limits_triplets(){
   for (int triplet=0; triplet<9; ++triplet){
-    auto key = make_key(_fixed_arc, triplet, _fixed_type);
-    max.at(key) = static_cast<int>(data->max(_fixed_arc, triplet, _fixed_type));
-//    min.at(key) = static_cast<int>(data->min(_fixed_arc, triplet, _fixed_type));
+    auto key = data->key(_fixed_arc, triplet, _fixed_type);
+    max[key] = static_cast<int>(data->max(key));
   }
 }
 
 void MainWindow::set_intensity_limits_types(){
   int_t types[]{int_t::x, int_t::a, int_t::p, int_t::xp, int_t::ab, int_t::b, int_t::xt, int_t::pt, int_t::t};
   for (int type=0; type<9; ++type){
-    auto key = make_key(_fixed_arc, _fixed_triplet, types[type]);
+    auto key = data->key(_fixed_arc, _fixed_triplet, types[type]);
     maxBox[type]->setValue(max.at(key));
-//    minBox[type]->setValue(min.at(key));
   }
 }
 
 void MainWindow::get_intensity_limits_types(){
   int_t types[]{int_t::x, int_t::a, int_t::p, int_t::xp, int_t::ab, int_t::b, int_t::xt, int_t::pt, int_t::t};
   for (int type=0; type<9; ++type){
-    auto key = make_key(_fixed_arc, _fixed_triplet, types[type]);
-    max.at(key) = maxBox[type]->value();
-//    min.at(key) = minBox[type]->value();
+    auto key = data->key(_fixed_arc, _fixed_triplet, types[type]);
+    max[key] = maxBox[type]->value();
   }
 }
 
 void MainWindow::auto_intensity_limits_types(){
   int_t types[]{int_t::x, int_t::a, int_t::p, int_t::xp, int_t::ab, int_t::b, int_t::xt, int_t::pt, int_t::t};
   for (auto & type : types){
-    auto key = make_key(_fixed_arc, _fixed_triplet, type);
-    max.at(key) = static_cast<int>(data->max(_fixed_arc, _fixed_triplet, type));
-//    min.at(key) = static_cast<int>(data->min(_fixed_arc, _fixed_triplet, type));
+    auto key = data->key(_fixed_arc, _fixed_triplet, type);
+    max[key] = static_cast<int>(data->max(key));
   }
 }
 
 void MainWindow::set_intensity_limits_singular(){
-  auto key = make_key(_fixed_arc, _fixed_triplet, _fixed_type);
+  auto key = data->key(_fixed_arc, _fixed_triplet, _fixed_type);
   maxBox[0]->setValue(max.at(key));
-//  minBox[0]->setValue(min.at(key));
 }
 
 void MainWindow::get_intensity_limits_singular(){
-  auto key = make_key(_fixed_arc, _fixed_triplet, _fixed_type);
-  max.at(key) = maxBox[0]->value();
-//  min.at(key) = minBox[0]->value();
+  auto key = data->key(_fixed_arc, _fixed_triplet, _fixed_type);
+  max[key] = maxBox[0]->value();
 }
 
 void MainWindow::auto_intensity_limits_singular(){
-  auto key = make_key(_fixed_arc, _fixed_triplet, _fixed_type);
-  max.at(key) = static_cast<int>(data->max(_fixed_arc, _fixed_triplet, _fixed_type));
-//  min.at(key) = static_cast<int>(data->min(_fixed_arc, _fixed_triplet, _fixed_type));
+  auto key = data->key(_fixed_arc, _fixed_triplet, _fixed_type);
+  max[key] = static_cast<int>(data->max(key));
 }
 
 void MainWindow::set_intensity_limits() {

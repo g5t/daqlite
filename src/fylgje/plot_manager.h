@@ -2,9 +2,10 @@
 #include <map>
 #include <QGridLayout>
 #include <QPlot/qcustomplot/qcustomplot.h>
-
+#include <fmt/format.h>
 #include "data_manager.h"
 #include <iostream>
+
 
 class PlotManager{
 public:
@@ -97,19 +98,7 @@ public:
       ax->setScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
       ax->setRange(min - (max - min) / 40, max + (max - min) / 20);
     }
-//    void plot(int i, int j, const QCPColorMapData & data, double min, double max, bool is_log){
-//      auto k = key(i, j);
-//      if (!dims.count(k) || dims.at(k) != Dim::two) return;
-//      if (!images.count(k)) return;
-//      auto im = images.at(k);
-//      // Why does setData _require_ a mutable pointer?
-//      im->setData(const_cast<QCPColorMapData *>(&data), true);
-//      auto p = plots.at(k);
-//      p->rescaleAxes();
-//      im->setDataScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
-////      im->rescaleDataRange();
-//      im->setDataRange(QCPRange(min, max));
-//    }
+
   void plot(int i, int j, QCPColorMapData * data, double min, double max, bool is_log, std::string_view gradient, bool is_inverted){
     auto k = key(i, j);
     if (!dims.count(k) || dims.at(k) != Dim::two) return;
@@ -172,8 +161,8 @@ private:
         if (!item){
             auto p = new QCustomPlot();
             p->axisRect()->setAutoMargins(QCP::msNone);
-            p->xAxis->ticker()->setTickCount(0);
-            p->yAxis->ticker()->setTickCount(0);
+            p->xAxis->setTicks(false);
+            p->yAxis->setTicks(false);
             p->xAxis->setTickPen(QPen(Qt::NoPen));
             layout->addWidget(p, i, j);
             plots[key(i, j)] = p;

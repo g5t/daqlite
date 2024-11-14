@@ -9,6 +9,8 @@
 #pragma once
 
 #include "ESSConsumer.h"
+#include "KafkaConfig.h"
+#include "Configuration.h"
 #include <QThread>
 #include <utility>
 
@@ -16,8 +18,10 @@ class WorkerThread : public QThread {
   Q_OBJECT
 
 public:
-  WorkerThread(ESSConsumer::data_t * data, std::string Broker, std::string Topic) {
-    Consumer = new ESSConsumer(data, std::move(Broker), std::move(Topic));
+  WorkerThread(ESSConsumer::data_t * data, Configuration & Config):
+  configuration(Config) {
+    KafkaConfig kcfg(Config.KafkaConfigFile);
+    Consumer = new ESSConsumer(data, configuration, kcfg.CfgParms);
   };
 
   //~WorkerThread(){};
@@ -27,6 +31,9 @@ public:
 
   /// \brief Kafka consumer
   ESSConsumer *Consumer;
+
+private:
+  Configuration &configuration;
 
 signals:
   /// \brief this signal is 'emitted' when there is new data
