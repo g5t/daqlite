@@ -20,9 +20,9 @@ set(fylgje_inc
   plot_manager.h
   two_spin_box.h
   data_manager.h
-  datastore_bifrost.h
   WorkerThread.h
   JsonFile.h
+  cycles.h
   )
 
 set(fylgje_ui

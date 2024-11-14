@@ -24,8 +24,6 @@ public:
     Consumer = new ESSConsumer(data, configuration, kcfg.CfgParms);
   };
 
-  //~WorkerThread(){};
-
   /// \brief thread main loop
   void run() override;
 

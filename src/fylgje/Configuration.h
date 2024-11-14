@@ -46,21 +46,6 @@ public:
            bool Throw = false);
 
   // Configurable options
-//  struct TOF {
-//    unsigned int Scale{1000};     // ns -> us
-//    unsigned int MaxValue{25000}; // us
-//    unsigned int BinSize{512};    // bins
-//    bool AutoScaleX{true};
-//    bool AutoScaleY{true};
-//  };
-//
-//  struct Geometry {
-//    int XDim{1};
-//    int YDim{1};
-//    int ZDim{1};
-//    int Offset{0};
-//  };
-
   struct Kafka {
     std::string Topic{"bifrost_detector_samples"};
     std::string Broker{"172.17.5.38:9092"};
@@ -82,8 +67,6 @@ public:
     int Height{900};
   };
 
-//  struct TOF TOF;
-//  struct Geometry Geometry;
   struct Kafka Kafka;
   struct Plot Plot;
 

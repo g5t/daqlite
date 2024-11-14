@@ -141,7 +141,6 @@ private:
     int_t _fixed_type{int_t::ab}; // should match the default in fylgje_window.ui
 
     std::map<std::pair<int_t, int>, TwoSpinBox *> bin_boxes{};
-//    std::map<key_t, int> max;
     intensity_map_t max;
 
     std::vector<QSpinBox*> maxBox;

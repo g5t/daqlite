@@ -15,13 +15,9 @@ void WorkerThread::run() {
     intent = Consumer->handleMessage(Msg);
     delete Msg;
     if (ESSConsumer::Status::Update == intent){
-        //emit resultReady();
         intent = ESSConsumer::Status::Continue;
     }
   }
 }
-//
-//void WorkerThread::resultReady() {
-//
-//}
+
 

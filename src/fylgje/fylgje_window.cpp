@@ -13,10 +13,6 @@ MainWindow::MainWindow(Configuration & Config, QWidget *parent)
   maxBox = {ui->intMax00, ui->intMax01, ui->intMax02,
             ui->intMax10, ui->intMax11, ui->intMax12,
             ui->intMax20, ui->intMax21, ui->intMax22};
-//    minBox = {ui->intMin00, ui->intMin01, ui->intMin02,
-//              ui->intMin10, ui->intMin11, ui->intMin12,
-//              ui->intMin20, ui->intMin21, ui->intMin22};
-
 
   connect(ui->arcRadio1, &QRadioButton::clicked, this, &MainWindow::set_arc_1);
   connect(ui->arcRadio2, &QRadioButton::clicked, this, &MainWindow::set_arc_2);

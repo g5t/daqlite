@@ -30,9 +30,6 @@ public:
     }
 
     void make_all_same(Dim d, type_t t){
-//        if (layout->rowCount() != 3 || layout->columnCount() != 3){
-//          empty_layout();
-//        }
         empty_layout();
         for (int i=0; i<3; ++i) {
             for (int j=0; j<3; ++j) {
@@ -104,8 +101,6 @@ public:
     if (!dims.count(k) || dims.at(k) != Dim::two) return;
     if (!images.count(k)) return;
     auto im = images.at(k);
-//    im->setInterpolate(false);
-//    im->setTightBoundary(false);
     // Why does setData _require_ a mutable pointer?
     im->setData(data);
     auto p = plots.at(k);
@@ -116,42 +111,8 @@ public:
     im->setDataRange(QCPRange(min, max));
   }
 
-//  void scale(const std::map<type_t, int> & min, const std::map<type_t, int> & max, bool is_linear = true){
-//    for (auto [k, d]: dims){
-//      auto lower = min.count(types.at(k)) ? min.at(types.at(k)) : 0;
-//      auto upper = max.count(types.at(k)) ? max.at(types.at(k)) : 1;
-//      inner_scale(k, lower, upper, is_linear);
-//    }
-//  }
-//
-//  void scale(double min, double max, bool is_linear = true){
-//    for (auto [k, p]: dims){
-//      inner_scale(k, min, max, is_linear);
-//    }
-//  }
-//
-//  void scale(int i, int j, double min, double max, bool is_linear = true){
-//    inner_scale(key(i, j), min, max, is_linear);
-//  }
 
 private:
-//  void inner_scale(int k, double min, double max, bool is_log){
-//    if (dims[k] == Dim::one){
-//      auto p = plots.at(k);
-//      QCPAxis * ax{flipped[k] ? p->xAxis : p->yAxis};
-//      ax->setScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
-//      p->rescaleAxes();
-//      ax->setRange(min, max);
-//      ax->scaleRange(1.1, ax->range().center());
-//    }
-//    if (dims[k] == Dim::two){
-//      auto m = images.at(k);
-//      m->setDataScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
-//      m->rescaleDataRange();
-//      m->setDataRange(QCPRange(min, max));
-//    }
-//  }
-
   [[nodiscard]] inline int key(int i, int j) const {
         return i * n_ + j;
     }

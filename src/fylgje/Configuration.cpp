@@ -20,20 +20,10 @@ void Configuration::fromJsonFile(std::string fname) {
     throw(std::runtime_error("File is not valid JSON"));
   }
 
-//  getGeometryConfig();
   getKafkaConfig();
   getPlotConfig();
-//  getTOFConfig();
   print();
 }
-//
-//void Configuration::getGeometryConfig() {
-//  /// 'geometry' field is mandatory
-//  Geometry.XDim = getVal("geometry", "xdim", Geometry.XDim, true);
-//  Geometry.YDim = getVal("geometry", "ydim", Geometry.YDim, true);
-//  Geometry.ZDim = getVal("geometry", "zdim", Geometry.ZDim, true);
-//  Geometry.Offset = getVal("geometry", "offset", Geometry.Offset);
-//}
 
 void Configuration::getKafkaConfig() {
   /// 'broker' and 'topic' must be specified
@@ -68,13 +58,6 @@ void Configuration::getPlotConfig() {
   Plot.Height = getVal("plot", "window_height", Plot.Height);
 }
 
-//void Configuration::getTOFConfig() {
-//  TOF.Scale = getVal("tof", "scale", TOF.Scale);
-//  TOF.MaxValue = getVal("tof", "max_value", TOF.MaxValue);
-//  TOF.BinSize = getVal("tof", "bin_size", TOF.BinSize);
-//  TOF.AutoScaleX = getVal("tof", "auto_scale_x", TOF.AutoScaleX);
-//  TOF.AutoScaleY = getVal("tof", "auto_scale_y", TOF.AutoScaleY);
-//}
 
 void Configuration::print() {
   fmt::print("[Kafka]\n");
@@ -85,10 +68,6 @@ void Configuration::print() {
   fmt::print("  replica.fetch.max.bytes {}\n", Kafka.ReplicaFetchMaxBytes);
   fmt::print("  enable.auto.commit {}\n", Kafka.EnableAutoCommit);
   fmt::print("  enable.auto.offset.store {}\n", Kafka.EnableAutoOffsetStore);
-//  fmt::print("[Geometry]\n");
-//  fmt::print("  Dimensions ({}, {}, {})\n", Geometry.XDim, Geometry.YDim,
-//             Geometry.ZDim);
-//  fmt::print("  Pixel Offset {}\n", Geometry.Offset);
   fmt::print("[Plot]\n");
   fmt::print("  WindowTitle {}\n", Plot.WindowTitle);
   fmt::print("  Clear periodically {}\n", Plot.ClearPeriodic);
@@ -96,19 +75,12 @@ void Configuration::print() {
   fmt::print("  Color gradient {}\n", Plot.ColorGradient);
   fmt::print("  Invert gradient {}\n", Plot.InvertGradient);
   fmt::print("  Log Scale {}\n", Plot.LogScale);
-//  fmt::print("[TOF]\n");
-//  fmt::print("  Scale {}\n", TOF.Scale);
-//  fmt::print("  Max value {}\n", TOF.MaxValue);
-//  fmt::print("  Bin size {}\n", TOF.BinSize);
-//  fmt::print("  Auto scale x {}\n", TOF.AutoScaleX);
-//  fmt::print("  Auto scale y {}\n", TOF.AutoScaleY);
 }
 
 //\brief getVal() template is used to effectively achieve
 // getInt(), getString() and getBool() functionality through T
 template <typename T>
-T Configuration::getVal(std::string Group, std::string Option, T Default,
-                        bool Throw) {
+T Configuration::getVal(std::string Group, std::string Option, T Default, bool Throw) {
   T ConfigVal;
   try {
     ConfigVal = JsonObj[Group][Option];

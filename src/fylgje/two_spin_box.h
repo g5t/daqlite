@@ -1,6 +1,7 @@
 #pragma once
 #include <QSpinBox>
 
+/// \brief A specialization of Qt QSpinBox which allows only values which are powers of two
 class TwoSpinBox: public QSpinBox
 {
 public:
