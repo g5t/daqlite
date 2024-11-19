@@ -13,7 +13,6 @@ public:
         setRange(acceptedValues.first(), acceptedValues.last());
         setValue(maximum);
     }
-
     void stepBy(int steps) override
     {
          // Bounds the index between 0 and length
