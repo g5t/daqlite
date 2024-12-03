@@ -10,8 +10,10 @@
 #include "plot_manager.h"
 #include "data_manager.h"
 #include "two_spin_box.h"
+#include "table_item_types.h"
 #include "cycles.h"
 #include "Configuration.h"
+#include "Calibration.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -29,7 +31,7 @@ class MainWindow : public QMainWindow
     using intensity_map_t = ::bifrost::data::map_t<int>;
     enum class Time {Fixed, Historical, Live};
 public:
-    MainWindow(Configuration & Config, QWidget *parent = nullptr);
+    MainWindow(Configuration & Config, Calibration & calibration, QWidget *parent = nullptr);
     ~MainWindow();
 
     void set_arc_1(){set_arc(0);}
@@ -97,6 +99,9 @@ private:
   void setup_intensity_limits();
   void setup_gradient_list();
   void setup_consumer();
+  void setup_calibration();
+  void setup_calibration_table();
+  void setup_calibration_info();
 
   void set_intensity_limits();
   void get_intensity_limits();
@@ -132,6 +137,10 @@ private:
   void pause_toggled(bool checked);
   bool is_paused();
 
+
+  void save_calibration();
+
+
 private:
     Ui::MainWindow *ui;
     bool _triplet_fixed{false};
@@ -148,12 +157,15 @@ private:
     std::string broker;
     std::string topic;
 
-    ::bifrost::data::Manager * data;
+    ::bifrost::data::Manager * data, * included_data, * excluded_data;
     PlotManager * plots;
     WorkerThread * consumer{};
 
     /// \brief configuration obtained from main()
     Configuration configuration;
+
+    /// \brief calibration obtained from main()
+    Calibration calibration;
 
     Time time_status{Time::Live};
 

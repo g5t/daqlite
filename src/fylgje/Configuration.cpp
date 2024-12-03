@@ -20,9 +20,18 @@ void Configuration::fromJsonFile(std::string fname) {
     throw(std::runtime_error("File is not valid JSON"));
   }
 
+  getInstrumentConfig();
   getKafkaConfig();
   getPlotConfig();
   print();
+}
+
+void Configuration::getInstrumentConfig() {
+  using std::operator""s;
+  Instrument.Name = getVal("instrument", "name", "n/a"s, true);
+  Instrument.groups = getVal("instrument", "groups", Instrument.groups);
+  Instrument.units_per_group = getVal("instrument", "units_per_group", Instrument.units_per_group);
+  Instrument.pixels_per_unit = getVal("instrument", "pixels_per_unit", Instrument.pixels_per_unit);
 }
 
 void Configuration::getKafkaConfig() {
