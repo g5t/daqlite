@@ -53,7 +53,8 @@ public:
 
 
   /// \brief Constructor needs the configured Broker and Topic
-  ESSConsumer(data_t * data, Configuration & configuration, std::vector<std::pair<std::string, std::string>> &KafkaConfig);
+  ESSConsumer(data_t * data, Configuration & configuration,
+              std::vector<std::pair<std::string, std::string>> &KafkaConfig);
 
   /// \brief wrapper function for librdkafka consumer
   RdKafka::Message *consume();
@@ -73,10 +74,17 @@ public:
 
   static std::string randomGroupString(size_t length);
 
+  void consume_all();
+  void consume_forever();
+  void consume_from(int64_t);
+  void consume_until(int64_t);
+
 private:
   Configuration & configuration;
 
   RdKafka::KafkaConsumer *mConsumer;
+  int32_t my_partition{0};
+  int64_t earliest_timestamp{-1}, latest_timestamp{-1};
 
   data_t * histograms;
 
@@ -84,4 +92,5 @@ private:
   std::vector<std::pair<std::string, std::string>> &mKafkaConfig;
 
   void set_consumer_offset(Start start, int64_t ms_since_utc_epoch);
+  void set_topic_partition_offset(std::vector<RdKafka::TopicPartition*>&, Start, int64_t);
 };

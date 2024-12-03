@@ -4,8 +4,8 @@
 #include "fylgje_window.h"
 #include "./ui_fylgje_window.h"
 
-MainWindow::MainWindow(Configuration & Config, QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), configuration(Config)
+MainWindow::MainWindow(Configuration & Config, Calibration & calibration, QWidget *parent)
+    : QMainWindow(parent), ui(new Ui::MainWindow), configuration(Config), calibration(calibration)
 {
   ui->setupUi(this);
   initialize();
@@ -64,10 +64,16 @@ MainWindow::MainWindow(Configuration & Config, QWidget *parent)
   connect(ui->tripletCycleCheck, &QCheckBox::clicked, this, &MainWindow::cycle);
   connect(ui->typeCycleCheck, &QCheckBox::clicked, this, &MainWindow::cycle);
 
+  connect(ui->filterShowAll, &QCheckBox::clicked, this, &MainWindow::set_filter_all);
+  connect(ui->filterShowIncluded, &QCheckBox::clicked, this, &MainWindow::set_filter_included);
+  connect(ui->filterShowExcluded, &QCheckBox::clicked, this, &MainWindow::set_filter_excluded);
+
   setup_add_bin_boxes();
   setup_time_limits();
   setup_intensity_limits();
   setup_gradient_list();
+  setup_calibration();
+  setup_data();
   setup();
 }
 
@@ -109,6 +115,8 @@ void MainWindow::setup_time_limits(){
     dt->setDateTime(now);
     dt->setMinimumDateTime(now.addDays(-28));
   }
+  connect(ui->timeBeginning, &QDateTimeEdit::dateTimeChanged, this, &MainWindow::set_time_early);
+  connect(ui->timeEnding, &QDateTimeEdit::dateTimeChanged, this, &MainWindow::set_time_late);
 }
 
 
@@ -119,6 +127,8 @@ void MainWindow::set_time_live(){
     dt->setDateTime(now);
     dt->setEnabled(false);
   }
+  consumer->Consumer->consume_forever();
+  consumer->Consumer->consume_from(now.toMSecsSinceEpoch());
 }
 void MainWindow::set_time_historical(){
   time_status = Time::Historical;
@@ -130,6 +140,20 @@ void MainWindow::set_time_fixed(){
   time_status = Time::Fixed;
   for (auto & dt: {ui->timeBeginning, ui->timeEnding}){
     dt->setEnabled(false);
+  }
+  consumer->Consumer->consume_until(ui->timeEnding->dateTime().toMSecsSinceEpoch());
+  consumer->Consumer->consume_from(ui->timeBeginning->dateTime().toMSecsSinceEpoch());
+}
+
+void MainWindow::set_time_early(const QDateTime & time){
+  if (time_status == Time::Historical){
+    reset();
+    consumer->consume_from(time.toMSecsSinceEpoch());
+  }
+}
+void MainWindow::set_time_late(const QDateTime & time){
+  if (time_status == Time::Historical){
+    consumer->consume_until(time.toMSecsSinceEpoch());
   }
 }
 
@@ -165,7 +189,9 @@ void MainWindow::setup_gradient_list(){
 }
 
 void MainWindow::initialize(){
-  data = new ::bifrost::data::Manager(5, 9);
+  auto tubes = configuration.Instrument.units_per_group;
+  auto pixelation = configuration.Instrument.pixels_per_unit;
+  data = new ::bifrost::data::Manager(5, 9, tubes, pixelation, calibration);
   plots = new PlotManager(ui->plotGrid, 3, 3);
   max.resize(data->key_count());
   std::fill(max.begin(), max.end(), 0);
@@ -195,9 +221,8 @@ void MainWindow::setup_consumer(){
     consumer->start();
 }
 
-MainWindow::~MainWindow()
-{
-    delete ui;
+MainWindow::~MainWindow(){
+  delete ui;
 }
 
 
@@ -353,57 +378,72 @@ void MainWindow::plot_single(int arc, int triplet, int_t t){
     auto is_inverted = ui->colormapInvertedCheck->isChecked();
     auto intensity = 1.0 * max.at(key);
     if (PlotManager::Dim::one == d){
-        plots->plot(0, 0, data->axis(t), data->data_1D(arc, triplet, t), 0.0, intensity, is_log);
+      using ::bifrost::data::Filter;
+      std::optional<std::vector<double>> all{std::nullopt}, included{std::nullopt}, excluded{std::nullopt};
+      if (ui->filter1Everything->isChecked()) all = data->data_1D(arc, triplet, t, Filter::none);
+      if (ui->filter1Included->isChecked()) included = data->data_1D(arc, triplet, t, Filter::positive);
+      if (ui->filter1Excluded->isChecked()) excluded = data->data_1D(arc, triplet, t, Filter::negative);
+      plots->plot_all_included_excluded(0, 0, data->axis(t), all, included, excluded, 0.0, intensity, is_log);
     }
     if (PlotManager::Dim::two == d){
-        plots->plot(0, 0, data->data_2D(arc, triplet, t), 0.0, intensity, is_log, gradient, is_inverted);
+        plots->plot(0, 0, data->data_2D(arc, triplet, t, plot_filter), 0.0, intensity, is_log, gradient, is_inverted, {}, {}, {});
     }
 }
 
 void MainWindow::plot_one_type(int arc, int_t t){
-    PlotManager::Dim d{PlotManager::Dim::none};
-    if (int_t::a == t || int_t::b == t || int_t::x == t || int_t::p == t || int_t::t == t){
-        d = PlotManager::Dim::one;
-    } else if (int_t::ab == t || int_t::xt == t || int_t::pt == t || int_t::xp == t){
-        d = PlotManager::Dim::two;
+  PlotManager::Dim d{PlotManager::Dim::none};
+  if (int_t::a == t || int_t::b == t || int_t::x == t || int_t::p == t || int_t::t == t){
+      d = PlotManager::Dim::one;
+  } else if (int_t::ab == t || int_t::xt == t || int_t::pt == t || int_t::xp == t){
+      d = PlotManager::Dim::two;
+  }
+  plots->make_all_same(d, t);
+  auto is_log = ui->scaleButton->isChecked();
+  using ::bifrost::data::Filter;
+  std::optional<std::vector<double>> all{std::nullopt}, included{std::nullopt}, excluded{std::nullopt};
+  if (PlotManager::Dim::one == d){
+    for (int i=0; i<3; ++i) {
+      for (int j=0; j<3; ++j) {
+        auto key = data->key(arc, i*3+j, t);
+        auto intensity = 1.0 * max.at(key);
+        if (ui->filter1Everything->isChecked()) all = data->data_1D(arc, i*3+j, t, Filter::none);
+        if (ui->filter1Included->isChecked()) included = data->data_1D(arc, i*3+j, t, Filter::positive);
+        if (ui->filter1Excluded->isChecked()) excluded = data->data_1D(arc, i*3+j, t, Filter::negative);
+        plots->plot_all_included_excluded(i, j, data->axis(t), all, included, excluded, 0.0, intensity, is_log);
+      }
     }
-    plots->make_all_same(d, t);
-    auto is_log = ui->scaleButton->isChecked();
-    if (PlotManager::Dim::one == d){
-        for (int i=0; i<3; ++i) {
-            for (int j=0; j<3; ++j) {
-              auto key = data->key(arc, i*3+j, t);
-              auto intensity = 1.0 * max.at(key);
-              plots->plot(i, j, data->axis(t), data->data_1D(arc, i*3+j, t), 0.0, intensity, is_log);
-            }
-        }
-    }
-    if (PlotManager::Dim::two == d){
-      auto gradient = ui->colormapComboBox->currentText().toStdString();
-      auto is_inverted = ui->colormapInvertedCheck->isChecked();
-        for (int i=0; i<3; ++i) {
-            for (int j=0; j<3; ++j) {
-              auto key = data->key(arc, i*3+j, t);
-              plots->plot(i, j, data->data_2D(arc, i*3+j, t), 0.0, 1.0*max[key], is_log, gradient, is_inverted);
-            }
-        }
-    }
+  }
+  if (PlotManager::Dim::two == d){
+    auto gradient = ui->colormapComboBox->currentText().toStdString();
+    auto is_inverted = ui->colormapInvertedCheck->isChecked();
+      for (int i=0; i<3; ++i) {
+          for (int j=0; j<3; ++j) {
+            auto key = data->key(arc, i*3+j, t);
+            plots->plot(i, j, data->data_2D(arc, i*3+j, t, plot_filter), 0.0, 1.0*max[key], is_log, gradient, is_inverted, {}, {}, {});
+          }
+      }
+  }
 }
 void MainWindow::plot_one_triplet(int arc, int triplet){
+  using ::bifrost::data::Filter;
   plots->make_multi(type_order);
-
   int i[]{0,0,0,1,1,1,2,2,2};
   int j[]{0,1,2,0,1,2,0,1,2};
   auto is_log = ui->scaleButton->isChecked();
+  std::optional<std::vector<double>> all{std::nullopt}, included{std::nullopt}, excluded{std::nullopt};
   for (int t: {0, 1, 2, 5, 8}){
     auto key = data->key(arc, triplet, type_order[t]);
-    plots->plot(i[t], j[t], data->axis(type_order[t]), data->data_1D(arc, triplet, type_order[t]), 0.0, 1.0*max[key], is_log);
+    auto intensity = 1.0 * max[key];
+    if (ui->filter1Everything->isChecked()) all = data->data_1D(arc, triplet, type_order[t], Filter::none);
+    if (ui->filter1Included->isChecked()) included = data->data_1D(arc, triplet, type_order[t], Filter::positive);
+    if (ui->filter1Excluded->isChecked()) excluded = data->data_1D(arc, triplet, type_order[t], Filter::negative);
+    plots->plot_all_included_excluded(i[t], j[t], data->axis(type_order[t]), all, included, excluded, 0.0, intensity, is_log);
   }
   auto gradient = ui->colormapComboBox->currentText().toStdString();
   auto is_inverted = ui->colormapInvertedCheck->isChecked();
   for (int t: {3, 4, 6, 7}){
     auto key = data->key(arc, triplet, type_order[t]);
-    plots->plot(i[t], j[t], data->data_2D(arc, triplet, type_order[t]), 0.0, 1.0*max[key], is_log, gradient, is_inverted);
+    plots->plot(i[t], j[t], data->data_2D(arc, triplet, type_order[t], plot_filter), 0.0, 1.0*max[key], is_log, gradient, is_inverted, {}, {}, {});
   }
 }
 
@@ -427,6 +467,14 @@ void MainWindow::pause_toggled(bool checked)
 
 bool MainWindow::is_paused(){
   return ui->pauseButton->isChecked();
+}
+
+
+MainWindow::PlotType MainWindow::selected_plot_type(){
+  if (ui->tripletBox->isChecked() && !ui->intTypeBox->isChecked()) return PlotType::Types;
+  if (ui->intTypeBox->isChecked() && !ui->tripletBox->isChecked()) return PlotType::Triplets;
+  if (ui->intTypeBox->isChecked() && ui->tripletBox->isChecked()) return PlotType::Singular;
+  return PlotType::Unknown;
 }
 
 
@@ -455,7 +503,7 @@ void MainWindow::get_intensity_limits_triplets(){
 void MainWindow::auto_intensity_limits_triplets(){
   for (int triplet=0; triplet<9; ++triplet){
     auto key = data->key(_fixed_arc, triplet, _fixed_type);
-    max[key] = static_cast<int>(data->max(key));
+    max[key] = static_cast<int>(data->max(key, plot_filter));
   }
 }
 
@@ -479,7 +527,7 @@ void MainWindow::auto_intensity_limits_types(){
   int_t types[]{int_t::x, int_t::a, int_t::p, int_t::xp, int_t::ab, int_t::b, int_t::xt, int_t::pt, int_t::t};
   for (auto & type : types){
     auto key = data->key(_fixed_arc, _fixed_triplet, type);
-    max[key] = static_cast<int>(data->max(key));
+    max[key] = static_cast<int>(data->max(key, plot_filter));
   }
 }
 
@@ -495,7 +543,7 @@ void MainWindow::get_intensity_limits_singular(){
 
 void MainWindow::auto_intensity_limits_singular(){
   auto key = data->key(_fixed_arc, _fixed_triplet, _fixed_type);
-  max[key] = static_cast<int>(data->max(key));
+  max[key] = static_cast<int>(data->max(key, plot_filter));
 }
 
 void MainWindow::set_intensity_limits() {
@@ -508,31 +556,23 @@ void MainWindow::set_intensity_limits() {
 }
 
 void MainWindow::auto_intensity_limits() {
-  if (ui->tripletBox->isChecked() && !ui->intTypeBox->isChecked()){
-    auto_intensity_limits_types();
-  } else if (ui->intTypeBox->isChecked() && !ui->tripletBox->isChecked()){
-    auto_intensity_limits_triplets();
-  } else if (ui->intTypeBox->isChecked() && ui->tripletBox->isChecked()){
-    auto_intensity_limits_singular();
-  }
+  auto pt = selected_plot_type();
+  if (pt == PlotType::Types) auto_intensity_limits_types();
+  if (pt == PlotType::Triplets) auto_intensity_limits_triplets();
+  if (pt == PlotType::Singular) auto_intensity_limits_singular();
 }
 
 void MainWindow::update_intensity_limits() {
-  if (ui->tripletBox->isChecked() && !ui->intTypeBox->isChecked()){
-    set_intensity_limits_types();
-  } else if (ui->intTypeBox->isChecked() && !ui->tripletBox->isChecked()){
-    set_intensity_limits_triplets();
-  } else if (ui->intTypeBox->isChecked() && ui->tripletBox->isChecked()){
-    set_intensity_limits_singular();
-  }
+  auto pt = selected_plot_type();
+  if (pt == PlotType::Types) set_intensity_limits_types();
+  if (pt == PlotType::Triplets) set_intensity_limits_triplets();
+  if (pt == PlotType::Singular) set_intensity_limits_singular();
 }
 
 void MainWindow::get_intensity_limits(){
-  if (ui->tripletBox->isChecked() && !ui->intTypeBox->isChecked()){
-    get_intensity_limits_triplets();
-  } else if (ui->intTypeBox->isChecked() && !ui->tripletBox->isChecked()){
-    get_intensity_limits_types();
-  } else if (ui->intTypeBox->isChecked() && ui->tripletBox->isChecked()){
-    get_intensity_limits_singular();
-  }
+  auto pt = selected_plot_type();
+  if (pt == PlotType::Types) get_intensity_limits_types();
+  if (pt == PlotType::Triplets) get_intensity_limits_triplets();
+  if (pt == PlotType::Singular) get_intensity_limits_singular();
 }
+

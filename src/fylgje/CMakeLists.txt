@@ -1,18 +1,25 @@
 include(QtLibraryConfig)
 find_package(RdKafka REQUIRED)
 find_package(qplot REQUIRED)
+find_package(h5cpp REQUIRED)
 
 set(fylgje_src
   fylgje_main.cpp
   fylgje_window.cpp
+  fylgje_overview.cpp
+  fylgje_calibration.cpp
+  fylgje_data.cpp
   WorkerThread.cpp
   KafkaConfig.cpp
   ESSConsumer.cpp
   data_manager.cpp
   Configuration.cpp
+  Calibration.cpp
+  Interval.cpp
   )
 
 set(fylgje_inc
+  Calibration.h
   Configuration.h
   ESSConsumer.h
   KafkaConfig.h
@@ -23,6 +30,7 @@ set(fylgje_inc
   WorkerThread.h
   JsonFile.h
   cycles.h
+  Interval.h
   )
 
 set(fylgje_ui
@@ -44,8 +52,8 @@ target_link_libraries(
   PRIVATE RdKafka::rdkafka++
   PRIVATE RdKafka::rdkafka
   PRIVATE QPlot
-  PRIVATE QtColorWidgets
   PRIVATE Qt6::Widgets
+  PRIVATE h5cpp::h5cpp
 )
 
 target_link_libraries(fylgje

@@ -81,22 +81,56 @@ public:
         plot(i, j, &q_x, &q_y, min, max, is_log);
     }
 
-    void plot(int i, int j, const QVector<double> * x, const QVector<double> * y, double min, double max, bool is_log){
-      // 1-D data plotting
-      auto k = key(i, j);
-      if (!dims.count(k) || dims.at(k) != Dim::one) return;
-      auto g = lines.at(k);
-      g->setData(*x, *y);
-      auto p = plots.at(k);
-      QCPAxis * independent{flipped[k] ? p->yAxis : p->xAxis};
-      independent->setRange(x->front(), x->back());
-      // apply scaling
-      QCPAxis * ax{flipped[k] ? p->xAxis : p->yAxis};
-      ax->setScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
-      ax->setRange(min - (max - min) / 40, max + (max - min) / 20);
+  void plot(int i, int j, const QVector<double> * x, const QVector<double> * y, double min, double max, bool is_log){
+    // 1-D data plotting
+    auto k = key(i, j);
+    if (!dims.count(k) || dims.at(k) != Dim::one) return;
+    auto g = lines.at(k);
+    g->setData(*x, *y);
+    auto p = plots.at(k);
+    QCPAxis * independent{flipped[k] ? p->yAxis : p->xAxis};
+    independent->setRange(x->front(), x->back());
+    // apply scaling
+    QCPAxis * ax{flipped[k] ? p->xAxis : p->yAxis};
+    ax->setScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
+    ax->setRange(min - (max - min) / 40, max + (max - min) / 20);
+  }
+  void plot_all_included_excluded(int i, int j, const std::vector<double> & std_x,
+                                  const std::optional<std::vector<double>> & all,
+                                  const std::optional<std::vector<double>> & included,
+                                  const std::optional<std::vector<double>> & excluded,
+                                  double min, double max, bool is_log) {
+    using ::bifrost::data::Filter;
+    // 1-D data plotting
+    auto k = key(i, j);
+    if (!dims.count(k) || dims.at(k) != Dim::one) return;
+
+    QVector<double> x(std_x.begin(), std_x.end());
+    if (all.has_value()) {
+      lines.at(key(i, j, Filter::none))->setData(x, QVector<double>(all.value().begin(), all.value().end()));
+    }
+    if (included.has_value()) {
+      lines.at(key(i, j, Filter::positive))->setData(x, QVector<double>(included.value().begin(), included.value().end()));
+    }
+    if (excluded.has_value()) {
+      lines.at(key(i, j, Filter::negative))->setData(x, QVector<double>(excluded.value().begin(), excluded.value().end()));
     }
 
-  void plot(int i, int j, QCPColorMapData * data, double min, double max, bool is_log, std::string_view gradient, bool is_inverted){
+    auto p = plots.at(k);
+    QCPAxis * independent{flipped[k] ? p->yAxis : p->xAxis};
+    independent->setRange(x.front(), x.back());
+    // apply scaling
+    QCPAxis * ax{flipped[k] ? p->xAxis : p->yAxis};
+    ax->setScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
+    ax->setRange(min - (max - min) / 40, max + (max - min) / 20);
+  }
+
+
+  void plot(int i, int j, QCPColorMapData * data, double min, double max, bool is_log,
+            std::string_view gradient, bool is_inverted,
+            const std::optional<std::vector<std::pair<double, double>>> & left,
+            const std::optional<std::vector<std::pair<double, double>>> & center,
+            const std::optional<std::vector<std::pair<double, double>>> & right){
     auto k = key(i, j);
     if (!dims.count(k) || dims.at(k) != Dim::two) return;
     if (!images.count(k)) return;
@@ -109,12 +143,43 @@ public:
     im->setGradient(named_colormap(gradient, is_inverted));
     im->setDataScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
     im->setDataRange(QCPRange(min, max));
+
+    auto poly = [](const std::vector<std::pair<double, double>> & v){
+      std::vector<double> x, y;
+      x.reserve(v.size()+1);
+      y.reserve(v.size()+1);
+      for (const auto & [a, b]: v){
+        x.push_back(a);
+        y.push_back(b);
+      }
+      x.push_back(v.front().first);
+      y.push_back(v.front().second);
+      QVector<double> q_x(x.begin(), x.end());
+      QVector<double> q_y(y.begin(), y.end());
+      return std::make_pair(q_x, q_y);
+    };
+    using ::bifrost::data::Filter;
+    if (left.has_value()){
+      auto [x, y] = poly(left.value());
+      polygons[key(i, j, Filter::negative)]->addData(x, y);
+    }
+    if (center.has_value()){
+      auto [x, y] = poly(center.value());
+      polygons[key(i, j, Filter::none)]->addData(x, y);
+    }
+    if (right.has_value()){
+      auto [x, y] = poly(right.value());
+      polygons[key(i, j, Filter::positive)]->addData(x, y);
+    }
+
   }
 
 
 private:
-  [[nodiscard]] inline int key(int i, int j) const {
-        return i * n_ + j;
+  [[nodiscard]] inline int key(int i, int j, ::bifrost::data::Filter filter = ::bifrost::data::Filter::none) const {
+      using ::bifrost::data::Filter;
+      auto index = static_cast<int>(filter);
+      return i + n1 * j + n1 * n2 * index;
     }
 
     void make_plot(int i, int j, bool flip, type_t t){
@@ -132,24 +197,30 @@ private:
         }
     }
     void make_1D(int i, int j, bool flip, type_t t){
-        dims[key(i, j)] = Dim::one;
-        make_plot(i, j, flip, t);
-        auto p = plots[key(i, j)];
-        auto g = new QCPGraph(flip ? p->yAxis : p->xAxis, flip ? p->xAxis : p->yAxis);
-        // styling of the displayed line
-        lines[key(i, j)] = g;
+      using ::bifrost::data::Filter;
+      auto k = key(i, j);
+      dims[k] = Dim::one;
+      make_plot(i, j, flip, t);
 
-        p->yAxis->setTicks(true);
-        p->xAxis->setTicks(true);
-        p->yAxis->setTickLabels(true);
-        p->xAxis->setTickLabels(true);
-        p->axisRect()->setupFullAxesBox();
+      plots[k]->yAxis->setTicks(true);
+      plots[k]->xAxis->setTicks(true);
+      plots[k]->yAxis->setTickLabels(true);
+      plots[k]->xAxis->setTickLabels(true);
+      plots[k]->axisRect()->setupFullAxesBox();
 
-        g->setLineStyle(QCPGraph::LineStyle::lsStepCenter);
-
-        //p->setInteractions(QCP::iRangeDrag| QCP::iRangeZoom | QCP::iSelectPlottables);
+      std::vector<std::pair<Filter, QColor>> filter_color{
+        {{Filter::none, Qt::black}, {Filter::positive, Qt::darkGreen}, {Filter::negative, Qt::darkRed}}
+      };
+      for (const auto & [filter, color]: filter_color){
+        auto lk = key(i, j, filter);
+        lines[lk] = new QCPGraph(flip ? plots[k]->yAxis : plots[k]->xAxis, flip ? plots[k]->xAxis : plots[k]->yAxis);
+        lines[lk]->setLineStyle(QCPGraph::LineStyle::lsStepCenter);
+        lines[lk]->setPen(QPen(color));
+      }
+      //plots[k]->setInteractions(QCP::iRangeDrag| QCP::iRangeZoom | QCP::iSelectPlottables);
     }
     void make_2D(int i, int j, bool flip, type_t t){
+      using ::bifrost::data::Filter;
       dims[key(i, j)] = Dim::two;
       make_plot(i, j, flip, t);
       auto p = plots[key(i, j)];
@@ -167,8 +238,18 @@ private:
       m->setColorScale(s);
       m->setGradient(QCPColorGradient::gpGrayscale);
       m->rescaleDataRange();
-
       images[key(i, j)] = m;
+
+      // abuse the Filter enum to also specify tubes
+      std::vector<std::pair<Filter, QColor>> filter_color{
+          {{Filter::none, Qt::green}, {Filter::positive, Qt::yellow}, {Filter::negative, Qt::magenta}}
+      };
+      for (const auto & [filter, color]: filter_color){
+        auto pk = key(i, j, filter);
+        polygons[pk] = new QCPCurve(flip ? p->yAxis : p->xAxis, flip ? p->xAxis : p->yAxis);
+        polygons[pk]->setLineStyle(QCPCurve::LineStyle::lsLine);
+        polygons[pk]->setPen(QPen(color));
+      }
     }
 
 
@@ -177,11 +258,11 @@ private:
     layout_t * layout{};
     int n1;
     int n2;
-    int n_{3};
 
     std::map<int, QCustomPlot *> plots;
     std::map<int, QCPColorMap *> images;
     std::map<int, QCPGraph *> lines;
+    std::map<int, QCPCurve *> polygons;
     std::map<int, Dim> dims;
     std::map<int, type_t> types;
     std::map<int, bool> flipped;
