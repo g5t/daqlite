@@ -4,6 +4,7 @@
 #include <QVector>
 #include <QPlot/qcustomplot/qcustomplot.h>
 #include <fmt/format.h>
+#include "Calibration.h"
 
 namespace bifrost {
     inline int arc(int group) {
@@ -21,6 +22,8 @@ namespace bifrost {
 }
 
 namespace bifrost::data {
+    enum class Filter {none, positive, negative};
+
     int hist_a_or_b(int x, int shift, int bins);
     int hist_p(int x, int shift, int bins);
     int hist_t(double x, int bins);
@@ -35,7 +38,7 @@ namespace bifrost::data {
         }
     }
 
-    enum class Type {unknown=-1, x=0, a=1, p=2, xp=3, ab=4, b=5, xt=6, pt=7, t=8};
+    enum class Type {unknown=-1, x=0, a=1, p=2, xp=3, ab=4, b=5, xt=6, pt=7, t=8, pixel=9};
 
     constexpr Type TYPE1D[]{Type::a, Type::b, Type::x, Type::p, Type::t};
     constexpr Type TYPE2D[]{Type::xp, Type::ab, Type::xt, Type::pt};
@@ -77,15 +80,25 @@ namespace bifrost::data {
       using data_t = std::vector<int>;
     private:
       map_t<data_t> data;
+      data_t pixel_data;
 
       std::map<Type, int> bins_1d {{Type::a, BIN1D}, {Type::b, BIN1D}, {Type::p, BIN1D}, {Type::x, BIN1D}, {Type::t, BIN1D}};
       std::map<Type, int> bins_2d {{Type::a, BIN2D}, {Type::b, BIN2D}, {Type::x, BIN2D}, {Type::p, BIN2D}, {Type::t, BIN2D}};
 
       int arcs;
       int triplets;
+      int tubes_per_triplet;
+      int pixels_per_tube;
+      int pixels_per_arc;
+      int pixels_per_tube_arc;
+      int total_pixels;
+      Calibration & calibration;
 
     public:
-      Manager(int arcs, int triplets): arcs(arcs), triplets(triplets) {
+      Manager(int arcs, int triplets, int tubes, int pixels, Calibration & calib)
+      : arcs(arcs), triplets(triplets),
+        tubes_per_triplet{tubes}, pixels_per_tube{pixels}, calibration(calib)
+        {
         // setup data objects ...
         data.resize(key_count());
         for (int a = 0; a<arcs; ++a){
@@ -94,14 +107,22 @@ namespace bifrost::data {
             for (auto k: TYPE2D) data[key(a, t, k)].resize(BIN2D*BIN2D, 0);
           }
         }
+        pixels_per_tube_arc = triplets * pixels_per_tube;
+        pixels_per_arc = tubes_per_triplet * pixels_per_tube_arc;
+        total_pixels = pixels_per_arc * arcs;
+        pixel_data.resize(total_pixels, 0);
       }
       ~Manager() = default;
+
+      [[nodiscard]] int group(int arc, int triplet) const;
+      [[nodiscard]] int pixel(int arc, int triplet, int a, int b) const;
+      [[nodiscard]] bool includes(int arc, int triplet, int a, int b) const;
 
       void clear(){
           //for (auto & [k, x]: data) std::fill(x.begin(), x.end(), 0);
           for (auto & d: data) std::fill(d.begin(), d.end(), 0);
       }
-      bool add(int arc, int triplet, int a, int b, double time);
+      bool add(int arc, int triplet, int a, int b, double time, Filter filter=Filter::none);
 
       [[nodiscard]] double max() const;
       [[nodiscard]] double max(int arc) const;

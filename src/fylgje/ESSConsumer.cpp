@@ -40,9 +40,12 @@ static double frame_time(uint32_t pulse_hi, uint32_t pulse_lo, uint32_t prev_hi,
   return time;
 }
 
-ESSConsumer::ESSConsumer(data_t * data, Configuration & config, std::vector<std::pair<std::string, std::string>> &KafkaConfig) :
-  configuration(config), histograms(data), mKafkaConfig(KafkaConfig) {
-
+ESSConsumer::ESSConsumer(data_t * data, data_t * included, data_t * excluded,
+                         Configuration & config, std::vector<std::pair<std::string, std::string>> &KafkaConfig) :
+  configuration(config),
+  histograms(data), included(included), excluded(excluded),
+  mKafkaConfig(KafkaConfig)
+  {
   mConsumer = subscribeTopic();
   assert(mConsumer != nullptr);
   // if ... something is set in the gui, then seek the consumer offset before consuming
@@ -167,6 +170,8 @@ uint32_t ESSConsumer::parseCAENData(uint8_t * Readout, int Size, uint32_t hi, ui
     } else {
       auto time = frame_time(hi, lo, p_hi, p_lo, crd->HighTime, crd->LowTime);
       histograms->add(crd->Fiber, crd->Group, crd->A, crd->B, time);
+      included->add(crd->Fiber, crd->Group, crd->A, crd->B, time, ::bifrost::data::Filter::positive);
+      excluded->add(crd->Fiber, crd->Group, crd->A, crd->B, time, ::bifrost::data::Filter::negative);
     }
     BytesLeft -= sizeof(caen_readout);
     Readout += sizeof(caen_readout);

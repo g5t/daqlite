@@ -5,14 +5,19 @@ find_package(qplot REQUIRED)
 set(fylgje_src
   fylgje_main.cpp
   fylgje_window.cpp
+  fylgje_overview.cpp
+  fylgje_calibration.cpp
   WorkerThread.cpp
   KafkaConfig.cpp
   ESSConsumer.cpp
   data_manager.cpp
   Configuration.cpp
+  Calibration.cpp
+  Interval.cpp
   )
 
 set(fylgje_inc
+  Calibration.h
   Configuration.h
   ESSConsumer.h
   KafkaConfig.h
@@ -23,6 +28,7 @@ set(fylgje_inc
   WorkerThread.h
   JsonFile.h
   cycles.h
+  Interval.h
   )
 
 set(fylgje_ui

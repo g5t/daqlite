@@ -4,8 +4,8 @@
 #include "fylgje_window.h"
 #include "./ui_fylgje_window.h"
 
-MainWindow::MainWindow(Configuration & Config, QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), configuration(Config)
+MainWindow::MainWindow(Configuration & Config, Calibration & calibration, QWidget *parent)
+    : QMainWindow(parent), ui(new Ui::MainWindow), configuration(Config), calibration(calibration)
 {
   ui->setupUi(this);
   initialize();
@@ -68,6 +68,7 @@ MainWindow::MainWindow(Configuration & Config, QWidget *parent)
   setup_time_limits();
   setup_intensity_limits();
   setup_gradient_list();
+  setup_calibration();
   setup();
 }
 
@@ -165,7 +166,11 @@ void MainWindow::setup_gradient_list(){
 }
 
 void MainWindow::initialize(){
-  data = new ::bifrost::data::Manager(5, 9);
+  auto tubes = configuration.Instrument.units_per_group;
+  auto pixelation = configuration.Instrument.pixels_per_unit;
+  data = new ::bifrost::data::Manager(5, 9, tubes, pixelation, calibration);
+  included_data = new ::bifrost::data::Manager(5, 9, tubes, pixelation, calibration);
+  excluded_data = new ::bifrost::data::Manager(5, 9, tubes, pixelation, calibration);
   plots = new PlotManager(ui->plotGrid, 3, 3);
   max.resize(data->key_count());
   std::fill(max.begin(), max.end(), 0);
@@ -190,7 +195,7 @@ void MainWindow::timer_callback_window_update() {
 
 void MainWindow::setup_consumer(){
     delete consumer;
-    consumer = new WorkerThread(data, configuration);
+    consumer = new WorkerThread(data, included_data, excluded_data, configuration);
     // caengraph.WThread = consumer;
     consumer->start();
 }
@@ -536,3 +541,4 @@ void MainWindow::get_intensity_limits(){
     get_intensity_limits_singular();
   }
 }
+

@@ -1,4 +1,5 @@
 #include "Configuration.h"
+#include "Calibration.h"
 #include "fylgje_window.h"
 
 #include <map>
@@ -18,6 +19,7 @@ int main(int argc, char *argv[])
         {"topic", QCommandLineOption("t", "Kafka <topic>.", "kafka"),},
         {"config", QCommandLineOption("k", "Kafka <configuration> file.", "configuration"),},
         {"info", QCommandLineOption({"i", "info"}, "Information about fyjlgje.")},
+        {"calibration", QCommandLineOption({"c", "calibration"}, "Detector calibration JSON file", "calibration.json")}
     };
     CLI.addHelpOption();
     for (const auto & [name, opt]: cliOptions) {
@@ -54,7 +56,17 @@ int main(int argc, char *argv[])
       }
     }
 
-    MainWindow w(Config);
+    Calibration calibration{};
+    if (CLI.isSet(cliOptions.at("calibration"))) {
+      if (auto calib = CLI.value(cliOptions.at("calibration")).toStdString(); !calib.empty()) {
+        calibration = from_json_file(calib);
+//        nlohmann::json j = calibration;
+        to_json_file(calibration, "test_output.json");
+      }
+    }
+
+
+    MainWindow w(Config, calibration);
     w.setWindowTitle(QString::fromStdString(Config.Plot.WindowTitle));
     w.resize(Config.Plot.Width, Config.Plot.Height);
     w.show();

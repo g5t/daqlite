@@ -18,10 +18,11 @@ class WorkerThread : public QThread {
   Q_OBJECT
 
 public:
-  WorkerThread(ESSConsumer::data_t * data, Configuration & Config):
+  using data_t = ESSConsumer::data_t;
+  WorkerThread(data_t * data, data_t * included, data_t * excluded, Configuration & Config):
   configuration(Config) {
     KafkaConfig kcfg(Config.KafkaConfigFile);
-    Consumer = new ESSConsumer(data, configuration, kcfg.CfgParms);
+    Consumer = new ESSConsumer(data, included, excluded, configuration, kcfg.CfgParms);
   };
 
   /// \brief thread main loop

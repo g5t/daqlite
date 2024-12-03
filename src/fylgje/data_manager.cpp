@@ -42,13 +42,61 @@ int bifrost::data::hist_x(int a, int b, int bins){
     return x;
 }
 
+int bifrost::data::Manager::group(int arc, int triplet) const {
+  return arc * triplets + triplet;
+}
 
-bool bifrost::data::Manager::add(int fiber, int group, int a, int b, double time){
+///\brief Replicate the EFU calculations to identify a unique pixel number
+///\returns 0 if no valid pixel
+int bifrost::data::Manager::pixel(int arc, int triplet, int a, int b) const {
+  auto g = group(arc, triplet);
+  auto pos = static_cast<double>(a) / static_cast<double>(a + b);
+  auto tube = calibration.getUnitId(g, pos);
+  if (tube < 0) {
+    // invalid global position (outside any unit's range)
+    return 0;
+  }
+  auto cor_pos = calibration.posCorrection(g, tube, calibration.unitPosition(g, tube,  pos)); // in range (0, 1)
+  // corrected position in (0.0, 1.0) is mapped to a tube pixel in (0, pixels_per_tube - 1)
+  // its offset by which tube it is, which triplet its in, and which arc its in
+  int offset = pixels_per_tube * arc + pixels_per_tube * triplet + pixels_per_tube_arc * tube;
+  // and note that valid pixels index from 1 -- not 0.
+  return 1 + offset + static_cast<int>((pixels_per_tube - 1) * cor_pos);
+}
+
+///\brief Determine if the charge division would give a pixel number, and if the the pulse height is within threshold
+bool bifrost::data::Manager::includes(int arc, int triplet, int a, int b) const {
+  auto g = group(arc, triplet);
+  if (g < 0) return false;
+
+  auto pos = static_cast<double>(a) / static_cast<double>(a + b);
+  auto tube = calibration.getUnitId(g, pos);
+  if (tube < 0) return false;
+
+  auto unit_pos = calibration.unitPosition(g, tube, pos);
+  if (unit_pos < 0 || unit_pos > 1) return false;
+
+  return calibration.pulseHeightOK(g, tube, a+b);
+}
+
+
+
+bool bifrost::data::Manager::add(int fiber, int group, int a, int b, double time, bifrost::data::Filter filter){
     auto arc_ = arc(group);
     auto triplet_ = triplet(fiber, group);
     if (arc_ < 0 || arc_ >= arcs || triplet_ < 0 || triplet_ >= triplets) {
         return false;
     }
+    if (filter != Filter::none){
+      // filter == positive && included || filter == negative && excluded; continue
+      if (includes(arc_, triplet_, a, b) ^ (filter == Filter::positive)) {
+        return false;
+      }
+    }
+    if (auto p = pixel(arc_, triplet_, a, b); (p > 0 && p <= total_pixels)) {
+      pixel_data[p-1] += 1;
+    }
+
     bool ok{true};
     ok &= add_1D(arc_, triplet_, a, b, time);
     ok &= add_2D(arc_, triplet_, a, b, time);

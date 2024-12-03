@@ -53,7 +53,9 @@ public:
 
 
   /// \brief Constructor needs the configured Broker and Topic
-  ESSConsumer(data_t * data, Configuration & configuration, std::vector<std::pair<std::string, std::string>> &KafkaConfig);
+  ESSConsumer(data_t * data, data_t * included, data_t * excluded,
+              Configuration & configuration,
+              std::vector<std::pair<std::string, std::string>> &KafkaConfig);
 
   /// \brief wrapper function for librdkafka consumer
   RdKafka::Message *consume();
@@ -79,6 +81,8 @@ private:
   RdKafka::KafkaConsumer *mConsumer;
 
   data_t * histograms;
+  data_t * included;
+  data_t * excluded;
 
   /// \brief loadable Kafka-specific configuration
   std::vector<std::pair<std::string, std::string>> &mKafkaConfig;
