@@ -79,7 +79,8 @@ namespace bifrost::data {
       using D2 = QCPColorMapData;
       using data_t = std::vector<int>;
     private:
-      map_t<data_t> data;
+//      map_t<data_t> data;
+      map_t<data_t> everything, included, excluded;
       data_t pixel_data;
 
       std::map<Type, int> bins_1d {{Type::a, BIN1D}, {Type::b, BIN1D}, {Type::p, BIN1D}, {Type::x, BIN1D}, {Type::t, BIN1D}};
@@ -100,11 +101,15 @@ namespace bifrost::data {
         tubes_per_triplet{tubes}, pixels_per_tube{pixels}, calibration(calib)
         {
         // setup data objects ...
-        data.resize(key_count());
-        for (int a = 0; a<arcs; ++a){
-          for (int t = 0; t<triplets; ++t) {
-            for (auto k: TYPE1D) data[key(a, t, k)].resize(BIN1D, 0);
-            for (auto k: TYPE2D) data[key(a, t, k)].resize(BIN2D*BIN2D, 0);
+        for (auto data : {&everything, &included, &excluded}) {
+          data->resize(key_count());
+          for (int a = 0; a < arcs; ++a) {
+            for (int t = 0; t < triplets; ++t) {
+//              for (auto k: TYPE1D) data[key(a, t, k)].resize(BIN1D, 0);
+//              for (auto k: TYPE2D) data[key(a, t, k)].resize(BIN2D * BIN2D, 0);
+              for (auto k: TYPE1D) data->at(key(a, t, k)).resize(BIN1D, 0);
+              for (auto k: TYPE2D) data->at(key(a, t, k)).resize(BIN2D * BIN2D, 0);
+            }
           }
         }
         pixels_per_tube_arc = triplets * pixels_per_tube;
@@ -119,28 +124,30 @@ namespace bifrost::data {
       [[nodiscard]] bool includes(int arc, int triplet, int a, int b) const;
 
       void clear(){
-          //for (auto & [k, x]: data) std::fill(x.begin(), x.end(), 0);
-          for (auto & d: data) std::fill(d.begin(), d.end(), 0);
+        for (auto data: {&everything, &included, &excluded}) {
+          for (auto &d: *data) std::fill(d.begin(), d.end(), 0);
+        }
       }
-      bool add(int arc, int triplet, int a, int b, double time, Filter filter=Filter::none);
+      bool add(int arc, int triplet, int a, int b, double time);
 
-      [[nodiscard]] double max() const;
-      [[nodiscard]] double max(int arc) const;
-      [[nodiscard]] double max(int arc, int triplet) const;
-      [[nodiscard]] double max(int arc, Type t) const;
-      [[nodiscard]] double max(int arc, int triplet, Type t) const;
-      [[nodiscard]] double max(key_t k) const;
+      [[nodiscard]] double max(Filter) const;
+      [[nodiscard]] double max(int arc, Filter) const;
+      [[nodiscard]] double max(int arc, int triplet, Filter) const;
+      [[nodiscard]] double max(int arc, Type t, Filter) const;
+      [[nodiscard]] double max(int arc, int triplet, Type t, Filter) const;
+      [[nodiscard]] double max(key_t k, Filter) const;
 
-      [[nodiscard]] double min() const;
-      [[nodiscard]] double min(int arc) const;
-      [[nodiscard]] double min(int arc, int triplet) const;
-      [[nodiscard]] double min(int arc, Type t) const;
-      [[nodiscard]] double min(int arc, int triplet, Type t) const;
+      [[nodiscard]] double min(Filter) const;
+      [[nodiscard]] double min(int arc, Filter) const;
+      [[nodiscard]] double min(int arc, int triplet, Filter) const;
+      [[nodiscard]] double min(int arc, Type t, Filter) const;
+      [[nodiscard]] double min(int arc, int triplet, Type t, Filter) const;
+      [[nodiscard]] double min(key_t k, Filter) const;
 
-      [[nodiscard]] D1 data_1D(int arc, int triplet, Type t) const;
-      [[nodiscard]] D1 data_1D(key_t k) const;
-      [[nodiscard]] D2 * data_2D(int arc, int triplet, Type t) const;
-      [[nodiscard]] D2 * data_2D(key_t k) const;
+      [[nodiscard]] D1 data_1D(int arc, int triplet, Type t, Filter) const;
+      [[nodiscard]] D1 data_1D(key_t k, Filter) const;
+      [[nodiscard]] D2 * data_2D(int arc, int triplet, Type t, Filter) const;
+      [[nodiscard]] D2 * data_2D(key_t k, Filter) const;
 
       [[nodiscard]] AX axis(Type t) const {
         int bins{0};
@@ -196,15 +203,13 @@ namespace bifrost::data {
       }
 
     private:
-      bool add_1D(int arc, int triplet, int a, int b, double time);
-      bool add_2D(int arc, int triplet, int a, int b, double time);
+      bool add_1D(int arc, int triplet, int a, int b, double time, bool allowed);
+      bool add_2D(int arc, int triplet, int a, int b, double time, bool allowed);
 
-      [[nodiscard]] int max_1D(int arc, int triplet, Type t) const;
-      [[nodiscard]] int max_1D(key_t t) const;
-      [[nodiscard]] int max_2D(int arc, int triplet, Type t) const;
-      [[nodiscard]] int max_2D(key_t t) const;
-      [[nodiscard]] int min_1D(int arc, int triplet, Type t) const;
-      [[nodiscard]] int min_2D(int arc, int triplet, Type t) const;
+      [[nodiscard]] int max_1D(key_t t, Filter) const;
+      [[nodiscard]] int max_2D(key_t t, Filter) const;
+      [[nodiscard]] int min_1D(key_t t, Filter) const;
+      [[nodiscard]] int min_2D(key_t t, Filter) const;
 
       [[nodiscard]] std::pair<int, int> bins_2D(Type t) const{
         Type x{Type::unknown}, y;

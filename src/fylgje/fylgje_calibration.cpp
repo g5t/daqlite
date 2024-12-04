@@ -9,28 +9,38 @@ void MainWindow::setup_calibration(){
   setup_calibration_info();
   setup_calibration_table();
   connect(ui->actionSave_Calibration, &QAction::triggered, this, &MainWindow::save_calibration);
+  connect(ui->actionLoad_Calibration, &QAction::triggered, this, &MainWindow::load_calibration);
 }
 
 void MainWindow::setup_calibration_info(){
-  auto layout = ui->calibrationLayout->layout();
+  auto layout = ui->calibrationInfoLayout->layout();
   QString message{calibration.info().c_str()};
-  auto line = new QLineEdit(message, this);
-  line->setToolTip("Info");
-  layout->addWidget(line);
-  connect(line, &QLineEdit::textChanged, this, [&](const QString & text){
+  calibration_info = ui->calibrationInfo;
+  calibration_info->setToolTip("Info");
+  layout->addWidget(calibration_info);
+  connect(calibration_info, &QLineEdit::textChanged, this, [&](const QString & text){
     calibration.set_info(text.toStdString());
   });
+
+  std::string date_time_format{"yyyy.MM.ddThh:mm:ss"};
+  auto then = QDateTime::fromTime_t(calibration.date());
+  ui->calibrationTime->setDisplayFormat(date_time_format.c_str());
+  ui->calibrationTime->setDateTime(then);
+  ui->calibrationTime->setReadOnly(true);
+}
+void MainWindow::update_calibration_info(){
+  ui->calibrationInfo->setText(calibration.info().c_str());
+  ui->calibrationTime->setDateTime(QDateTime::fromTime_t(calibration.date()));
 }
 
 void MainWindow::setup_calibration_table(){
-  using Item = QTableWidgetItem;
-  auto layout = ui->calibrationLayout->layout();
+  auto layout = ui->calibrationVerticalLayout->layout();
 
   std::vector<float> arcs{2.7, 3.2, 3.8, 4.4, 5.0};
 
   auto rows = configuration.Instrument.groups * configuration.Instrument.units_per_group;
-  std::vector<std::pair<std::string, std::function<Item*(int,int,int,CalibrationUnit *)>>> columns{
-      {"arc/meV", [&arcs](int arc, int, int, CalibrationUnit *){
+  calibration_table_columns = {
+      {"arc/meV", [arcs](int arc, int, int, CalibrationUnit *){
         return new FloatTableItem(arcs[arc], false);
       }},
       {"triplet", [](int, int triplet, int, CalibrationUnit *){
@@ -65,25 +75,34 @@ void MainWindow::setup_calibration_table(){
       }},
   };
   QStringList headers;
-  for (const auto & [label, _]: columns){
+  for (const auto & [label, _]: calibration_table_columns){
     headers << label.c_str();
   }
+  if (calibration_table) free(calibration_table);
+  calibration_table = new QTableWidget(rows, headers.size(), this);
+  layout->addWidget(calibration_table);
+  calibration_table->setHorizontalHeaderLabels(headers);
 
-  std::vector<QTableWidgetItem *> table_cells;
-  table_cells.reserve(rows * headers.size());
+  setup_calibration_table_items();
+}
 
-  auto table = new QTableWidget(rows, headers.size(), this);
-  layout->addWidget(table);
-  table->setHorizontalHeaderLabels(headers);
+void MainWindow::setup_calibration_table_items(){
+  auto rows = calibration_table->rowCount();
+  auto columns = calibration_table->columnCount();
+  calibration_table_items.reserve(rows * columns);
+  // My idea was to keep track of the table items and remove the old ones by hand, but QTableWidget::setItem
+  // seems to do that for us, so this `calibration_table_items` vector isn't necessary?
+
   for (int group=0; group<configuration.Instrument.groups; ++group){
     for (int unit=0; unit<configuration.Instrument.units_per_group; ++unit){
       auto arc = group / 9;
       auto triplet = group % 9;
       auto row = group * configuration.Instrument.units_per_group + unit;
-      for (int column=0; column < headers.size(); ++column){
+      for (int column=0; column < columns; ++column){
         // this item handles updating the editable unit fields without a separate callback
-        auto item = columns[column].second(arc, triplet, unit, calibration.unit_pointer(group, unit));
-        table->setItem(row, column, item);
+        auto item = calibration_table_columns[column].second(arc, triplet, unit, calibration.unit_pointer(group, unit));
+        calibration_table->setItem(row, column, item);
+        calibration_table_items.push_back(item);
       }
     }
   }
@@ -104,4 +123,26 @@ void MainWindow::save_calibration() {
   calibration.set_date();
   j = calibration;
   to_json_file(j, std::string(p));
+}
+
+void MainWindow::load_calibration() {
+  using namespace std::filesystem;
+  auto title = tr("Load Configuration");
+  auto files = tr("JSON files (*.json *.JSON)");
+  auto p = path(QFileDialog::getOpenFileName(this, title, "", files).toStdString());
+  if (!p.has_filename()) return;
+  nlohmann::json j;
+  try {
+    j = from_json_file(std::string(p));
+    calibration = j;
+    setup_calibration_table_items();
+    update_calibration_info();
+  } catch (const std::runtime_error & ex) {
+    QMessageBox msgBox;
+    auto txt = fmt::format("Loading calibration from {} failed", std::string(p));
+    msgBox.setText(txt.c_str());
+    msgBox.setDetailedText(ex.what());
+    msgBox.exec();
+  }
+
 }

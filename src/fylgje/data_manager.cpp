@@ -81,29 +81,26 @@ bool bifrost::data::Manager::includes(int arc, int triplet, int a, int b) const 
 
 
 
-bool bifrost::data::Manager::add(int fiber, int group, int a, int b, double time, bifrost::data::Filter filter){
+bool bifrost::data::Manager::add(int fiber, int group, int a, int b, double time){
     auto arc_ = arc(group);
     auto triplet_ = triplet(fiber, group);
     if (arc_ < 0 || arc_ >= arcs || triplet_ < 0 || triplet_ >= triplets) {
         return false;
     }
-    if (filter != Filter::none){
-      // filter == positive && included || filter == negative && excluded; continue
-      if (includes(arc_, triplet_, a, b) ^ (filter == Filter::positive)) {
-        return false;
+    auto allowed = includes(arc_, triplet_, a, b);
+    if (allowed) {
+      if (auto p = pixel(arc_, triplet_, a, b); (p > 0 && p <= total_pixels)) {
+        pixel_data[p - 1] += 1;
       }
-    }
-    if (auto p = pixel(arc_, triplet_, a, b); (p > 0 && p <= total_pixels)) {
-      pixel_data[p-1] += 1;
     }
 
     bool ok{true};
-    ok &= add_1D(arc_, triplet_, a, b, time);
-    ok &= add_2D(arc_, triplet_, a, b, time);
+    ok &= add_1D(arc_, triplet_, a, b, time, allowed);
+    ok &= add_2D(arc_, triplet_, a, b, time, allowed);
     return ok;
 }
 
-bool bifrost::data::Manager::add_1D(int arc, int triplet, int a, int b, double time){
+bool bifrost::data::Manager::add_1D(int arc, int triplet, int a, int b, double time, bool allowed){
   auto t_a = std::make_pair(Type::a, hist_a_or_b(a, SHIFT1D, BIN1D));
   auto t_b = std::make_pair(Type::b, hist_a_or_b(b, SHIFT1D, BIN1D));
   auto t_p = std::make_pair(Type::p, hist_p(a+b, SHIFT1D, BIN1D));
@@ -112,26 +109,32 @@ bool bifrost::data::Manager::add_1D(int arc, int triplet, int a, int b, double t
   if (t_a.second < 0 || t_b.second < 0 || t_p.second < 0 || t_x.second < 0 || t_t.second < 0) {
       return false;
   }
-  for (auto [t, h]: {t_a, t_b, t_p, t_x, t_t}) {
-    auto this_key = this->key(arc, triplet, t);
-    if (!data.count(this_key)) {
-      std::stringstream ss;
-      ss << t;
-      fmt::print("arc={}, triplet={}, type={} does not exist in managed data\n", arc, triplet, ss.str());
-      return false;
-    }
-    if (static_cast<size_t>(h) < data.at(this_key).size()){
-      data.at(this_key).at(h) += 1;
-    } else {
-      std::stringstream ss;
-      ss << t;
-      fmt::print("arc={}, triplet={}, type={} at a={}, b={} time={} given out of bound index {}\n", arc, triplet, ss.str(), a, b, time, h);
+  std::vector<std::pair<map_t<data_t> *, bool>> each{{{&everything, true}, {&included, allowed}, {&excluded, !allowed}}};
+  for (auto & [data, tf]: each) {
+    if (tf) {
+      for (auto [t, h]: {t_a, t_b, t_p, t_x, t_t}) {
+        auto this_key = this->key(arc, triplet, t);
+        if (!data->count(this_key)) {
+          std::stringstream ss;
+          ss << t;
+          fmt::print("arc={}, triplet={}, type={} does not exist in managed data\n", arc, triplet, ss.str());
+          return false;
+        }
+        if (static_cast<size_t>(h) < data->at(this_key).size()) {
+          data->at(this_key).at(h) += 1;
+        } else {
+          std::stringstream ss;
+          ss << t;
+          fmt::print("arc={}, triplet={}, type={} at a={}, b={} time={} given out of bound index {}\n", arc, triplet,
+                     ss.str(), a, b, time, h);
+        }
+      }
     }
   }
   return true;
 }
 
-bool bifrost::data::Manager::add_2D(int arc, int triplet, int full_a, int full_b, double full_t){
+bool bifrost::data::Manager::add_2D(int arc, int triplet, int full_a, int full_b, double full_t, bool allowed){
   auto a = hist_a_or_b(full_a, SHIFT2D, BIN2D);
   auto b = hist_a_or_b(full_b, SHIFT2D, BIN2D);
   auto p = hist_p(full_a+full_b, SHIFT2D, BIN2D);
@@ -139,120 +142,107 @@ bool bifrost::data::Manager::add_2D(int arc, int triplet, int full_a, int full_b
   auto t = hist_t(full_t, BIN2D);
   if (a < 0 || b < 0 || p < 0 || x < 0 || t < 0) return false;
   std::vector<std::tuple<Type, int, int>> t_i_j {{Type::ab, a, b}, {Type::pt, p, t}, {Type::xt, x, t}, {Type::xp, x, p}};
-  for (auto [y, i, j]: t_i_j){
-    auto this_key = this->key(arc, triplet, y);
-    if (!data.count(this_key)) {
-      std::stringstream ss;
-      ss << y;
-      fmt::print("arc={}, triplet={}, type={} does not exist in managed data\n", arc, triplet, ss.str());
-      return false;
-    }
-    auto ij = i * BIN2D + j;
-    if (static_cast<size_t>(ij) < data.at(this_key).size()){
-      data.at(this_key).at(ij) += 1;
-    } else {
-      std::stringstream ss;
-      ss << y;
-      fmt::print("arc={}, triplet={}, type={} at a={}, b={} time={} given out of bound index ({}, {})\n", arc, triplet, ss.str(), full_a, full_b, time, i, j);
+  std::vector<std::pair<map_t<data_t> *, bool>> each{{{&everything, true}, {&included, allowed}, {&excluded, !allowed}}};
+  for (auto & [data, tf]: each) {
+    if (tf) {
+      for (auto [y, i, j]: t_i_j) {
+        auto this_key = this->key(arc, triplet, y);
+        if (!data->count(this_key)) {
+          std::stringstream ss;
+          ss << y;
+          fmt::print("arc={}, triplet={}, type={} does not exist in managed data\n", arc, triplet, ss.str());
+          return false;
+        }
+        auto ij = i * BIN2D + j;
+        if (static_cast<size_t>(ij) < data->at(this_key).size()) {
+          data->at(this_key).at(ij) += 1;
+        } else {
+          std::stringstream ss;
+          ss << y;
+          fmt::print("arc={}, triplet={}, type={} at a={}, b={} time={} given out of bound index ({}, {})\n", arc,
+                     triplet, ss.str(), full_a, full_b, time, i, j);
+        }
+      }
     }
   }
   return true;
 }
 
-double bifrost::data::Manager::max() const {
-    double x{-1};
-    for (int a=0; a<arcs; ++a){
-        auto y = max(a);
-        if (y > x) x = y;
-    }
-    return x;
-}
-
-double bifrost::data::Manager::max(int arc) const {
-    double x{-1};
-    for (int t=0; t<triplets; ++t){
-        auto y = max(arc, t);
-        if (y > x) x = y;
-    }
-    return x;
-}
-
-double bifrost::data::Manager::max(int arc, int triplet) const {
-    double x{-1};
-    if (arc < 0 || arc >= arcs || triplet < 0 || triplet >= triplets) return x;
-    for (auto t: TYPEND){
-        auto y = max(arc, triplet, t);
-        if (y > x) x = y;
-    }
-    return x;
-}
-
-double bifrost::data::Manager::max(int arc, Type type) const {
-    double x{-1};
-    for (int t=0; t<triplets; ++t){
-      auto y = max(arc, t, type);
-      if (y > x) x = y;
-    }
-    return x;
-}
-
-double bifrost::data::Manager::max(int arc, int triplet, bifrost::data::Type t) const {
-  return max(key(arc, triplet, t));
-}
-
-double bifrost::data::Manager::max(bifrost::data::key_t k) const {
-  return is_1D(key_type(k)) ? max_1D(k) : max_2D(k);
-}
-
-double bifrost::data::Manager::min() const {
-  double x{max()};
-  for (int a=0; a<arcs; ++a){
-    auto y = min(a);
-    if (y < x) x = y;
-  }
+double bifrost::data::Manager::max(Filter which) const {
+  double x{std::numeric_limits<double>::lowest()};
+  for (int a=0; a<arcs; ++a) if (auto y = max(a, which); y > x) x = y;
   return x;
 }
 
-double bifrost::data::Manager::min(int arc) const {
-  double x{max(arc)};
-  for (int t=0; t<triplets; ++t){
-    auto y = min(arc, t);
-    if (y < x) x = y;
-  }
+double bifrost::data::Manager::max(int arc, Filter which) const {
+  double x{std::numeric_limits<double>::lowest()};
+  for (int t=0; t<triplets; ++t) if (auto y = max(arc, t, which); y > x) x = y;
   return x;
 }
 
-double bifrost::data::Manager::min(int arc, int triplet) const {
-  double x{max(arc, triplet)};
+double bifrost::data::Manager::max(int arc, int triplet, Filter which) const {
+  double x{std::numeric_limits<double>::lowest()};
   if (arc < 0 || arc >= arcs || triplet < 0 || triplet >= triplets) return x;
-  for (auto t: TYPEND){
-    auto y = min(arc, triplet, t);
-    if (y < x) x = y;
-  }
+  for (auto t: TYPEND) if (auto y = max(arc, triplet, t, which); y > x) x = y;
   return x;
 }
 
-double bifrost::data::Manager::min(int arc, Type type) const {
-  double x{max(arc, type)};
-  for (int t=0; t<triplets; ++t){
-    auto y = min(arc, t, type);
-    if (y < x) x = y;
-  }
+double bifrost::data::Manager::max(int arc, Type type, Filter which) const {
+  double x{std::numeric_limits<double>::lowest()};
+  for (int t=0; t<triplets; ++t)if (auto y = max(arc, t, type, which); y > x) x = y;
   return x;
 }
 
-double bifrost::data::Manager::min(int arc, int triplet, bifrost::data::Type t) const {
-  return is_1D(t) ? min_1D(arc, triplet, t) : min_2D(arc, triplet, t);
+double bifrost::data::Manager::max(int arc, int triplet, bifrost::data::Type t, Filter which) const {
+  return max(key(arc, triplet, t), which);
+}
+
+double bifrost::data::Manager::max(bifrost::data::key_t k, Filter which) const {
+  return is_1D(key_type(k)) ? max_1D(k, which) : max_2D(k, which);
+}
+
+double bifrost::data::Manager::min(Filter which) const {
+  double x{(std::numeric_limits<double>::max)()};
+  for (int a=0; a<arcs; ++a) if (auto y = min(a, which);y < x) x = y;
+  return x;
+}
+
+double bifrost::data::Manager::min(int arc, Filter which) const {
+  double x{(std::numeric_limits<double>::max)()};
+  for (int t=0; t<triplets; ++t) if (auto y = min(arc, t, which); y < x) x = y;
+  return x;
+}
+
+double bifrost::data::Manager::min(int arc, int triplet, Filter which) const {
+  double x{(std::numeric_limits<double>::max)()};
+  if (arc < 0 || arc >= arcs || triplet < 0 || triplet >= triplets) return x;
+  for (auto t: TYPEND) if (auto y = min(arc, triplet, t, which); y < x) x = y;
+  return x;
+}
+
+double bifrost::data::Manager::min(int arc, Type type, Filter which) const {
+  double x{(std::numeric_limits<double>::max)()};
+  for (int t=0; t<triplets; ++t) if (auto y = min(arc, t, type, which); y < x) x = y;
+  return x;
+}
+
+double bifrost::data::Manager::min(int arc, int triplet, bifrost::data::Type t, Filter which) const {
+  return min(key(arc, triplet, t), which);
+}
+
+double bifrost::data::Manager::min(bifrost::data::key_t k, Filter which) const {
+  return is_1D(key_type(k)) ? min_1D(k, which) : min_2D(k, which);
 }
 
 
-bifrost::data::Manager::D1 bifrost::data::Manager::data_1D(int arc, int triplet, bifrost::data::Type t) const {
-  return data_1D(this->key(arc, triplet, t));
+bifrost::data::Manager::D1 bifrost::data::Manager::data_1D(int arc, int triplet, bifrost::data::Type t, Filter which) const {
+  return data_1D(this->key(arc, triplet, t), which);
 }
 
-bifrost::data::Manager::D1 bifrost::data::Manager::data_1D(bifrost::data::key_t k) const {
+bifrost::data::Manager::D1 bifrost::data::Manager::data_1D(bifrost::data::key_t k, Filter which) const {
     auto d = bifrost::data::Manager::D1();
     auto this_type = key_type(k);
+    const auto & data{which == Filter::none ? everything : which == Filter::positive ? included : excluded};
     if (data.count(k) && bins_1d.count(this_type)){
       auto full = data.at(k);
       auto bins = bins_1d.at(this_type);
@@ -275,54 +265,53 @@ bifrost::data::Manager::D1 bifrost::data::Manager::data_1D(bifrost::data::key_t 
     return d;
 }
 
-bifrost::data::Manager::D2 * bifrost::data::Manager::data_2D(int arc, int triplet, bifrost::data::Type t) const {
-  return data_2D(key(arc, triplet, t));
+bifrost::data::Manager::D2 * bifrost::data::Manager::data_2D(int arc, int triplet, bifrost::data::Type t, Filter which) const {
+  return data_2D(key(arc, triplet, t), which);
 }
 
-bifrost::data::Manager::D2 * bifrost::data::Manager::data_2D(bifrost::data::key_t k) const {
-    // translate 2d to 1d axes
-    auto this_type = key_type(k);
-    auto [nx, ny] = bins_2D(this_type);
-    int bx{BIN2D/nx/2}, by{BIN2D/ny/2};
-    double norm{static_cast<double>(BIN2D)*static_cast<double>(BIN2D)/static_cast<double>(nx)/static_cast<double>(ny)};
+bifrost::data::Manager::D2 * bifrost::data::Manager::data_2D(bifrost::data::key_t k, Filter which) const {
+  // translate 2d to 1d axes
+  auto this_type = key_type(k);
+  auto [nx, ny] = bins_2D(this_type);
+  int bx{BIN2D/nx/2}, by{BIN2D/ny/2};
+  double norm{static_cast<double>(BIN2D)*static_cast<double>(BIN2D)/static_cast<double>(nx)/static_cast<double>(ny)};
 
-    auto d = new ::bifrost::data::Manager::D2(nx, ny, QCPRange(bx, BIN2D-bx), QCPRange(by, BIN2D-by));
-    d->fill(0);
-    if (data.count(k)){
-      auto full = data.at(k);
-      if (nx == BIN2D && ny == BIN2D){
-        for (int ix=0; ix < nx; ++ix){
-          for (int iy=0; iy < ny; ++iy){
-            d->setCell(ix, iy, full.at(ix * BIN2D + iy));
-          }
+  auto d = new ::bifrost::data::Manager::D2(nx, ny, QCPRange(bx, BIN2D-bx), QCPRange(by, BIN2D-by));
+  d->fill(0);
+  const auto & data{which == Filter::none ? everything : which == Filter::positive ? included : excluded};
+  if (data.count(k)){
+    auto full = data.at(k);
+    if (nx == BIN2D && ny == BIN2D){
+      for (int ix=0; ix < nx; ++ix){
+        for (int iy=0; iy < ny; ++iy){
+          d->setCell(ix, iy, full.at(ix * BIN2D + iy));
         }
-      } else {
-        auto rx = BIN2D / nx;
-        auto ry = BIN2D / ny;
-        for (int ix=0; ix < nx; ++ix){
-          for (int iy=0; iy < ny; ++iy){
-            double tmp{0.};
-            for (int jx=0; jx < rx; ++jx){
-              for (int jy=0; jy < ry; ++jy){
-                auto z = (ix * rx + jx) * BIN2D + (iy * ry + jy);
-                tmp += full.at(z);
-              }
+      }
+    } else {
+      auto rx = BIN2D / nx;
+      auto ry = BIN2D / ny;
+      for (int ix=0; ix < nx; ++ix){
+        for (int iy=0; iy < ny; ++iy){
+          double tmp{0.};
+          for (int jx=0; jx < rx; ++jx){
+            for (int jy=0; jy < ry; ++jy){
+              auto z = (ix * rx + jx) * BIN2D + (iy * ry + jy);
+              tmp += full.at(z);
             }
-            d->setCell(ix, iy, tmp/norm);
           }
+          d->setCell(ix, iy, tmp/norm);
         }
       }
     }
-    return d;
+  }
+  return d;
 }
 
 
-int bifrost::data::Manager::max_1D(int arc, int triplet, bifrost::data::Type t) const {
-  return max_1D(key(arc, triplet, t));
-}
-int bifrost::data::Manager::max_1D(bifrost::data::key_t k) const {
-  int value{-1};
+int bifrost::data::Manager::max_1D(bifrost::data::key_t k, Filter which) const {
+  int value{std::numeric_limits<int>::lowest()};
   auto this_type = key_type(k);
+  const auto & data{which == Filter::none ? everything : which == Filter::positive ? included : excluded};
   if (data.count(k) && bins_1d.count(this_type)){
     auto full = data.at(k);
     auto bins = bins_1d.at(this_type);
@@ -345,14 +334,11 @@ int bifrost::data::Manager::max_1D(bifrost::data::key_t k) const {
   return value;
 }
 
-int bifrost::data::Manager::max_2D(int arc, int triplet, bifrost::data::Type t) const {
-  return max_2D(key(arc, triplet ,t));
-}
-
-int bifrost::data::Manager::max_2D(bifrost::data::key_t k) const {
+int bifrost::data::Manager::max_2D(bifrost::data::key_t k, Filter which) const {
   auto [nx, ny] = bins_2D(key_type(k));
-  int value{-1};
+  int value{std::numeric_limits<int>::lowest()};
   double norm{static_cast<double>(BIN2D)*static_cast<double>(BIN2D)/static_cast<double>(nx)/static_cast<double>(ny)};
+  const auto & data{which == Filter::none ? everything : which == Filter::positive ? included : excluded};
   if (data.count(k)){
     auto & full = data.at(k);
     if (nx == BIN2D && ny == BIN2D){
@@ -382,12 +368,13 @@ int bifrost::data::Manager::max_2D(bifrost::data::key_t k) const {
 }
 
 
-int bifrost::data::Manager::min_1D(int arc, int triplet, bifrost::data::Type t) const {
-  auto this_key = this->key(arc, triplet, t);
-  int value{max_1D(arc, triplet, t)};
-  if (data.count(this_key) && bins_1d.count(t)){
-    auto full = data.at(this_key);
-    auto bins = bins_1d.at(t);
+int bifrost::data::Manager::min_1D(bifrost::data::key_t k, Filter which) const {
+  auto this_type = key_type(k);
+  int value{(std::numeric_limits<int>::max)()};
+  const auto & data{which == Filter::none ? everything : which == Filter::positive ? included : excluded};
+  if (data.count(k) && bins_1d.count(this_type)){
+    auto full = data.at(k);
+    auto bins = bins_1d.at(this_type);
     if (BIN1D == bins){
       for (int i=0; i<BIN1D; ++i){
         if (full.at(i) < value) value = full.at(i);
@@ -407,13 +394,14 @@ int bifrost::data::Manager::min_1D(int arc, int triplet, bifrost::data::Type t) 
   return value;
 }
 
-int bifrost::data::Manager::min_2D(int arc, int triplet, bifrost::data::Type t) const {
-  auto this_key = this->key(arc, triplet, t);
-  auto [nx, ny] = bins_2D(t);
+int bifrost::data::Manager::min_2D(bifrost::data::key_t k, Filter which) const {
+  auto this_type = key_type(k);
+  auto [nx, ny] = bins_2D(this_type);
   double norm{static_cast<double>(BIN2D)*static_cast<double>(BIN2D)/static_cast<double>(nx)/static_cast<double>(ny)};
-  auto value = max_2D(arc, triplet, t) * norm;
-  if (data.count(this_key)){
-    auto full = data.at(this_key);
+  int value{(std::numeric_limits<int>::max)()};
+  const auto & data{which == Filter::none ? everything : which == Filter::positive ? included : excluded};
+  if (data.count(k)){
+    auto full = data.at(k);
     if (nx == BIN2D && ny == BIN2D){
       for (int ix=0; ix < nx; ++ix){
         for (int iy=0; iy < ny; ++iy){
