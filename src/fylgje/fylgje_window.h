@@ -75,6 +75,10 @@ public:
     void set_time_historical();
     void set_time_fixed();
 
+    void set_filter_all(){plot_filter = ::bifrost::data::Filter::none; plot();}
+    void set_filter_included(){plot_filter = ::bifrost::data::Filter::positive; plot();}
+    void set_filter_excluded(){plot_filter = ::bifrost::data::Filter::negative; plot();}
+
     // gateway, uses private flags to determine which plot type is called
     void plot();
 
@@ -101,7 +105,9 @@ private:
   void setup_consumer();
   void setup_calibration();
   void setup_calibration_table();
+  void setup_calibration_table_items();
   void setup_calibration_info();
+  void update_calibration_info();
 
   void set_intensity_limits();
   void get_intensity_limits();
@@ -139,6 +145,7 @@ private:
 
 
   void save_calibration();
+  void load_calibration();
 
 
 private:
@@ -157,7 +164,8 @@ private:
     std::string broker;
     std::string topic;
 
-    ::bifrost::data::Manager * data, * included_data, * excluded_data;
+    ::bifrost::data::Manager * data;
+    ::bifrost::data::Filter plot_filter{::bifrost::data::Filter::none};
     PlotManager * plots;
     WorkerThread * consumer{};
 
@@ -183,5 +191,10 @@ private:
       }
       return static_cast<int>(i);
     }
+
+    QLineEdit * calibration_info{nullptr};
+    QTableWidget * calibration_table{nullptr};
+    std::vector<QTableWidgetItem *> calibration_table_items;
+    std::vector<std::pair<std::string, std::function<QTableWidgetItem*(int,int,int,CalibrationUnit *)>>> calibration_table_columns;
 };
 #endif // MAINWINDOW_H
