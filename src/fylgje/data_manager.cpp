@@ -512,3 +512,109 @@ std::vector<unsigned long long> bifrost::data::Manager::type_dimensions(Type typ
     default: return {};
   }
 }
+
+void bifrost::data::Manager::save_to(hdf5::node::Group group) const {
+  std::string creator{"fylgje"};
+  std::string version{"v0.0.1"};
+  std::string instrument{"BIFROST"};
+
+  group.attributes.create_from("creator", creator);
+  group.attributes.create_from("version", version);
+  group.attributes.create_from("instrument", instrument);
+  group.attributes.create_from("arcs", arcs);
+  group.attributes.create_from("triplets", triplets);
+  group.attributes.create_from("tubes", tubes_per_triplet);
+  group.attributes.create_from("pixels", pixels_per_tube);
+
+  std::vector<std::string> pixel_order{{"arcs", "tubes", "triplets"}};
+  std::vector<std::string> data_order{{"arc"}, {"triplets"}, {"type"}};
+  group.attributes.create_from("pixel_order", pixel_order);
+  group.attributes.create_from("data_order", data_order);
+
+  std::vector<std::pair<std::string, const map_t<data_t>*>> pairs{
+      {{"everything", &everything}, {"included", &included}, {"excluded", &excluded}}
+  };
+  // all datasets are integer valued
+  auto datatype = hdf5::datatype::create<int>();
+  // and we know their final size already, so use contiguous layout
+  hdf5::property::DatasetCreationList datasetCreationList;
+  datasetCreationList.layout(hdf5::property::DatasetLayout::CONTIGUOUS);
+
+  // bin center values for 1-D and 2-D axes:
+  // TODO add units for each axis
+  auto axg = group.create_group("axes");
+  auto ax1 = axg.create_group("1d");
+  auto ax2 = axg.create_group("2d");
+  auto dtf = hdf5::datatype::create<double>();
+  for (auto & t: TYPE1D){
+    auto dn = type_dataset_name(t);
+    auto ds1 = hdf5::dataspace::Simple({BIN1D+1});
+    auto ds2 = hdf5::dataspace::Simple({BIN2D+1});
+    auto d1 = ax1.create_dataset(dn, dtf, ds1, datasetCreationList);
+    auto d2 = ax2.create_dataset(dn, dtf, ds2, datasetCreationList);
+    d1.attributes.create_from("axes", axes_names(t));
+    d2.attributes.create_from("axes", axes_names(t));
+    d1.write(axis(t, BIN1D+1));
+    d2.write(axis(t, BIN2D+1));
+  }
+  std::string intensity_unit{"counts"};
+  for (auto & [name, data]: pairs){
+    auto dg = group.create_group(name);
+    for (int a = 0; a < arcs; ++a){
+      auto arc_name = fmt::format("arc{}", a);
+      auto da = dg.create_group(arc_name);
+      for (int t = 0; t < triplets; ++t){
+        auto triplet_name = fmt::format("triplet{}", t);
+        auto dt = da.create_group(triplet_name);
+        for (auto k: TYPEND){
+          auto dataset_name = type_dataset_name(k);
+          auto dsg = dt.create_group(dataset_name);
+          auto dataspace = hdf5::dataspace::Simple(type_dimensions(k));
+          auto ds = dsg.create_dataset("signal", datatype, dataspace, datasetCreationList);
+          auto the_axes = axes_names(k);
+          auto nax = the_axes.size();
+          for (auto & ax: the_axes){
+            auto p = hdf5::Path(fmt::format("./{}", ax));
+            dsg.create_link(p, (nax == 1 ? ax1 : ax2).get_dataset(p));
+          }
+          ds.attributes.create_from("axes", the_axes);
+          ds.attributes.create_from("unit", intensity_unit);
+          ds.write(data->at(key(a, t, k)));
+        }
+      }
+    }
+  }
+  // plus stash the pixel data:
+  auto dimensions = hdf5::Dimensions({pixel_data.size()});
+  auto pixeldataspace = hdf5::dataspace::Simple(dimensions);
+  auto pds = group.create_dataset("pixels", datatype, pixeldataspace, datasetCreationList);
+  pds.attributes.create_from("wrap_order", pixel_order);
+  pds.write(pixel_data);
+}
+void bifrost::data::Manager::save_to(hdf5::file::File file, std::optional<std::string> group) const {
+  auto root = file.root();
+  std::string name = group.value_or("fylgje");
+  if (root.has_group(name)){
+    throw std::runtime_error(fmt::format("The provided file already has the group /{}", name));
+  }
+  auto gr = root.create_group(name);
+  save_to(gr);
+}
+void bifrost::data::Manager::save_to(std::filesystem::path file, std::optional<std::string> group) const{
+  namespace fs = std::filesystem;
+  auto status = fs::status(file);
+  hdf5::file::File hdf5_file;
+  if (status.type() == fs::file_type::regular || status.type() == fs::file_type::symlink){
+    // then it should be an HDF5 file that we can write to:
+    if (!hdf5::file::is_hdf5_file(std::string(file))) {
+      throw std::runtime_error(fmt::format("{} is not an HDF5 file", std::string(file)));
+    }
+    hdf5_file = hdf5::file::open(std::string(file), hdf5::file::AccessFlags::READWRITE);
+  } else if (status.type() == fs::file_type::not_found){
+    hdf5_file = hdf5::file::create(std::string(file));
+  } else {
+    throw std::runtime_error(fmt::format("{} exists but is not a file", std::string(file)));
+  }
+
+  save_to(hdf5_file, group);
+}
