@@ -30,6 +30,7 @@ class MainWindow : public QMainWindow
     using key_t = ::bifrost::data::key_t;
     using intensity_map_t = ::bifrost::data::map_t<int>;
     enum class Time {Fixed, Historical, Live};
+    enum class PlotType {Unknown, Types, Triplets, Singular};
 public:
     MainWindow(Configuration & Config, Calibration & calibration, QWidget *parent = nullptr);
     ~MainWindow();
@@ -74,6 +75,8 @@ public:
     void set_time_live();
     void set_time_historical();
     void set_time_fixed();
+    void set_time_early(const QDateTime &);
+    void set_time_late(const QDateTime &);
 
     void set_filter_all(){plot_filter = ::bifrost::data::Filter::none; plot();}
     void set_filter_included(){plot_filter = ::bifrost::data::Filter::positive; plot();}
@@ -89,6 +92,7 @@ private:
   void set_triplet(int n, bool plot_now=true);
   void set_int(int_t t, bool plot_now=true);
 
+  PlotType selected_plot_type();
   // ensure there is only 1 full-size canvas, draw the fully specified plot
   void plot_single(int arc, int triplet, int_t int_type);
   // plot all triplets for the specified intensity plot type
@@ -147,6 +151,9 @@ private:
   void save_calibration();
   void load_calibration();
 
+  void setup_data();
+  void save_data();
+
 
 private:
     Ui::MainWindow *ui;
@@ -192,7 +199,6 @@ private:
       return static_cast<int>(i);
     }
 
-    QLineEdit * calibration_info{nullptr};
     QTableWidget * calibration_table{nullptr};
     std::vector<QTableWidgetItem *> calibration_table_items;
     std::vector<std::pair<std::string, std::function<QTableWidgetItem*(int,int,int,CalibrationUnit *)>>> calibration_table_columns;

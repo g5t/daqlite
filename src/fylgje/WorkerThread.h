@@ -31,6 +31,9 @@ public:
   /// \brief Kafka consumer
   ESSConsumer *Consumer;
 
+  void consume_from(int64_t ms_since_utc_epoch);
+  void consume_until(int64_t ms_since_utc_epoch);
+
 private:
   Configuration &configuration;
 

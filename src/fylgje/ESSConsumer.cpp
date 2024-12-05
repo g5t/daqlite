@@ -91,6 +91,37 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
   return ret;
 }
 
+void ESSConsumer::consume_from(int64_t ms_since_utc_epoch){
+  earliest_timestamp = ms_since_utc_epoch < 0 ? 0 : ms_since_utc_epoch;
+  std::vector<RdKafka::TopicPartition*> tps;
+  mConsumer->assignment(tps);
+  set_topic_partition_offset(tps, Time, ms_since_utc_epoch);
+  mConsumer->seek(*tps.front(), 1);
+}
+
+void ESSConsumer::consume_until(int64_t ms_since_utc_epoch){
+  auto duration = std::chrono::system_clock::now().time_since_epoch();
+  auto milliseconds= std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+  latest_timestamp = ms_since_utc_epoch < 0 ? -1 : ms_since_utc_epoch;
+  if (ms_since_utc_epoch < milliseconds){
+    // consume only in the past; do we _need_ to seek backwards?
+    std::vector<RdKafka::TopicPartition*> tps;
+    mConsumer->assignment(tps);
+    set_topic_partition_offset(tps, earliest_timestamp < 0 ? Beginning : Time, earliest_timestamp);
+    mConsumer->seek(*tps.front(), 1);
+  }
+}
+
+void ESSConsumer::consume_all(){
+  std::vector<RdKafka::TopicPartition*> tps;
+  mConsumer->assignment(tps);
+  set_topic_partition_offset(tps, Beginning, 0);
+  mConsumer->seek(*tps.front(), 1);
+}
+
+void ESSConsumer::consume_forever(){
+  latest_timestamp = -1;
+}
 
 void ESSConsumer::set_consumer_offset(ESSConsumer::Start start, int64_t ms_since_utc_epoch) {
   // set the consumer starting point, using the partition's known offsets ...
@@ -101,7 +132,6 @@ void ESSConsumer::set_consumer_offset(ESSConsumer::Start start, int64_t ms_since
   if (resp != RdKafka::ERR_NO_ERROR){
     fmt::print("Failed retrieving metadata: {}\n", err2str(resp));
   }
-  int32_t my_partition{0};
   if (metadataptr == nullptr){
     fmt::print("metadataptr still NULL\n");
   } else {
@@ -130,8 +160,15 @@ void ESSConsumer::set_consumer_offset(ESSConsumer::Start start, int64_t ms_since
     fmt::print("]\n");
   }
 
+  std::vector<RdKafka::TopicPartition*> tps;
+  tps.push_back(RdKafka::TopicPartition::create(configuration.Kafka.Topic, my_partition));
+  set_topic_partition_offset(tps, start, ms_since_utc_epoch);
+  mConsumer->assign(tps); // since consumption hasn't started, we seek by assigning the (topic, partition, offset)
+}
+
+void ESSConsumer::set_topic_partition_offset(std::vector<RdKafka::TopicPartition*>& tps, ESSConsumer::Start start, int64_t ms_since_utc_epoch){
   int64_t low{0}, high{0};
-  resp = mConsumer->get_watermark_offsets(configuration.Kafka.Topic, my_partition, &low, &high);
+  auto resp = mConsumer->get_watermark_offsets(configuration.Kafka.Topic, my_partition, &low, &high);
   if (resp != RdKafka::ERR_NO_ERROR) {
     fmt::print("Failed remembering watermark offsets for {} (partition {}): {}\n", configuration.Kafka.Topic, my_partition, err2str(resp));
   }
@@ -143,10 +180,8 @@ void ESSConsumer::set_consumer_offset(ESSConsumer::Start start, int64_t ms_since
   }
   fmt::print("Valid offsets for {} (partition: {}) are in range ({}, {})\n", configuration.Kafka.Topic, my_partition, low, high);
 
-  std::vector<RdKafka::TopicPartition*> tps;
-  tps.push_back(RdKafka::TopicPartition::create(configuration.Kafka.Topic, my_partition));
-  tps.front()->set_offset(start == Beginning ? low : start == End ? high : ms_since_utc_epoch);
-  if (start == Time){
+  tps.front()->set_offset(start == ESSConsumer::Start::Beginning ? low : start == ESSConsumer::Start::End ? high : ms_since_utc_epoch);
+  if (start == ESSConsumer::Start::Time){
     // now handle converting a time to an offset
     resp = mConsumer->offsetsForTimes(tps, 1000);
     if (resp != RdKafka::ERR_NO_ERROR){
@@ -154,7 +189,6 @@ void ESSConsumer::set_consumer_offset(ESSConsumer::Start start, int64_t ms_since
                  ms_since_utc_epoch, configuration.Kafka.Topic, my_partition, err2str(resp));
     }
   }
-  mConsumer->assign(tps); // since consumption hasn't started, we seek by assigning the (topic, partition, offset)
 }
 
 
@@ -232,10 +266,12 @@ ESSConsumer::Status ESSConsumer::handleMessage(RdKafka::Message *Message) {
 
   case RdKafka::ERR_NO_ERROR: {
       uint32_t count{0};
-      if (RawReadoutMessageBufferHasIdentifier(Message->payload())) {
+      if (latest_timestamp < 0 || Message->timestamp().timestamp < latest_timestamp) {
+        if (RawReadoutMessageBufferHasIdentifier(Message->payload())) {
           count = processAR51Data(Message);
-      } else {
+        } else {
           printf("Not a ar51 Kafka message!\n");
+        }
       }
       return count ? Update : Continue;
   }

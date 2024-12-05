@@ -73,6 +73,7 @@ MainWindow::MainWindow(Configuration & Config, Calibration & calibration, QWidge
   setup_intensity_limits();
   setup_gradient_list();
   setup_calibration();
+  setup_data();
   setup();
 }
 
@@ -114,6 +115,8 @@ void MainWindow::setup_time_limits(){
     dt->setDateTime(now);
     dt->setMinimumDateTime(now.addDays(-28));
   }
+  connect(ui->timeBeginning, &QDateTimeEdit::dateTimeChanged, this, &MainWindow::set_time_early);
+  connect(ui->timeEnding, &QDateTimeEdit::dateTimeChanged, this, &MainWindow::set_time_late);
 }
 
 
@@ -124,6 +127,8 @@ void MainWindow::set_time_live(){
     dt->setDateTime(now);
     dt->setEnabled(false);
   }
+  consumer->Consumer->consume_forever();
+  consumer->Consumer->consume_from(now.toMSecsSinceEpoch());
 }
 void MainWindow::set_time_historical(){
   time_status = Time::Historical;
@@ -135,6 +140,20 @@ void MainWindow::set_time_fixed(){
   time_status = Time::Fixed;
   for (auto & dt: {ui->timeBeginning, ui->timeEnding}){
     dt->setEnabled(false);
+  }
+  consumer->Consumer->consume_until(ui->timeEnding->dateTime().toMSecsSinceEpoch());
+  consumer->Consumer->consume_from(ui->timeBeginning->dateTime().toMSecsSinceEpoch());
+}
+
+void MainWindow::set_time_early(const QDateTime & time){
+  if (time_status == Time::Historical){
+    reset();
+    consumer->consume_from(time.toMSecsSinceEpoch());
+  }
+}
+void MainWindow::set_time_late(const QDateTime & time){
+  if (time_status == Time::Historical){
+    consumer->consume_until(time.toMSecsSinceEpoch());
   }
 }
 
@@ -367,7 +386,7 @@ void MainWindow::plot_single(int arc, int triplet, int_t t){
       plots->plot_all_included_excluded(0, 0, data->axis(t), all, included, excluded, 0.0, intensity, is_log);
     }
     if (PlotManager::Dim::two == d){
-        plots->plot(0, 0, data->data_2D(arc, triplet, t, plot_filter), 0.0, intensity, is_log, gradient, is_inverted);
+        plots->plot(0, 0, data->data_2D(arc, triplet, t, plot_filter), 0.0, intensity, is_log, gradient, is_inverted, {}, {}, {});
     }
 }
 
@@ -400,7 +419,7 @@ void MainWindow::plot_one_type(int arc, int_t t){
       for (int i=0; i<3; ++i) {
           for (int j=0; j<3; ++j) {
             auto key = data->key(arc, i*3+j, t);
-            plots->plot(i, j, data->data_2D(arc, i*3+j, t, plot_filter), 0.0, 1.0*max[key], is_log, gradient, is_inverted);
+            plots->plot(i, j, data->data_2D(arc, i*3+j, t, plot_filter), 0.0, 1.0*max[key], is_log, gradient, is_inverted, {}, {}, {});
           }
       }
   }
@@ -424,7 +443,7 @@ void MainWindow::plot_one_triplet(int arc, int triplet){
   auto is_inverted = ui->colormapInvertedCheck->isChecked();
   for (int t: {3, 4, 6, 7}){
     auto key = data->key(arc, triplet, type_order[t]);
-    plots->plot(i[t], j[t], data->data_2D(arc, triplet, type_order[t], plot_filter), 0.0, 1.0*max[key], is_log, gradient, is_inverted);
+    plots->plot(i[t], j[t], data->data_2D(arc, triplet, type_order[t], plot_filter), 0.0, 1.0*max[key], is_log, gradient, is_inverted, {}, {}, {});
   }
 }
 
@@ -448,6 +467,14 @@ void MainWindow::pause_toggled(bool checked)
 
 bool MainWindow::is_paused(){
   return ui->pauseButton->isChecked();
+}
+
+
+MainWindow::PlotType MainWindow::selected_plot_type(){
+  if (ui->tripletBox->isChecked() && !ui->intTypeBox->isChecked()) return PlotType::Types;
+  if (ui->intTypeBox->isChecked() && !ui->tripletBox->isChecked()) return PlotType::Triplets;
+  if (ui->intTypeBox->isChecked() && ui->tripletBox->isChecked()) return PlotType::Singular;
+  return PlotType::Unknown;
 }
 
 
@@ -529,32 +556,23 @@ void MainWindow::set_intensity_limits() {
 }
 
 void MainWindow::auto_intensity_limits() {
-  if (ui->tripletBox->isChecked() && !ui->intTypeBox->isChecked()){
-    auto_intensity_limits_types();
-  } else if (ui->intTypeBox->isChecked() && !ui->tripletBox->isChecked()){
-    auto_intensity_limits_triplets();
-  } else if (ui->intTypeBox->isChecked() && ui->tripletBox->isChecked()){
-    auto_intensity_limits_singular();
-  }
+  auto pt = selected_plot_type();
+  if (pt == PlotType::Types) auto_intensity_limits_types();
+  if (pt == PlotType::Triplets) auto_intensity_limits_triplets();
+  if (pt == PlotType::Singular) auto_intensity_limits_singular();
 }
 
 void MainWindow::update_intensity_limits() {
-  if (ui->tripletBox->isChecked() && !ui->intTypeBox->isChecked()){
-    set_intensity_limits_types();
-  } else if (ui->intTypeBox->isChecked() && !ui->tripletBox->isChecked()){
-    set_intensity_limits_triplets();
-  } else if (ui->intTypeBox->isChecked() && ui->tripletBox->isChecked()){
-    set_intensity_limits_singular();
-  }
+  auto pt = selected_plot_type();
+  if (pt == PlotType::Types) set_intensity_limits_types();
+  if (pt == PlotType::Triplets) set_intensity_limits_triplets();
+  if (pt == PlotType::Singular) set_intensity_limits_singular();
 }
 
 void MainWindow::get_intensity_limits(){
-  if (ui->tripletBox->isChecked() && !ui->intTypeBox->isChecked()){
-    get_intensity_limits_triplets();
-  } else if (ui->intTypeBox->isChecked() && !ui->tripletBox->isChecked()){
-    get_intensity_limits_types();
-  } else if (ui->intTypeBox->isChecked() && ui->tripletBox->isChecked()){
-    get_intensity_limits_singular();
-  }
+  auto pt = selected_plot_type();
+  if (pt == PlotType::Types) get_intensity_limits_types();
+  if (pt == PlotType::Triplets) get_intensity_limits_triplets();
+  if (pt == PlotType::Singular) get_intensity_limits_singular();
 }
 

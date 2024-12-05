@@ -7,6 +7,7 @@ set(fylgje_src
   fylgje_window.cpp
   fylgje_overview.cpp
   fylgje_calibration.cpp
+  fylgje_data.cpp
   WorkerThread.cpp
   KafkaConfig.cpp
   ESSConsumer.cpp
@@ -52,6 +53,7 @@ target_link_libraries(
   PRIVATE QPlot
   PRIVATE QtColorWidgets
   PRIVATE Qt6::Widgets
+  PRIVATE h5cpp::h5cpp
 )
 
 target_link_libraries(fylgje

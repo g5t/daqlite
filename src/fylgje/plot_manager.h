@@ -126,7 +126,11 @@ public:
   }
 
 
-  void plot(int i, int j, QCPColorMapData * data, double min, double max, bool is_log, std::string_view gradient, bool is_inverted){
+  void plot(int i, int j, QCPColorMapData * data, double min, double max, bool is_log,
+            std::string_view gradient, bool is_inverted,
+            const std::optional<std::vector<std::pair<double, double>>> & left,
+            const std::optional<std::vector<std::pair<double, double>>> & center,
+            const std::optional<std::vector<std::pair<double, double>>> & right){
     auto k = key(i, j);
     if (!dims.count(k) || dims.at(k) != Dim::two) return;
     if (!images.count(k)) return;
@@ -139,6 +143,35 @@ public:
     im->setGradient(named_colormap(gradient, is_inverted));
     im->setDataScaleType(is_log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
     im->setDataRange(QCPRange(min, max));
+
+    auto poly = [](const std::vector<std::pair<double, double>> & v){
+      std::vector<double> x, y;
+      x.reserve(v.size()+1);
+      y.reserve(v.size()+1);
+      for (const auto & [a, b]: v){
+        x.push_back(a);
+        y.push_back(b);
+      }
+      x.push_back(v.front().first);
+      y.push_back(v.front().second);
+      QVector<double> q_x(x.begin(), x.end());
+      QVector<double> q_y(y.begin(), y.end());
+      return std::make_pair(q_x, q_y);
+    };
+    using ::bifrost::data::Filter;
+    if (left.has_value()){
+      auto [x, y] = poly(left.value());
+      polygons[key(i, j, Filter::negative)]->addData(x, y);
+    }
+    if (center.has_value()){
+      auto [x, y] = poly(center.value());
+      polygons[key(i, j, Filter::none)]->addData(x, y);
+    }
+    if (right.has_value()){
+      auto [x, y] = poly(right.value());
+      polygons[key(i, j, Filter::positive)]->addData(x, y);
+    }
+
   }
 
 
@@ -187,6 +220,7 @@ private:
       //plots[k]->setInteractions(QCP::iRangeDrag| QCP::iRangeZoom | QCP::iSelectPlottables);
     }
     void make_2D(int i, int j, bool flip, type_t t){
+      using ::bifrost::data::Filter;
       dims[key(i, j)] = Dim::two;
       make_plot(i, j, flip, t);
       auto p = plots[key(i, j)];
@@ -204,8 +238,18 @@ private:
       m->setColorScale(s);
       m->setGradient(QCPColorGradient::gpGrayscale);
       m->rescaleDataRange();
-
       images[key(i, j)] = m;
+
+      // abuse the Filter enum to also specify tubes
+      std::vector<std::pair<Filter, QColor>> filter_color{
+          {{Filter::none, Qt::green}, {Filter::positive, Qt::yellow}, {Filter::negative, Qt::magenta}}
+      };
+      for (const auto & [filter, color]: filter_color){
+        auto pk = key(i, j, filter);
+        polygons[pk] = new QCPCurve(flip ? p->yAxis : p->xAxis, flip ? p->xAxis : p->yAxis);
+        polygons[pk]->setLineStyle(QCPCurve::LineStyle::lsLine);
+        polygons[pk]->setPen(QPen(color));
+      }
     }
 
 
@@ -218,6 +262,7 @@ private:
     std::map<int, QCustomPlot *> plots;
     std::map<int, QCPColorMap *> images;
     std::map<int, QCPGraph *> lines;
+    std::map<int, QCPCurve *> polygons;
     std::map<int, Dim> dims;
     std::map<int, type_t> types;
     std::map<int, bool> flipped;
