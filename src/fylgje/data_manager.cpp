@@ -468,3 +468,47 @@ std::ostream & operator<<(std::ostream & os, ::bifrost::data::Type type){
 //  if (std::get<2>(a) > std::get<2>(b)) return 1;
 //  return 0;
 //}
+
+std::vector<std::string> bifrost::data::axes_names(Type type){
+  switch (type){
+    case Type::a: {return {"A"};}
+    case Type::x: {return {"x"};}
+    case Type::p: {return {"p"};}
+    case Type::xp: {return {"x", "p"};}
+    case Type::ab: {return {"A", "B"};}
+    case Type::b: {return {"B"};}
+    case Type::xt: {return {"x", "t"};}
+    case Type::pt: {return {"p", "t"};}
+    case Type::t: {return {"t"};}
+    default: return {};
+  }
+}
+std::string bifrost::data::type_dataset_name(Type type){
+  switch (type){
+    case Type::a: {return "A";}
+    case Type::x: {return "x";}
+    case Type::p: {return "p";}
+    case Type::xp: {return "x_p";}
+    case Type::ab: {return "A_B";}
+    case Type::b: {return "B";}
+    case Type::xt: {return "x_t";}
+    case Type::pt: {return "p_t";}
+    case Type::t: {return "t";}
+    default: return {};
+  }
+}
+
+std::vector<unsigned long long> bifrost::data::Manager::type_dimensions(Type type) const{
+  switch (type){
+    case Type::a: {return {BIN1D};}
+    case Type::x: {return {BIN1D};}
+    case Type::p: {return {BIN1D};}
+    case Type::xp: {return {BIN2D, BIN2D};}
+    case Type::ab: {return {BIN2D, BIN2D};}
+    case Type::b: {return {BIN1D};}
+    case Type::xt: {return {BIN2D, BIN2D};}
+    case Type::pt: {return {BIN2D, BIN2D};}
+    case Type::t: {return {BIN1D};}
+    default: return {};
+  }
+}

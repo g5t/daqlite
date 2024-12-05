@@ -15,10 +15,9 @@ void MainWindow::setup_calibration(){
 void MainWindow::setup_calibration_info(){
   auto layout = ui->calibrationInfoLayout->layout();
   QString message{calibration.info().c_str()};
-  calibration_info = ui->calibrationInfo;
-  calibration_info->setToolTip("Info");
-  layout->addWidget(calibration_info);
-  connect(calibration_info, &QLineEdit::textChanged, this, [&](const QString & text){
+  ui->calibrationInfo->setToolTip("Info");
+  layout->addWidget(ui->calibrationInfo);
+  connect(ui->calibrationInfo, &QLineEdit::textChanged, this, [&](const QString & text){
     calibration.set_info(text.toStdString());
   });
 
@@ -78,9 +77,16 @@ void MainWindow::setup_calibration_table(){
   for (const auto & [label, _]: calibration_table_columns){
     headers << label.c_str();
   }
-  if (calibration_table) free(calibration_table);
-  calibration_table = new QTableWidget(rows, headers.size(), this);
-  layout->addWidget(calibration_table);
+  auto new_calibration_table = new QTableWidget(rows, headers.size(), this);
+  if (calibration_table) {
+    // TODO verify this doesn't cause a segfault
+    layout->replaceWidget(calibration_table, new_calibration_table);
+    delete calibration_table;
+    calibration_table = new_calibration_table;
+  } else {
+    calibration_table = new_calibration_table;
+    layout->addWidget(calibration_table);
+  }
   calibration_table->setHorizontalHeaderLabels(headers);
 
   setup_calibration_table_items();
@@ -90,8 +96,9 @@ void MainWindow::setup_calibration_table_items(){
   auto rows = calibration_table->rowCount();
   auto columns = calibration_table->columnCount();
   calibration_table_items.reserve(rows * columns);
-  // My idea was to keep track of the table items and remove the old ones by hand, but QTableWidget::setItem
-  // seems to do that for us, so this `calibration_table_items` vector isn't necessary?
+  // It's not clear if this item management would be handled by setItem internally:
+  for (auto & item: calibration_table_items) delete item;
+  calibration_table_items.clear();
 
   for (int group=0; group<configuration.Instrument.groups; ++group){
     for (int unit=0; unit<configuration.Instrument.units_per_group; ++unit){

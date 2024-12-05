@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>1036</width>
-    <height>974</height>
+    <height>1050</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1039,7 +1039,14 @@
      <addaction name="actionSave_Calibration"/>
      <addaction name="actionLoad_Calibration"/>
     </widget>
+    <widget class="QMenu" name="menuData">
+     <property name="title">
+      <string>Data</string>
+     </property>
+     <addaction name="actionSaveHDF5"/>
+    </widget>
     <addaction name="menuCalibration"/>
+    <addaction name="menuData"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuFylgje"/>
@@ -1063,6 +1070,11 @@
   <action name="actionLoad_Calibration">
    <property name="text">
     <string>Load JSON</string>
+   </property>
+  </action>
+  <action name="actionSaveHDF5">
+   <property name="text">
+    <string>Save HDF5</string>
    </property>
   </action>
  </widget>

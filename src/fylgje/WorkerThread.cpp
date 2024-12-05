@@ -20,4 +20,11 @@ void WorkerThread::run() {
   }
 }
 
+void WorkerThread::consume_from(int64_t ms_since_utc_epoch){
+  Consumer->consume_from(ms_since_utc_epoch);
+}
 
+
+void WorkerThread::consume_until(int64_t ms_since_utc_epoch){
+  Consumer->consume_until(ms_since_utc_epoch);
+}
