@@ -155,14 +155,15 @@ namespace bifrost::data {
       [[nodiscard]] D2 * data_2D(int arc, int triplet, Type t, Filter) const;
       [[nodiscard]] D2 * data_2D(key_t k, Filter) const;
 
-      [[nodiscard]] AX axis(Type t) const {
-        int bins{0};
-        if (is_1D(t)){
-          if (bins_1d.count(t)) bins = bins_1d.at(t);
-        } else {
-          if (bins_2d.count(t)) bins = bins_2d.at(t);
+      [[nodiscard]] AX axis(Type t, std::optional<int> bins = std::nullopt) const {
+        if (!bins.has_value()) {
+          if (is_1D(t)) {
+            if (bins_1d.count(t)) bins = bins_1d.at(t);
+          } else {
+            if (bins_2d.count(t)) bins = bins_2d.at(t);
+          }
         }
-        AX x(bins);
+        AX x(bins.value());
         double range{1<<15}, start{0};
         if (Type::x == t){
           range = 2;
@@ -171,9 +172,9 @@ namespace bifrost::data {
           range *= 2;
         } else if (Type::t == t){
           range = 1.0 / 14.0;
-          start = 1.0 / 14.0 / 2.0 / (bins + 1);
+          start = 1.0 / 14.0 / 2.0 / (bins.value() + 1);
         }
-        iota_step(x.begin(), x.end(), range / (bins + 1), start);
+        iota_step(x.begin(), x.end(), range / (bins.value() + 1), start);
         return x;
       }
 
@@ -240,81 +241,9 @@ namespace bifrost::data {
     public:
       std::vector<unsigned long long> type_dimensions(Type type) const;
 
-      void save_to(hdf5::node::Group group) const {
-        std::string creator{"fylgje"};
-        std::string version{"v0.0.1"};
-        std::string instrument{"BIFROST"};
-
-        group.attributes.create_from("creator", creator);
-        group.attributes.create_from("version", version);
-        group.attributes.create_from("instrument", instrument);
-        group.attributes.create_from("arcs", arcs);
-        group.attributes.create_from("triplets", triplets);
-        group.attributes.create_from("tubes", tubes_per_triplet);
-        group.attributes.create_from("pixels", pixels_per_tube);
-
-        std::vector<std::string> pixel_order{{"arcs", "tubes", "triplets"}};
-        std::vector<std::string> data_order{{"arc"}, {"triplets"}, {"type"}};
-        group.attributes.create_from("pixel_order", pixel_order);
-        group.attributes.create_from("data_order", data_order);
-
-        std::vector<std::pair<std::string, const map_t<data_t>*>> pairs{
-            {{"everything", &everything}, {"included", &included}, {"excluded", &excluded}}
-        };
-        // all datasets are integer valued
-        auto datatype = hdf5::datatype::create<int>();
-        // and we know their final size already, so use contiguous layout
-        hdf5::property::DatasetCreationList datasetCreationList;
-        datasetCreationList.layout(hdf5::property::DatasetLayout::CONTIGUOUS);
-
-        for (auto & [name, data]: pairs){
-          auto dg = group.create_group(name);
-          for (int a = 0; a < arcs; ++a){
-            for (int t = 0; t < triplets; ++t){
-              for (auto k: TYPEND){
-                auto dataset_name = fmt::format("arc_{}_triplet_{}_{}", a, t, type_dataset_name(k));
-                auto dataspace = hdf5::dataspace::Simple(type_dimensions(k));
-                auto ds = dg.create_dataset(dataset_name, datatype, dataspace, datasetCreationList);
-                ds.attributes.create_from("axes", axes_names(k));
-                ds.write(data->at(key(a, t, k)));
-              }
-            }
-          }
-        }
-        // plus stash the pixel data:
-        auto dimensions = hdf5::Dimensions({pixel_data.size()});
-        auto pixeldataspace = hdf5::dataspace::Simple(dimensions);
-        auto pds = group.create_dataset("pixels", datatype, pixeldataspace, datasetCreationList);
-        pds.attributes.create_from("wrap_order", pixel_order);
-        pds.write(pixel_data);
-      }
-      void save_to(hdf5::file::File file, std::optional<std::string> group = std::nullopt){
-        auto root = file.root();
-        std::string name = group.value_or("fylgje");
-        if (root.has_group(name)){
-          throw std::runtime_error(fmt::format("The provided file already has the group /{}", name));
-        }
-        auto gr = root.create_group(name);
-        save_to(gr);
-      }
-      void save_to(std::filesystem::path file, std::optional<std::string> group = std::nullopt){
-        namespace fs = std::filesystem;
-        auto status = fs::status(file);
-        hdf5::file::File hdf5_file;
-        if (status.type() == fs::file_type::regular || status.type() == fs::file_type::symlink){
-          // then it should be an HDF5 file that we can write to:
-          if (!hdf5::file::is_hdf5_file(std::string(file))) {
-            throw std::runtime_error(fmt::format("{} is not an HDF5 file", std::string(file)));
-          }
-          hdf5_file = hdf5::file::open(std::string(file), hdf5::file::AccessFlags::READWRITE);
-        } else if (status.type() == fs::file_type::not_found){
-          hdf5_file = hdf5::file::create(std::string(file));
-        } else {
-          throw std::runtime_error(fmt::format("{} exists but is not a file", std::string(file)));
-        }
-
-        save_to(hdf5_file, group);
-      }
+      void save_to(std::filesystem::path file, std::optional<std::string> group = std::nullopt) const;
+      void save_to(hdf5::file::File file, std::optional<std::string> group = std::nullopt) const;
+      void save_to(hdf5::node::Group group) const;
     };
 
 }
