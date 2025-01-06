@@ -144,16 +144,16 @@ uint32_t ESSConsumer::processDA00Data(RdKafka::Message *Msg) {
     return 0;
   }
 
-  int64_t MaxTime = *std::max_element(TimeBins.begin(), TimeBins.end());
+  int64_t MaxTime = *std::max_element(BinEdges.begin(), BinEdges.end());
 
   if (MaxTime / mConfig.TOF.Scale > mConfig.TOF.MaxValue) {
     return 0;
   }
 
   mHistogram.add_values(DataBins);
-  mTOFs = TimeBins;
+  mTOFs = BinEdges;
 
-  mConfig.TOF.BinSize = TimeBins.size();
+  mConfig.TOF.BinSize = BinEdges.size() - 1;
 
   EventCount++;
   EventAccept++;
