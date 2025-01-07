@@ -134,24 +134,26 @@ uint32_t ESSConsumer::processDA00Data(RdKafka::Message *Msg) {
   const auto TimeBinsVariable = EvMsg->data()->Get(0);
   const auto DataBinsVariable = EvMsg->data()->Get(1);
 
-  std::vector<int64_t> TimeBins = getDataVector(*TimeBinsVariable);
+  std::vector<int64_t> BinEdges = getDataVector(*TimeBinsVariable);
   std::vector<int64_t> DataBins = getDataVector(*DataBinsVariable);
 
-  if (TimeBins.size() != DataBins.size()) {
+  // Bin edges has one plus element to describe last edge compared to the data which
+  // has as many elements as bins
+  if (BinEdges.size() != DataBins.size() + 1) {
     EventDiscard++;
     return 0;
   }
 
-  int64_t MaxTime = *std::max_element(TimeBins.begin(), TimeBins.end());
+  int64_t MaxTime = *std::max_element(BinEdges.begin(), BinEdges.end());
 
   if (MaxTime / mConfig.TOF.Scale > mConfig.TOF.MaxValue) {
     return 0;
   }
 
   mHistogram.add_values(DataBins);
-  mTOFs = TimeBins;
+  mTOFs = BinEdges;
 
-  mConfig.TOF.BinSize = TimeBins.size();
+  mConfig.TOF.BinSize = BinEdges.size() - 1;
 
   EventCount++;
   EventAccept++;
