@@ -143,7 +143,6 @@ void MainWindow::handleKafkaData(int ElapsedCountMS) {
 
   for (auto &Plot : Plots) {
     Plot->updateData();
-    Plot->plotDetectorImage(false);
   }
 
   Consumer.EventCount = 0;

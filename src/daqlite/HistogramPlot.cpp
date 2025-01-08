@@ -74,26 +74,28 @@ void HistogramPlot::setCustomParameters() {
 void HistogramPlot::plotDetectorImage(bool Force) {
   setCustomParameters();
   mGraph->data()->clear();
-  uint32_t MaxY{1};
 
-  for (unsigned int i = 0; i < HistogramXAxisValues.size(); i++) {
+  for (unsigned int i = 0;
+       (i < HistogramXAxisValues.size()) and (i < HistogramYAxisValues.size());
+       i++) {
     if ((HistogramXAxisValues[i] != 0) or (Force)) {
-      if (HistogramYAxisValues[i] > MaxY) {
-        // Calculate the maximum Y value for scaling
-        MaxY = HistogramYAxisValues[i];
-      }
 
-      double ScaledXValue = static_cast<double>(HistogramXAxisValues[i]) / mConfig.TOF.Scale;
+      double ScaledXValue =
+          static_cast<double>(HistogramXAxisValues[i]) / mConfig.TOF.Scale;
 
       mGraph->addData(ScaledXValue, HistogramYAxisValues[i]);
     }
   }
 
   // yAxis->rescale();
-  if (mConfig.TOF.AutoScaleX) {
-    xAxis->setRange(0, mConfig.TOF.MaxValue * 1.05);
+  if (mConfig.TOF.AutoScaleX && !HistogramXAxisValues.empty()) {
+    double MaxX = *std::max_element(HistogramXAxisValues.begin(),
+                                    HistogramXAxisValues.end());
+    xAxis->setRange(0, MaxX / mConfig.TOF.Scale * 1.05);
   }
-  if (mConfig.TOF.AutoScaleY) {
+  if (mConfig.TOF.AutoScaleY && !HistogramYAxisValues.empty()) {
+    auto MaxY = *std::max_element(HistogramYAxisValues.begin(),
+                                  HistogramYAxisValues.end());
     yAxis->setRange(0, MaxY * 1.05);
   }
   replot();
@@ -104,12 +106,19 @@ void HistogramPlot::updateData() {
   auto t2 = std::chrono::high_resolution_clock::now();
   std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
 
-  std::vector<uint32_t> YAxisValues = mConsumer.readResetHistogram();
-  HistogramXAxisValues = mConsumer.getTofs();
+  // continure the the update only if we have data available from the consumer
+  if (mConsumer.getHistogramSize() == 0 or mConsumer.getTOFsSize() == 0) {
+    return;
+  }
 
-  if (YAxisValues.size() != HistogramXAxisValues.size()) {
-    fmt::print("HistogramPlot::updateData() - TOF and Count vectors are not "
-               "the same size\n");
+  std::vector<uint32_t> YAxisValues = mConsumer.readResetHistogram();
+  auto TofValues = mConsumer.getTofs();
+
+  HistogramXAxisValues = TofValues;
+
+  if (YAxisValues.size() != HistogramXAxisValues.size() - 1) {
+    fmt::print("HistogramPlot::updateData() - Y axis values in not fit for x "
+               "axis values. Skip processing!\n");
     return;
   }
 
@@ -126,8 +135,7 @@ void HistogramPlot::updateData() {
     HistogramYAxisValues.resize(YAxisValues.size());
   }
 
-  // Accumulate counts, PixelId 0 does not exist
-  for (unsigned int i = 1; i < YAxisValues.size(); i++) {
+  for (unsigned int i = 0; i < YAxisValues.size(); i++) {
     HistogramYAxisValues[i] += YAxisValues[i];
   }
 

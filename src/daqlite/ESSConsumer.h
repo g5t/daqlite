@@ -12,6 +12,7 @@
 
 #include <Configuration.h>
 #include <ThreadSafeVector.h>
+#include <cstddef>
 #include <cstdint>
 #include <da00_dataarray_generated.h>
 #include <flatbuffers/flatbuffers.h>
@@ -74,6 +75,11 @@ public:
   uint64_t EventCount{0};
   uint64_t EventAccept{0};
   uint64_t EventDiscard{0};
+
+  size_t getHistogramSize() const { return mHistogram.size(); }
+  size_t getHistogramTofSize() const { return mHistogramTof.size(); }
+  size_t getPixelIDsSize() const { return mPixelIDs.size(); }
+  size_t getTOFsSize() const { return mTOFs.size(); }
 
   /// \brief read out the histogram data and reset it
   std::vector<uint32_t> readResetHistogram() {
@@ -149,6 +155,6 @@ private:
   } mKafkaStats;
 
   uint32_t mNumPixels{0}; ///< Number of pixels
-  uint32_t mMinPixel{0}; ///< Offset
-  uint32_t mMaxPixel{0}; ///< Number of pixels + offset
+  uint32_t mMinPixel{0};  ///< Offset
+  uint32_t mMaxPixel{0};  ///< Number of pixels + offset
 };
