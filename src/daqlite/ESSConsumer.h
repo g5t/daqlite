@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2024 European Spallation Source, ERIC. See LICENSE file
+// Copyright \(C\) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file ESSConsumer.h
@@ -10,16 +10,23 @@
 
 #pragma once
 
-#include <Configuration.h>
 #include <ThreadSafeVector.h>
+#include <types/DataType.h>
+
+#include <librdkafka/rdkafkacpp.h>
+
 #include <cstddef>
 #include <cstdint>
-#include <da00_dataarray_generated.h>
-#include <flatbuffers/flatbuffers.h>
-#include <librdkafka/rdkafkacpp.h>
-#include <mutex>
+#include <map>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
+
+// Forward declarations
+class Configuration;
+class PlotType;
+struct da00_Variable;
 
 /// \class ESSConsumer
 /// \brief A class to handle Kafka consumer operations for ESS data.
@@ -68,57 +75,52 @@ public:
   /// \return true if message contains data, false otherwise
   bool handleMessage(RdKafka::Message *message);
 
-  /// \brief return a random group id so that simultaneous consume from
+  /// \brief return a random group id so that simultaneous consume from  fmt::print("ESSConsumer::readResetTOFs: Clearing = {} {} {}\n\n", mSubscriptionCount[DataType::TOF], mDeliveryCount[DataType::TOF]);
+
   /// multiple applications is possible.
   static std::string randomGroupString(size_t length);
-
-  uint64_t EventCount{0};
-  uint64_t EventAccept{0};
-  uint64_t EventDiscard{0};
 
   size_t getHistogramSize() const { return mHistogram.size(); }
   size_t getHistogramTofSize() const { return mHistogramTof.size(); }
   size_t getPixelIDsSize() const { return mPixelIDs.size(); }
   size_t getTOFsSize() const { return mTOFs.size(); }
 
+  uint64_t getEventCount() const { return mEventCount; };
+  uint64_t getEventAccept() const { return mEventAccept; };
+  uint64_t getEventDiscard() const { return mEventDiscard; };
+
   /// \brief read out the histogram data and reset it
-  std::vector<uint32_t> readResetHistogram() {
-    std::vector<uint32_t> ret = mHistogram;
-    mHistogram.clear();
-    return ret;
-  }
+  std::vector<uint32_t> readResetHistogram();
 
   /// \brief read out the TOF histogram data and reset it
-  std::vector<uint32_t> readResetHistogramTof() {
-    std::vector<uint32_t> ret = mHistogramTof;
-    mHistogramTof.clear();
-    return ret;
-  }
+  std::vector<uint32_t> readResetHistogramTof();
 
-  /// \brief read out the event pixel IDs and clear the vector
-  std::vector<uint32_t> readResetPixelIDs() {
-    std::vector<uint32_t> ret = mPixelIDs;
-    mPixelIDs.clear();
-    return ret;
-  }
+  /// \brief read out the event pixel IDs and reset it
+  std::vector<uint32_t> readResetPixelIDs();
 
-  /// \brief read out the event TOFs and clear the vector
-  std::vector<uint32_t> readResetTOFs() {
-    std::vector<uint32_t> ret = mTOFs;
-    mTOFs.clear();
-    return ret;
-  }
+  /// \brief read out the event TOFs and reset it
+  std::vector<uint32_t> readResetTOFs();
 
-  std::vector<uint32_t> getTofs() const {
-    std::vector<uint32_t> ret = mTOFs;
-    return ret;
-  }
+  /// \brief read out the event TOFs (no reset)
+  std::vector<uint32_t> getTofs() const;
+
+  /// \brief Add a new plot subscribing for data
+  ///
+  /// \param Type  The plot type
+  void addSubscriber(PlotType Type);
+
+  /// Call this after pulling events data. Cleared all subscriptions have been delivered
+  void gotEventRequest();
 
 private:
   RdKafka::Conf *mConf;
   RdKafka::Conf *mTConf;
   RdKafka::KafkaConsumer *mConsumer;
   RdKafka::Topic *mTopic;
+
+  uint64_t mEventCount{0};
+  uint64_t mEventAccept{0};
+  uint64_t mEventDiscard{0};
 
   // Thread safe histogram data storage
   ThreadSafeVector<uint32_t, int64_t> mHistogram;
@@ -157,4 +159,22 @@ private:
   uint32_t mNumPixels{0}; ///< Number of pixels
   uint32_t mMinPixel{0};  ///< Offset
   uint32_t mMaxPixel{0};  ///< Number of pixels + offset
+
+  /// \brief  Check if all deliveries have been made for a given data type
+  /// \param  Type  Check for this data type
+  /// \return true if all deliveries are done
+  bool checkDelivery(DataType Type);
+
+  /// \brief Number of plots subscribing to ESSConsumer data (is incremented
+  ///        when calling addSubscriber)
+  size_t mSubscribers{0};
+
+  /// \brief  Count the current number of request for event stats
+  size_t mEventRequests{0};
+
+  /// \brief The number of subscribers for each data type
+  std::map<DataType, size_t> mSubscriptionCount;
+
+  /// \brief The number of deliveries made so far for different data types
+  std::map<DataType, size_t> mDeliveryCount;
 };

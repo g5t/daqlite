@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2024 European Spallation Source, ERIC. See LICENSE file
+// Copyright \(C\) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file HistogramPlot.h
@@ -10,13 +10,16 @@
 #pragma once
 
 #include <AbstractPlot.h>
-#include <ESSConsumer.h>
-#include <Configuration.h>
-#include <QPlot/QPlot.h>
-#include <chrono>
-#include <logical_geometry/ESSGeometry.h>
-#include <qvector.h>
+
+#include <stdint.h>
 #include <vector>
+
+// Forward declarations
+class Configuration;
+class ESSConsumer;
+class ESSGeometry;
+class QCPGraph;
+class QMouseEvent;
 
 class HistogramPlot : public AbstractPlot {
   Q_OBJECT

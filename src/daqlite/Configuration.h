@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2021 European Spallation Source, ERIC. See LICENSE file
+// Copyright \(C\) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file Configuration.h
@@ -10,19 +10,31 @@
 
 #pragma once
 
-#include <fstream>
+#include <types/PlotType.h>
+
 #include <nlohmann/json.hpp>
+
 #include <string>
+#include <utility>
+#include <vector>
 
 class Configuration {
 public:
   /// \brief constructor using default values
   /// Default are likely to be unsuitable and this should probably
   /// always be followed by a call to fromJsonFile()
-  Configuration(){};
+  Configuration(){}
 
-  /// \brief loads configuration from json file
-  void fromJsonFile(std::string fname);
+  /// \brief loads configuration from JSON file
+  void fromJsonObj(const nlohmann::json &obj);
+
+  /// \brief loads configuration from JSON file
+  void fromJsonFile(const std::string &path);
+
+  /// \brief loads configuration from JSON file
+  static std::vector<Configuration> getConfigurations(const std::string &path);
+
+  static void prettyJSON(nlohmann::json &obj, const std::string &header="", int indent=4);
 
   // get the Kafka related config options
   void getKafkaConfig();
@@ -42,11 +54,11 @@ public:
   /// \brief return value of type T from the json object, possibly default,
   // and optionally throws if value is not found
   template <typename T>
-  T getVal(std::string Group, std::string Option, T Default,
+  T getVal(const std::string &Group, const std::string &Option, T Default,
            bool Throw = false);
 
   // Configurable options
-  struct TOF {
+  struct TOFOptions {
     unsigned int Scale{1000};     // ns -> us
     unsigned int MaxValue{25000}; // us
     unsigned int BinSize{512};    // bins
@@ -54,14 +66,14 @@ public:
     bool AutoScaleY{true};
   };
 
-  struct Geometry {
+  struct GeometryOptions {
     int XDim{1};
     int YDim{1};
     int ZDim{1};
     int Offset{0};
   };
 
-  struct Kafka {
+  struct KafkaOptions {
     std::string Topic{"nmx_detector"};
     std::string Broker{"172.17.5.38:9092"};
     std::string Source{""};
@@ -72,8 +84,8 @@ public:
     std::string EnableAutoOffsetStore{"false"};
   };
 
-  struct Plot {
-    std::string PlotType{"pixels"}; // "tof" and "tof2d" are also possible
+  struct PlotOptions {
+    PlotType Plot{PlotType::PIXELS}; // "tof" and "tof2d" are also possible
     bool ClearPeriodic{false};
     uint32_t ClearEverySeconds{5};
     bool Interpolate{false};
@@ -87,14 +99,13 @@ public:
     int Height{400}; // default window height
   };
 
-//
-  struct TOF TOF;
-  struct Geometry Geometry;
-  struct Kafka Kafka;
-  struct Plot Plot;
+  struct TOFOptions mTOF;
+  struct GeometryOptions mGeometry;
+  struct KafkaOptions mKafka;
+  struct PlotOptions mPlot;
 
-  std::string KafkaConfigFile{""};
-  std::vector<std::pair<std::string, std::string>> KafkaConfig;
+  std::string mKafkaConfigFile{""};
+  std::vector<std::pair<std::string, std::string>> mKafkaConfig;
 
-  nlohmann::json JsonObj;
+  nlohmann::json mJsonObj;
 };

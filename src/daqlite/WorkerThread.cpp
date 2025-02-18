@@ -7,10 +7,12 @@
 //===----------------------------------------------------------------------===//
 
 #include <WorkerThread.h>
-#include <chrono>
+
+#include <ESSConsumer.h>
+
+#include <ratio>
 
 void WorkerThread::run() {
-
   auto t2 = std::chrono::high_resolution_clock::now();
   auto t1 = std::chrono::high_resolution_clock::now();
 
@@ -33,3 +35,4 @@ void WorkerThread::run() {
     }
   }
 }
+

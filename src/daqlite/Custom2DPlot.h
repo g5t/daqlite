@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2024 European Spallation Source, ERIC. See LICENSE file
+// Copyright \(C\) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file Custom2DPlot.h
@@ -9,11 +9,19 @@
 #pragma once
 
 #include <AbstractPlot.h>
-#include <ESSConsumer.h>
-#include <Configuration.h>
-#include <QPlot/QPlot.h>
-#include <chrono>
-#include <logical_geometry/ESSGeometry.h>
+
+#include <QPlot/qcustomplot/qcustomplot.h>
+
+#include <stdint.h>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Forward declarations
+class Configuration;
+class ESSConsumer;
+class ESSGeometry;
 
 class Custom2DPlot : public AbstractPlot {
   Q_OBJECT
@@ -28,13 +36,13 @@ public:
   void updateData() override;
 
   /// \brief Support for different gradients
-  QCPColorGradient getColorGradient(std::string GradientName);
+  QCPColorGradient getColorGradient(const std::string &GradientName);
 
   /// \brief update plot based on (possibly dynamic) config settings
   void setCustomParameters();
 
   /// \brief rotate through gradient names
-  std::string getNextColorGradient(std::string GradientName);
+  std::string getNextColorGradient(const std::string &GradientName);
 
   /// \brief clears histogram data
   void clearDetectorImage() override;

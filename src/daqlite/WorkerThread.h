@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2024 European Spallation Source, ERIC. See LICENSE file
+// Copyright \(C\) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file WorkerThread.h
@@ -12,19 +12,23 @@
 
 #pragma once
 
+#include <Configuration.h>
 #include <ESSConsumer.h>
 #include <KafkaConfig.h>
-#include <QMutex>
+
 #include <QThread>
-#include <iostream>
+
 #include <memory>
+#include <stdexcept>
 
 class WorkerThread : public QThread {
   Q_OBJECT
 
 public:
-  WorkerThread(Configuration &Config) : mConfig(Config) {
-    KafkaConfig KafkaCfg(Config.KafkaConfigFile);
+  WorkerThread(Configuration &Config)
+  : mConfig(Config)
+  {
+    KafkaConfig KafkaCfg(Config.mKafkaConfigFile);
     Consumer = std::make_unique<ESSConsumer>(Config, KafkaCfg.CfgParms);
   };
 

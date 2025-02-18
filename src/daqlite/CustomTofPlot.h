@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2024 European Spallation Source, ERIC. See LICENSE file
+// Copyright \(C\) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file CustomTofPlot.h
@@ -9,10 +9,19 @@
 #pragma once
 
 #include <AbstractPlot.h>
-#include <Configuration.h>
-#include <QPlot/QPlot.h>
-#include <chrono>
-#include <logical_geometry/ESSGeometry.h>
+
+#include <stdint.h>
+#include <vector>
+
+// Forward declarations
+class Configuration;
+class ESSConsumer;
+class ESSGeometry;
+class QCPGraph;
+class QMouseEvent;
+class QObject;
+
+
 
 class CustomTofPlot : public AbstractPlot {
   Q_OBJECT
@@ -33,7 +42,7 @@ public:
 
 public slots:
   void showPointToolTip(QMouseEvent *event);
-  
+
 private:
   /// \brief updates the image
   /// \param Force forces updates of histogram data with zero count

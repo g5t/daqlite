@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2024 European Spallation Source, ERIC. See LICENSE file
+// Copyright \(C\) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file MainWindow.h
@@ -8,28 +8,27 @@
 
 #pragma once
 
-#include <AbstractPlot.h>
 #include <Configuration.h>
-#include <QMainWindow>
-#include <WorkerThread.h>
-#include <memory>
 
-QT_BEGIN_NAMESPACE
-namespace Ui {
-class MainWindow;
-}
-QT_END_NAMESPACE
+#include <QMainWindow>
+
+#include <stddef.h>
+#include <memory>
+#include <vector>
+
+// Forward declarations
+class AbstractPlot;
+class QObject;
+class QWidget;
+class WorkerThread;
+
+namespace Ui { class MainWindow; }
 
 class MainWindow : public QMainWindow {
   Q_OBJECT
 
-  // typedef std::variant<std::unique_ptr<Custom2DPlot>,
-  //                      std::unique_ptr<CustomAMOR2DTOFPlot>,
-  //                      std::unique_ptr<CustomTofPlot>>
-  //     PlotVariants;
-
 public:
-  MainWindow(Configuration &Config, QWidget *parent = nullptr);
+  MainWindow(const Configuration &Config, WorkerThread *Worker, QWidget *parent = nullptr);
   ~MainWindow();
 
   /// \brief create the plot widgets
@@ -59,11 +58,12 @@ private:
 
   std::vector<std::unique_ptr<AbstractPlot>> Plots;
 
-  // Q3DScatter scatter;
+  /// \brief Configuration obtained from ctor
+  Configuration mConfig;
 
-  /// \brief configuration obtained from main()
-  Configuration &mConfig;
+  // Pointer to worker thread
+  WorkerThread *mWorker;
 
-  /// \brief
-  std::unique_ptr<WorkerThread> KafkaConsumerThread;
+  /// \brief Number of updates data deliveries so far
+  size_t mCount;
 };

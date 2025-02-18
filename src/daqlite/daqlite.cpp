@@ -8,26 +8,31 @@
 /// Handles command line option(s), instantiates GUI
 //===----------------------------------------------------------------------===//
 
-#include <Configuration.h>
-#include <Custom2DPlot.h>
-#include <MainWindow.h>
-#include <WorkerThread.h>
+#include "Configuration.h"
+#include "MainWindow.h"        
+#include "WorkerThread.h"
 
-#include <QApplication>
-#include <QCommandLineParser>
-#include <QPlot/QPlot.h>
-#include <fmt/format.h>
-#include <stdio.h>
+#include <QApplication>          
+#include <QCommandLineOption>    
+#include <QCommandLineParser>    
+#include <QPushButton>           
+#include <QString>               
+
+#include <stdio.h>               
+#include <memory>                
+#include <string>                
+#include <vector>                
 
 int main(int argc, char *argv[]) {
   QApplication app(argc, argv);
 
+  // Handle all commandline args
   QCommandLineParser CLI;
   CLI.setApplicationDescription("Daquiri light - when you're driving home");
   CLI.addHelpOption();
 
-  QCommandLineOption fileOption("f", "Configuration file", "unusedDefault");
-  CLI.addOption(fileOption);
+  QCommandLineOption configurationOption("f", "Configuration file", "unusedDefault");
+  CLI.addOption(configurationOption);
 
   QCommandLineOption kafkaBrokerOption("b", "Kafka broker", "unusedDefault");
   CLI.addOption(kafkaBrokerOption);
@@ -40,32 +45,58 @@ int main(int argc, char *argv[]) {
 
   CLI.process(app);
 
-  Configuration Config;
-  if (CLI.isSet(fileOption)) {
-    std::string FileName = CLI.value(fileOption).toStdString();
-    Config.fromJsonFile(FileName);
-  }
+  // Parent button used to quit all plot widgets
+  QPushButton main("&Quit");
+  main.connect(&main, &QPushButton::clicked, app.quit);
+
+  // ---------------------------------------------------------------------------
+  // Get top configuration
+  const std::string FileName = CLI.value(configurationOption).toStdString();
+  std::vector<Configuration> confs = Configuration::getConfigurations(FileName);
+  Configuration MainConfig = confs.front();
 
   if (CLI.isSet(kafkaBrokerOption)) {
     std::string KafkaBroker = CLI.value(kafkaBrokerOption).toStdString();
-    Config.Kafka.Broker = KafkaBroker;
-    printf("<<<< \n WARNING Override kafka broker to %s \n>>>>\n", Config.Kafka.Broker.c_str());
+    MainConfig.mKafka.Broker = KafkaBroker;
+    printf("<<<< \n WARNING Override kafka broker to %s \n>>>>\n", MainConfig.mKafka.Broker.c_str());
   }
 
   if (CLI.isSet(kafkaTopicOption)) {
     std::string KafkaTopic = CLI.value(kafkaTopicOption).toStdString();
-    Config.Kafka.Topic = KafkaTopic;
-    printf("<<<< \n WARNING Override kafka topic to %s \n>>>>\n", Config.Kafka.Topic.c_str());
+    MainConfig.mKafka.Topic = KafkaTopic;
+    printf("<<<< \n WARNING Override kafka topic to %s \n>>>>\n", MainConfig.mKafka.Topic.c_str());
   }
 
-  if (CLI.isSet(kafkaConfigOption)) {
-    std::string FileName = CLI.value(kafkaConfigOption).toStdString();
-    Config.KafkaConfigFile = FileName;
+  // Setup worker thread
+  std::shared_ptr<WorkerThread> Worker = std::make_shared<WorkerThread>(MainConfig);
+
+
+  // Setup a window for each plot 
+  for (size_t i=1; i < confs.size(); ++i) {
+    Configuration Config = confs[i];
+
+    if (CLI.isSet(kafkaBrokerOption)) {
+      std::string KafkaBroker = CLI.value(kafkaBrokerOption).toStdString();
+      Config.mKafka.Broker = KafkaBroker;
+      printf("<<<< \n WARNING Override kafka broker to %s \n>>>>\n", Config.mKafka.Broker.c_str());
+    }
+
+    if (CLI.isSet(kafkaTopicOption)) {
+      std::string KafkaTopic = CLI.value(kafkaTopicOption).toStdString();
+      Config.mKafka.Topic = KafkaTopic;
+      printf("<<<< \n WARNING Override kafka topic to %s \n>>>>\n", Config.mKafka.Topic.c_str());
+    }
+
+    MainWindow* w = new MainWindow(Config, Worker.get());
+    w->setWindowTitle(QString::fromStdString(Config.mPlot.WindowTitle));
+    w->setParent(&main, Qt::Window);
+    w->show();
   }
 
-  MainWindow w(Config);
-  w.setWindowTitle(QString::fromStdString(Config.Plot.WindowTitle));
-  w.resize(Config.Plot.Width, Config.Plot.Height);
+  // Start the worker and let the Qt event handler take over  
+  Worker->start();
+  // main.show();
+  // main.raise();
 
   return app.exec();
 }

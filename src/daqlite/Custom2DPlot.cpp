@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2021 European Spallation Source, ERIC. See LICENSE file
+// Copyright \(C\) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file Custom2DPlot.cpp
@@ -6,23 +6,32 @@
 //===----------------------------------------------------------------------===//
 
 #include <Custom2DPlot.h>
-#include <WorkerThread.h>
-#include <algorithm>
-#include <assert.h>
+
+#include <AbstractPlot.h>
+#include <Configuration.h>
+#include <ESSConsumer.h>
+#include <types/PlotType.h>
+
+#include <logical_geometry/ESSGeometry.h>
+
 #include <fmt/format.h>
+#include <algorithm>
+#include <ratio>
 #include <string>
+
+using std::string;
+using std::vector;
 
 Custom2DPlot::Custom2DPlot(Configuration &Config, ESSConsumer &Consumer,
                            Projection Proj)
-    : AbstractPlot(PIXEL, Consumer), mConfig(Config), mProjection(Proj) {
-
+    : AbstractPlot(PlotType::PIXELS, Consumer)
+    , mConfig(Config)
+    , mProjection(Proj) {
   // Register callback functions for events
-  connect(this, SIGNAL(mouseMove(QMouseEvent *)), this,
-          SLOT(showPointToolTip(QMouseEvent *)));
+  connect(this, &QCustomPlot::mouseMove, this, &Custom2DPlot::showPointToolTip);
   setAttribute(Qt::WA_AlwaysShowToolTips);
 
-  auto &geom = mConfig.Geometry;
-
+  auto &geom = mConfig.mGeometry;
   LogicalGeometry = new ESSGeometry(geom.XDim, geom.YDim, geom.ZDim, 1);
   HistogramData.resize(LogicalGeometry->max_pixel() + 1);
 
@@ -72,7 +81,7 @@ Custom2DPlot::Custom2DPlot(Configuration &Config, ESSConsumer &Consumer,
 
   // associate the color map with the color scale
   mColorMap->setColorScale(mColorScale);
-  mColorMap->setInterpolate(mConfig.Plot.Interpolate);
+  mColorMap->setInterpolate(mConfig.mPlot.Interpolate);
   mColorMap->setTightBoundary(false);
   mColorScale->axis()->setLabel("Counts");
 
@@ -92,14 +101,14 @@ Custom2DPlot::Custom2DPlot(Configuration &Config, ESSConsumer &Consumer,
 
 void Custom2DPlot::setCustomParameters() {
   // set the color gradient of the color map to one of the presets:
-  QCPColorGradient Gradient(getColorGradient(mConfig.Plot.ColorGradient));
+  QCPColorGradient Gradient(getColorGradient(mConfig.mPlot.ColorGradient));
 
-  if (mConfig.Plot.InvertGradient) {
+  if (mConfig.mPlot.InvertGradient) {
     Gradient = Gradient.inverted();
   }
 
   mColorMap->setGradient(Gradient);
-  if (mConfig.Plot.LogScale) {
+  if (mConfig.mPlot.LogScale) {
     mColorMap->setDataScaleType(QCPAxis::stLogarithmic);
   } else {
     mColorMap->setDataScaleType(QCPAxis::stLinear);
@@ -108,7 +117,7 @@ void Custom2DPlot::setCustomParameters() {
 
 // Try the user supplied gradient name, then fall back to 'hot' and
 // provide a list of options
-QCPColorGradient Custom2DPlot::getColorGradient(std::string GradientName) {
+QCPColorGradient Custom2DPlot::getColorGradient(const string &GradientName) {
   if (mGradients.find(GradientName) != mGradients.end()) {
     return mGradients.find(GradientName)->second;
   } else {
@@ -122,10 +131,10 @@ QCPColorGradient Custom2DPlot::getColorGradient(std::string GradientName) {
   }
 }
 
-std::string Custom2DPlot::getNextColorGradient(std::string GradientName) {
+string Custom2DPlot::getNextColorGradient(const string &GradientName) {
   bool SaveFirst{true};
   bool SaveNext{false};
-  std::string RetVal;
+  string RetVal;
 
   for (auto &Gradient : mGradients) {
     if (SaveFirst) {
@@ -191,10 +200,10 @@ void Custom2DPlot::updateData() {
   std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
 
   // update histogram data from consumer of worker thread
-  std::vector<uint32_t> Histogram = mConsumer.readResetHistogram();
+  vector<uint32_t> Histogram = mConsumer.readResetHistogram();
 
-  int64_t nsBetweenClear = 1000000000LL * mConfig.Plot.ClearEverySeconds;
-  if (mConfig.Plot.ClearPeriodic and (elapsed.count() >= nsBetweenClear)) {
+  int64_t nsBetweenClear = 1000000000LL * mConfig.mPlot.ClearEverySeconds;
+  if (mConfig.mPlot.ClearPeriodic and (elapsed.count() >= nsBetweenClear)) {
     t1 = std::chrono::high_resolution_clock::now();
     std::fill(HistogramData.begin(), HistogramData.end(), 0);
     plotDetectorImage(true); // Periodically clear the histogram

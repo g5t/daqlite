@@ -7,12 +7,18 @@
 //===----------------------------------------------------------------------===//
 
 #include <KafkaConfig.h>
-#include <JsonFile.h>
-#include <condition_variable>
-#include <iostream>
-#include <cstdio>
 
-KafkaConfig::KafkaConfig(std::string KafkaConfigFile) {
+#include <JsonFile.h>
+
+#include <nlohmann/json.hpp>
+
+#include <cstdio>
+#include <map>
+#include <stdexcept>
+
+using std::string;
+
+KafkaConfig::KafkaConfig(const string &KafkaConfigFile) {
   if (KafkaConfigFile == "") {
     return;
   }
@@ -23,9 +29,9 @@ KafkaConfig::KafkaConfig(std::string KafkaConfigFile) {
     nlohmann::json KafkaParms = root["KafkaParms"];
 
     for (const auto &Parm : KafkaParms) {
-      std::map<std::string, std::string> MyMap = Parm;
+      std::map<string, string> MyMap = Parm;
       for (auto it = MyMap.begin(); it != MyMap.end(); it++) {
-        std::pair<std::string, std::string> CfgPair{it->first, it->second};
+        std::pair<string, string> CfgPair{it->first, it->second};
         CfgParms.push_back(CfgPair);
       }
     }

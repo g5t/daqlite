@@ -8,25 +8,29 @@ set(daqlite_src
   Custom2DPlot.cpp
   CustomAMOR2DTOFPlot.cpp
   CustomTofPlot.cpp
-  HistogramPlot.cpp
   ESSConsumer.cpp
+  HistogramPlot.cpp
   KafkaConfig.cpp
   MainWindow.cpp
   WorkerThread.cpp
   )
 
 set(daqlite_inc
+  AbstractPlot.h
   Configuration.h
   Custom2DPlot.h
   CustomAMOR2DTOFPlot.h
   CustomTofPlot.h
-  HistogramPlot.h
-  AbstractPlot.h
   ESSConsumer.h
+  HistogramPlot.h
   KafkaConfig.h
   MainWindow.h
-  WorkerThread.h
   ThreadSafeVector.h
+  WorkerThread.h
+
+  # Types
+  types/PlotType.h
+  types/CommonTypes.h
   )
 
 set(daqlite_ui
