@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2023 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file daqlite.cpp
@@ -8,41 +8,67 @@
 /// Handles command line option(s), instantiates GUI
 //===----------------------------------------------------------------------===//
 
-#include "Configuration.h"
-#include "MainWindow.h"        
-#include "WorkerThread.h"
+#include <Configuration.h>
+#include <MainWindow.h>
+#include <WorkerThread.h>
 
-#include <QApplication>          
-#include <QCommandLineOption>    
-#include <QCommandLineParser>    
-#include <QPushButton>           
-#include <QString>               
+#include <QApplication>
+#include <QCommandLineOption>
+#include <QCommandLineParser>
+#include <QPushButton>
+#include <QString>
 
-#include <stdio.h>               
-#include <memory>                
-#include <string>                
-#include <vector>                
+#include <fmt/format.h>
+
+#include <stdio.h>
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace {
+  /// \brief Extract specified command line options and add them to the plot configuration
+
+  /// \param CLI     Command line options
+  /// \param Config  Plot configuration
+  void setKafkaOptions(const QCommandLineParser &CLI, Configuration &Config) {
+    for (const QString &option: CLI.optionNames()) {
+      if (option == "b") {
+        Config.mKafka.Broker = CLI.value(option).toStdString();
+        fmt::print("<<<< \n WARNING Overriding kafka broker to {} \n>>>>\n", Config.mKafka.Broker);
+      }
+
+      else if (option == "t") {
+        Config.mKafka.Topic = CLI.value(option).toStdString();
+        fmt::print("<<<< \n WARNING Overriding kafka topic to {} \n>>>>\n", Config.mKafka.Topic);
+      }
+
+      else if (option == "k") {
+        Config.mKafkaConfigFile = CLI.value(option).toStdString();
+        fmt::print("<<<< \n WARNING Overriding path to kafka config file to {} \n>>>>\n", Config.mKafkaConfigFile);
+      }
+    }
+  }
+}
 
 int main(int argc, char *argv[]) {
   QApplication app(argc, argv);
 
-  // Handle all commandline args
+  // Handle all command line args
   QCommandLineParser CLI;
   CLI.setApplicationDescription("Daquiri light - when you're driving home");
   CLI.addHelpOption();
 
-  QCommandLineOption configurationOption("f", "Configuration file", "unusedDefault");
-  CLI.addOption(configurationOption);
-
-  QCommandLineOption kafkaBrokerOption("b", "Kafka broker", "unusedDefault");
-  CLI.addOption(kafkaBrokerOption);
-
-  QCommandLineOption kafkaTopicOption("t", "Kafka topic", "unusedDefault");
-  CLI.addOption(kafkaTopicOption);
-
-  QCommandLineOption kafkaConfigOption("k", "Kafka configuration file", "unusedDefault");
-  CLI.addOption(kafkaConfigOption);
-
+  // Add specified options
+  std::vector<std::tuple<QString, QString, QString>> Options = {
+    {"f", "Configuration file",       "unusedDefault"},
+    {"b", "Kafka broker",             "unusedDefault"},
+    {"t", "Kafka topic",              "unusedDefault"},
+    {"k", "Kafka configuration file", "unusedDefault"},
+  };
+  for (const auto& [key, info, unused]: Options) {
+    QCommandLineOption option(key, info, unused);
+    CLI.addOption(option);
+  }
   CLI.process(app);
 
   // Parent button used to quit all plot widgets
@@ -51,41 +77,18 @@ int main(int argc, char *argv[]) {
 
   // ---------------------------------------------------------------------------
   // Get top configuration
-  const std::string FileName = CLI.value(configurationOption).toStdString();
+  const std::string FileName = CLI.value("f").toStdString();
   std::vector<Configuration> confs = Configuration::getConfigurations(FileName);
   Configuration MainConfig = confs.front();
-
-  if (CLI.isSet(kafkaBrokerOption)) {
-    std::string KafkaBroker = CLI.value(kafkaBrokerOption).toStdString();
-    MainConfig.mKafka.Broker = KafkaBroker;
-    printf("<<<< \n WARNING Override kafka broker to %s \n>>>>\n", MainConfig.mKafka.Broker.c_str());
-  }
-
-  if (CLI.isSet(kafkaTopicOption)) {
-    std::string KafkaTopic = CLI.value(kafkaTopicOption).toStdString();
-    MainConfig.mKafka.Topic = KafkaTopic;
-    printf("<<<< \n WARNING Override kafka topic to %s \n>>>>\n", MainConfig.mKafka.Topic.c_str());
-  }
+  setKafkaOptions(CLI, MainConfig);
 
   // Setup worker thread
   std::shared_ptr<WorkerThread> Worker = std::make_shared<WorkerThread>(MainConfig);
 
-
-  // Setup a window for each plot 
+  // Setup a window for each plot
   for (size_t i=1; i < confs.size(); ++i) {
     Configuration Config = confs[i];
-
-    if (CLI.isSet(kafkaBrokerOption)) {
-      std::string KafkaBroker = CLI.value(kafkaBrokerOption).toStdString();
-      Config.mKafka.Broker = KafkaBroker;
-      printf("<<<< \n WARNING Override kafka broker to %s \n>>>>\n", Config.mKafka.Broker.c_str());
-    }
-
-    if (CLI.isSet(kafkaTopicOption)) {
-      std::string KafkaTopic = CLI.value(kafkaTopicOption).toStdString();
-      Config.mKafka.Topic = KafkaTopic;
-      printf("<<<< \n WARNING Override kafka topic to %s \n>>>>\n", Config.mKafka.Topic.c_str());
-    }
+    setKafkaOptions(CLI, MainConfig);
 
     MainWindow* w = new MainWindow(Config, Worker.get());
     w->setWindowTitle(QString::fromStdString(Config.mPlot.WindowTitle));
@@ -93,7 +96,7 @@ int main(int argc, char *argv[]) {
     w->show();
   }
 
-  // Start the worker and let the Qt event handler take over  
+  // Start the worker and let the Qt event handler take over
   Worker->start();
   // main.show();
   // main.raise();
