@@ -50,31 +50,30 @@ vector<Configuration> Configuration::getConfigurations(const std::string &Path) 
     }
   }
 
-  Configuration conf;
-  conf.fromJsonObj(Common);
-  Configurations.push_back(conf);
+  // Handy utility for adding a plot to a configuration
+  auto adder = [](const nlohmann::json &common, const nlohmann::json &plot) {
+    // Copy the common state and add a plot
+    nlohmann::json state = common;
+    state["plot"] = plot;
+
+    // Initialize and return configuration 
+    Configuration conf;
+    conf.fromJsonObj(state);
+
+    return conf;
+  };
 
   // ---------------------------------------------------------------------------
   // Single plot
   if (MainJSON.contains("plot")) {
-    Common["plot"] = MainJSON["plot"];
+    Configurations.push_back(adder(Common, MainJSON["plot"]));
   }
-
-  // Uncomment to print JSON object
-  // Configuration::prettyJSON(Common, "Top plot");
-  conf.fromJsonObj(Common);
-  Configurations.push_back(conf);
-
+  
   // ---------------------------------------------------------------------------
   // Multiple plots
   if (MainJSON.contains("plots")) {
     for (const auto& [key, plot] : MainJSON["plots"].items()) {
-      Common["plot"] = plot;
-
-      // Uncomment to print JSON object
-      // Configuration::prettyJSON(Common, key);
-      conf.fromJsonObj(Common);
-      Configurations.push_back(conf);
+      Configurations.push_back(adder(Common, plot));
     }
   }
 
@@ -155,7 +154,13 @@ void Configuration::getPlotConfig() {
   mPlot.WindowTitle = getVal("plot", "window_title", mPlot.WindowTitle);
   mPlot.PlotTitle = getVal("plot", "plot_title", mPlot.PlotTitle);
   mPlot.XAxis = getVal("plot", "xaxis", mPlot.XAxis);
-  mPlot.Width = getVal("plot", "window_width", mPlot.Width);
+
+  // Check if a plot width or height is specified
+  if (mJsonObj.contains("plot")) {
+    mPlot.defaultGeometry  = !mJsonObj["plot"].contains("window_width");
+    mPlot.defaultGeometry &= !mJsonObj["plot"].contains("window_height");
+  }
+  mPlot.Width  = getVal("plot", "window_width", mPlot.Width);
   mPlot.Height = getVal("plot", "window_height", mPlot.Height);
 }
 
