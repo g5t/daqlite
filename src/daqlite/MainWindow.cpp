@@ -71,15 +71,15 @@ MainWindow::MainWindow(const Configuration &Config, WorkerThread *Worker, QWidge
     // Resize square plots
     if (mConfig.mPlot.Plot == PlotType::PIXELS || mConfig.mPlot.Plot == PlotType::TOF2D) {
       size = std::max(size, 0.4 * geom.height());
-      h = 1.1*size;
-      w = size;
+      w = 1.1 * size;
+      h = size;
     }
 
     // ... and the rest
     else {
       size = std::max(size, 0.4 * geom.width());
-      h = size;
-      w = 0.4 * size;
+      w = size;
+      h = 0.4 * size;
     }
   }
   resize(w, h);
