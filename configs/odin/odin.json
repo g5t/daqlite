@@ -1,50 +1,39 @@
 {
-  "kafka" : {
-    "broker" : "172.30.242.20:9092",
-    "topic" : "odin_detector",
+  "kafka": {
+    "broker"                   : "172.30.242.20:9092",
+    "topic"                    : "odin_detector",
 
-    "message.max.bytes" : "10000000",
-    "fetch.message.max.bytes" : "10000000",
-    "replica.fetch.max.bytes" : "10000000",
-    "enable.auto.commit" : "false",
+    "message.max.bytes"        : "10000000",
+    "fetch.message.max.bytes"  : "10000000",
+    "replica.fetch.max.bytes"  : "10000000",
+    "enable.auto.commit"       : "false",
     "enable.auto.offset.store" : "false"
   },
 
-  "geometry" : {
-    "xdim" : 1024,
-    "ydim" : 1024,
-    "zdim" : 1,
+  "geometry": {
+    "xdim"   : 1024,
+    "ydim"   : 1024,
+    "zdim"   : 1,
     "offset" : 0
   },
 
-  "tof" : {
-    "scale" : 1000,
+  "tof": {
+    "scale"     : 1000,
     "max_value" : 100000,
-    "bin_size" : 512
-  },
-
-  "plot": {
-    "plot_type" : "pixels",
-    "window_title" : "ODIN Image",
-    "plot_title" : "Pixels",
-    "clear_periodic" : false,
-    "clear_interval_seconds" : 5,
-    "interpolate_pixels" : false,
-    "color_gradient" : "grayscale",
-    "invert_gradient" : false,
-    "log_scale" : true
+    "bin_size"  : 512
   },
 
   "plots": {
-    "plot-tof": {
-      "plot_type"              : "tof",
-      "window_title"           : "ODIN ToF",
-      "plot_title"             : "ToF",
+    "pixels": {
+      "plot_type"              : "pixels",
+      "window_title"           : "ODIN Image",
+      "plot_title"             : "Pixels",
       "clear_periodic"         : false,
-      "clear_interval_seconds" : 30,
+      "clear_interval_seconds" : 5,
       "interpolate_pixels"     : false,
+      "color_gradient"         : "grayscale",
       "invert_gradient"        : false,
-      "log_scale"              : false
+      "log_scale"              : true
     }
   }
 }

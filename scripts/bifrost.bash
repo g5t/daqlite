@@ -13,5 +13,5 @@ else
     DAQLITE_CONFIG="../configs"
 fi
 
-$DAQLITE_HOME/bin/daqlite  $BROKER -f $DAQLITE_CONFIG/bifrost/bifrost.json $KAFKA_CONFIG &
-$DAQLITE_HOME/bin/daqlite  $BROKER -f $DAQLITE_CONFIG/bifrost/bifrosttof.json $KAFKA_CONFIG
+$DAQLITE_HOME/bin/daqlite  $BROKER -f $DAQLITE_CONFIG/bifrost/bifrost.json $KAFKA_CONFIG
+

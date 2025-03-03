@@ -34,6 +34,6 @@
     "invert_gradient" : false,
     "log_scale" : false,
     "window_width" : 750,
-    "window_height": 250
+    "window_height": 350
   }
 }
