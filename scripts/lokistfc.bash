@@ -13,8 +13,7 @@ else
     DAQLITE_CONFIG="../configs"
 fi
 
-$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/stfc/loki.json $KAFKA_CONFIG &
-$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/stfc/lokitof.json $KAFKA_CONFIG
+$DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/stfc/loki.json $KAFKA_CONFIG
 # Beam monitor setup not used in daqlite deployment
 # $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/stfc/lokimon_ch0.json $KAFKA_CONFIG &
 # $DAQLITE_HOME/bin/daqlite $BROKER -f $DAQLITE_CONFIG/loki/stfc/lokimon_ch1.json $KAFKA_CONFIG &

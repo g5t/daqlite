@@ -82,7 +82,7 @@ MainWindow::MainWindow(const Configuration &Config, WorkerThread *Worker, QWidge
       w = 0.4 * size;
     }
   }
-  resize(h, w);
+  resize(w, h);
 
   show();
   startKafkaConsumerThread();
