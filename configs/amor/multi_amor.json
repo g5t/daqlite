@@ -58,8 +58,8 @@
       "color_gradient"         : "hot",
       "invert_gradient"        : false,
       "log_scale"              : false,
-      "window_width"           : 640,
-      "window_height"          : 256
+      "window_width"           : 750,
+      "window_height"          : 350
     },
 
     "plot": {
