@@ -12,7 +12,7 @@
 
   "geometry": {
     "xdim"   : 64,
-    "ydim"   : 448,
+    "ydim"   : 1024,
     "zdim"   : 1,
     "offset" : 0
   },

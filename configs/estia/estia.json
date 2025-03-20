@@ -16,15 +16,35 @@
     "offset" : 0
   },
 
-  "plot": {
-    "plot_type"              : "pixels",
-    "window_title"           : "ESTIA detector image",
-    "plot_title"             : "Pixels",
-    "clear_periodic"         : false,
-    "clear_interval_seconds" : 5,
-    "interpolate_pixels"     : false,
-    "color_gradient"         : "thermal",
-    "invert_gradient"        : false,
-    "log_scale"              : true
+  "tof": {
+    "scale"     : 1000,
+    "max_value" : 100000,
+    "bin_size"  : 512
+  },
+
+  "plots": {
+    "pixels": {
+      "plot_type"              : "pixels",
+      "window_title"           : "ESTIA detector image",
+      "plot_title"             : "Pixels",
+      "clear_periodic"         : false,
+      "clear_interval_seconds" : 5,
+      "interpolate_pixels"     : false,
+      "color_gradient"         : "thermal",
+      "invert_gradient"        : false,
+      "log_scale"              : true
+    },
+
+    "tof": {
+      "plot_type"              : "tof",
+      "window_title"           : "ESTIA detector ToF",
+      "plot_title"             : "ToF",
+      "clear_periodic"         : false,
+      "clear_interval_seconds" : 30,
+      "interpolate_pixels"     : false,
+      "color_gradient"         : "hot",
+      "invert_gradient"        : false,
+      "log_scale"              : false
+    }
   }
 }
