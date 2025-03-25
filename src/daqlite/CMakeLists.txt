@@ -4,6 +4,7 @@ find_package(qplot REQUIRED)
 
 set(daqlite_src
   daqlite.cpp
+  AbstractPlot.cpp
   Configuration.cpp
   Custom2DPlot.cpp
   CustomAMOR2DTOFPlot.cpp
