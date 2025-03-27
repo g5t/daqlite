@@ -22,14 +22,15 @@ void MainWindow::setup_calibration_info(){
   });
 
   std::string date_time_format{"yyyy.MM.ddThh:mm:ss"};
-  auto then = QDateTime::fromTime_t(calibration.date());
+  auto c_date = calibration.date();
+  auto then = QDateTime::fromSecsSinceEpoch(c_date);
   ui->calibrationTime->setDisplayFormat(date_time_format.c_str());
   ui->calibrationTime->setDateTime(then);
   ui->calibrationTime->setReadOnly(true);
 }
 void MainWindow::update_calibration_info(){
   ui->calibrationInfo->setText(calibration.info().c_str());
-  ui->calibrationTime->setDateTime(QDateTime::fromTime_t(calibration.date()));
+  ui->calibrationTime->setDateTime(QDateTime::fromSecsSinceEpoch(calibration.date()));
 }
 
 void MainWindow::setup_calibration_table(){

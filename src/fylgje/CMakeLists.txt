@@ -1,6 +1,7 @@
 include(QtLibraryConfig)
 find_package(RdKafka REQUIRED)
 find_package(qplot REQUIRED)
+find_package(h5cpp REQUIRED)
 
 set(fylgje_src
   fylgje_main.cpp
@@ -51,7 +52,7 @@ target_link_libraries(
   PRIVATE RdKafka::rdkafka++
   PRIVATE RdKafka::rdkafka
   PRIVATE QPlot
-  PRIVATE QtColorWidgets
+#  PRIVATE QtColorWidgets
   PRIVATE Qt6::Widgets
   PRIVATE h5cpp::h5cpp
 )
