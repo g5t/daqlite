@@ -54,12 +54,12 @@ void MainWindow::setup_calibration_table(){
       {"x right", [](int, int, int, CalibrationUnit * unit){
         return new CalibrationUnitRightItem(unit); // Item(tr("%1").arg(unit.right));
       }},
-      {"height min", [](int, int, int, CalibrationUnit * unit){
-        return new CalibrationUnitMinItem(unit);
-      }},
-      {"height max", [](int, int, int, CalibrationUnit * unit){
-        return new CalibrationUnitMaxItem(unit);
-      }},
+//      {"height min", [](int, int, int, CalibrationUnit * unit){
+//        return new CalibrationUnitMinItem(unit);
+//      }},
+//      {"height max", [](int, int, int, CalibrationUnit * unit){
+//        return new CalibrationUnitMaxItem(unit);
+//      }},
       {"c0", [](int, int, int, CalibrationUnit * unit){
         return new CalibrationUnitC0Item(unit);
       }},

@@ -1,4 +1,7 @@
 #include "Calibration.h"
+#include <iomanip>
+#include <sstream>
+#include <iostream>
 
 CalibrationGroup::CalibrationGroup(int i, std::vector<CalibrationUnit> && els)
 : index{i}, elements{std::move(els)} {
@@ -44,12 +47,30 @@ Calibration::Calibration(int group_count, int element_count)
 }
 void Calibration::set_date(const std::string & date_str) {
   struct std::tm tm{};
-  char * const result = strptime(date_str.c_str(), "%Y-%m-%dT%TZ", &tm);
-  if (result != date_str.c_str() + date_str.size()){
+  std::istringstream ss(date_str);
+  ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+  if (ss.fail()){
     throw std::runtime_error(fmt::format("Failed to parse UTC time from '{}'", date_str));
   }
   date_ = timegm(&tm);
+  if (ss.peek() == '.') {
+    ss.ignore();
+    double fractional;
+    ss >> fractional;
+    if (ss.fail()) {
+      std::cout << fmt::format("Failed to parse fractional seconds from '{}'", date_str) << std::endl;
+    } else {
+      auto microseconds = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double>(fractional));
+      date_ += std::chrono::duration_cast<std::chrono::seconds>(microseconds).count();
+    }
+  }
+//  char * const result = strptime(date_str.c_str(), "%Y-%m-%dT%TZ", &tm);
+//  if (result != date_str.c_str() + date_str.size()){
+//    throw std::runtime_error(fmt::format("Failed to parse UTC time from '{}'", date_str));
+//  }
+//  date_ = timegm(&tm);
 }
+
 void Calibration::set_groups(Groups groups) {
   // ensure consistent group sizes
   auto els = groups.empty() ? 0 : groups.front().size();
@@ -93,51 +114,71 @@ void Calibration::set_groups(Groups groups) {
   }
   return groups_[group].elements[unit].unit_position(global_position);
 }
+//
+//[[nodiscard]] int Calibration::pulseHeightOK(int group, int unit, int pulse_height) const {
+//  if (group >= static_cast<int>(groups_.size())){
+//    return false;
+//  }
+//  if (unit >= static_cast<int>(groups_[group].elements.size())){
+//    return false;
+//  }
+//  return groups_[group].elements[unit].pulse_height_ok(pulse_height);
+//}
 
-[[nodiscard]] int Calibration::pulseHeightOK(int group, int unit, int pulse_height) const {
-  if (group >= static_cast<int>(groups_.size())){
-    return false;
-  }
-  if (unit >= static_cast<int>(groups_[group].elements.size())){
-    return false;
-  }
-  return groups_[group].elements[unit].pulse_height_ok(pulse_height);
-}
-
-
-void to_json(nlohmann::json & j, const CalibrationUnit & el){
-  auto jel = nlohmann::json{{"unit", el.index}, {"left", el.left}, {"right", el.right}};
-  if (el.c0.has_value()) jel["c0"] = el.c0.value();
-  if (el.c1.has_value()) jel["c1"] = el.c1.value();
-  if (el.c2.has_value()) jel["c2"] = el.c2.value();
-  if (el.c3.has_value()) jel["c3"] = el.c3.value();
-  if (el.min.has_value()) jel["min"] = el.min.value();
-  if (el.max.has_value()) jel["max"] = el.max.value();
-  j = jel;
-}
-
-void from_json(const nlohmann::json & j, CalibrationUnit & el){
-  auto jel = j;
-  el.index = jel["unit"];
-  el.left = jel["left"];
-  el.right = jel["right"];
-  el.c0 = jel.contains("c0") ? std::optional(jel["c0"].get<double>()) : std::nullopt;
-  el.c1 = jel.contains("c1") ? std::optional(jel["c1"].get<double>()) : std::nullopt;
-  el.c2 = jel.contains("c2") ? std::optional(jel["c2"].get<double>()) : std::nullopt;
-  el.c3 = jel.contains("c3") ? std::optional(jel["c3"].get<double>()) : std::nullopt;
-  el.min = jel.contains("min") ? std::optional(jel["min"].get<int>()) : std::nullopt;
-  el.max = jel.contains("max") ? std::optional(jel["max"].get<int>()) : std::nullopt;
-}
+//
+//void to_json(nlohmann::json & j, const CalibrationUnit & el){
+//  auto jel = nlohmann::json{{"unit", el.index}, {"left", el.left}, {"right", el.right}};
+//  if (el.c0.has_value()) jel["c0"] = el.c0.value();
+//  if (el.c1.has_value()) jel["c1"] = el.c1.value();
+//  if (el.c2.has_value()) jel["c2"] = el.c2.value();
+//  if (el.c3.has_value()) jel["c3"] = el.c3.value();
+//  if (el.min.has_value()) jel["min"] = el.min.value();
+//  if (el.max.has_value()) jel["max"] = el.max.value();
+//  j = jel;
+//}
+//
+//void from_json(const nlohmann::json & j, CalibrationUnit & el){
+//  auto jel = j;
+//  el.index = jel["unit"];
+//  el.left = jel["left"];
+//  el.right = jel["right"];
+//  el.c0 = jel.contains("c0") ? std::optional(jel["c0"].get<double>()) : std::nullopt;
+//  el.c1 = jel.contains("c1") ? std::optional(jel["c1"].get<double>()) : std::nullopt;
+//  el.c2 = jel.contains("c2") ? std::optional(jel["c2"].get<double>()) : std::nullopt;
+//  el.c3 = jel.contains("c3") ? std::optional(jel["c3"].get<double>()) : std::nullopt;
+//  el.min = jel.contains("min") ? std::optional(jel["min"].get<int>()) : std::nullopt;
+//  el.max = jel.contains("max") ? std::optional(jel["max"].get<int>()) : std::nullopt;
+//}
 
 void to_json(nlohmann::json & j, const CalibrationGroup & gr){
-  j = nlohmann::json {{"units", gr.elements}, {"group", gr.index}};
+  // j = nlohmann::json {{"units", gr.elements}, {"group", gr.index}};
+  auto n = gr.elements.size();
+  std::vector<std::pair<double, double>> division(n);
+  std::vector<std::pair<int, int>> threshold(n);
+  std::vector<std::array<double, 4>> polynomial(n);
+  for (const auto & el: gr.elements){
+    division[el.index] = {el.left, el.right};
+//    threshold[el.index] = {el.min.value_or(0), el.max.value_or(0)};
+    polynomial[el.index] = {el.c0.value_or(0), el.c1.value_or(0), el.c2.value_or(0), el.c3.value_or(0)};
+  }
+  j = nlohmann::json {{"groupindex", gr.index}, {"intervals", division}, {"thresholds", threshold}, {"polynomials", polynomial}};
 }
 void from_json(const nlohmann::json & j, CalibrationGroup & gr){
-  auto jgr = j;
-  auto els = jgr["units"].get<std::vector<CalibrationUnit>>();
-  std::sort(els.begin(), els.end(), [](const auto & a, const auto & b){return a.index < b.index;});
-  gr.index = jgr["group"].get<int>();
-  gr.elements = els;
+  auto index_name = "groupindex";
+  auto index = j[index_name].get<int>();
+  auto divisions = j["intervals"].get<std::vector<std::pair<double, double>>>();
+  auto polynomials = j["polynomials"].get<std::vector<std::array<double, 4>>>();
+  auto s = divisions.size();
+  std::vector<CalibrationUnit> elements;
+  elements.reserve(s);
+  for (size_t i=0; i<s; ++i){
+    elements.emplace_back(i, divisions.at(i), polynomials.at(i));
+  }
+  gr.index = index; // j[index_name].get<int>();
+  /* If "parameters" contains "units" as a list of objects (again) we can handle parsing the easy way: */
+  //  auto elements = j["units"].get<std::vector<CalibrationUnit>>();
+  //  std::sort(elements.begin(), elements.end(), [](const auto & a, const auto & b){return a.index < b.index;});
+  gr.elements = elements;
 }
 
 
@@ -148,21 +189,23 @@ void to_json(nlohmann::json & j, const Calibration & cal){
     {"info", cal.info()},
     {"instrument", cal.instrument()},
     {"groups", cal.group_count()},
-    {"units", cal.element_count()},
+    {"groupsize", cal.element_count()}, // {"units", cal.element_count()},
     {"parameters", cal.groups()}}
   }};
 }
 
 void from_json(const nlohmann::json & j, Calibration & cal){
   auto jc = j["Calibration"];
-  auto parameters = jc["parameters"].get<Calibration::Groups>();
-  if (auto groups = jc["groups"].get<int>(); groups != static_cast<int>(parameters.size())){
-    auto message = fmt::format("Expected {} groups but json specifies {} instead!", parameters.size(), groups);
+  auto parameters = jc["Parameters"].get<Calibration::Groups>();
+  auto groups_name = "groups";
+  if (auto groups = jc[groups_name].get<int>(); groups != static_cast<int>(parameters.size())){
+    auto message = fmt::format("Expected {} groups but json specifies {}={} instead!", parameters.size(), groups_name, groups);
     throw std::runtime_error(message);
   }
   auto els = parameters.empty() ? 0 : parameters.front().size();
-  if (auto elements = jc["units"].get<int>(); elements != static_cast<int>(els)){
-    auto message = fmt::format("Expected {} units per group but json specifies {} instead!", els, elements);
+  auto elements_name = "groupsize"; // "units";
+  if (auto elements = jc[elements_name].get<int>(); elements != static_cast<int>(els)){
+    auto message = fmt::format("Expected {} units per group but json specifies {}={} instead!", els, elements_name, elements);
     throw std::runtime_error(message);
   }
   cal.set_version(jc["version"].get<int>());
