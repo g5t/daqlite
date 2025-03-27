@@ -76,7 +76,8 @@ bool bifrost::data::Manager::includes(int arc, int triplet, int a, int b) const 
   auto unit_pos = calibration.unitPosition(g, tube, pos);
   if (unit_pos < 0 || unit_pos > 1) return false;
 
-  return calibration.pulseHeightOK(g, tube, a+b);
+//  return calibration.pulseHeightOK(g, tube, a+b);
+  return true;
 }
 
 

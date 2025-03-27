@@ -76,24 +76,24 @@ protected:
   std::optional<int> data_;
 };
 
-class CalibrationUnitMinItem: public OptIntItem {
-public:
-  CalibrationUnitMinItem(CalibrationUnit * unit): OptIntItem(unit->min), unit_(unit){}
-protected:
-  void setCalibrationUnit(){unit_->min = data_;}
-  CalibrationUnit * unit_;
-public:
-  std::string CalibrationUnitStr(){return std::to_string(unit_->min.value_or(-1));}
-};
-class CalibrationUnitMaxItem: public OptIntItem {
-public:
-  CalibrationUnitMaxItem(CalibrationUnit * unit): OptIntItem(unit->max), unit_(unit){}
-protected:
-  void setCalibrationUnit(){unit_->max = data_;}
-  CalibrationUnit * unit_;
-public:
-  std::string CalibrationUnitStr(){return std::to_string(unit_->max.value_or(-1));}
-};
+//class CalibrationUnitMinItem: public OptIntItem {
+//public:
+//  CalibrationUnitMinItem(CalibrationUnit * unit): OptIntItem(unit->min), unit_(unit){}
+//protected:
+//  void setCalibrationUnit(){unit_->min = data_;}
+//  CalibrationUnit * unit_;
+//public:
+//  std::string CalibrationUnitStr(){return std::to_string(unit_->min.value_or(-1));}
+//};
+//class CalibrationUnitMaxItem: public OptIntItem {
+//public:
+//  CalibrationUnitMaxItem(CalibrationUnit * unit): OptIntItem(unit->max), unit_(unit){}
+//protected:
+//  void setCalibrationUnit(){unit_->max = data_;}
+//  CalibrationUnit * unit_;
+//public:
+//  std::string CalibrationUnitStr(){return std::to_string(unit_->max.value_or(-1));}
+//};
 
 
 class FloatTableItem: public FylgjeTableItem {

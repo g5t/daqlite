@@ -41,11 +41,15 @@ public:
   double left{0}, right{1};
   // linear_pos(pos) = pos - (c0 + c1 pos + c2 pos^2 + c3 pos^3)
   std::optional<double> c0{std::nullopt}, c1{std::nullopt}, c2{std::nullopt}, c3{std::nullopt};
-  // accept only ADC values with min <= pulse_height <= max
-  std::optional<int> min{std::nullopt}, max{std::nullopt};
+//  // accept only ADC values with min <= pulse_height <= max
+//  std::optional<int> min{std::nullopt}, max{std::nullopt};
 
   CalibrationUnit() = default;
   CalibrationUnit(int i, double l, double r): index{i}, left{l}, right{r} {}
+//  CalibrationUnit(int i, std::pair<double, double> lr, std::array<double, 4> p, std::pair<double, double> t)
+//  : index{i}, left{lr.first}, right{lr.second}, c0{p[0]}, c1{p[1]}, c2{p[2]}, c3{p[3]}, min{t.first}, max{t.second} {}
+  CalibrationUnit(int i, std::pair<double, double> lr, std::array<double, 4> p)
+      : index{i}, left{lr.first}, right{lr.second}, c0{p[0]}, c1{p[1]}, c2{p[2]}, c3{p[3]} {}
 
   [[nodiscard]] inline double min_x() const {return left < right ? left : right;}
   [[nodiscard]] inline double max_x() const {return left < right ? right : left;}
@@ -71,14 +75,14 @@ public:
     auto x = (global_position - left) / (right - left);
     return x < 0 ? 0 : x > 1 ? 1 : x;
   }
-  ///\brief Use the optional threshold values to decide if a pulse height value is acceptable
-  ///\param pulse_height the total pulse height as provided elsewhere
-  ///\returns false if less than the minimum or more than the maximum, otherwise true
-  [[nodiscard]] inline bool pulse_height_ok(int pulse_height) const {
-    if (min.has_value() && pulse_height < min.value()) return false;
-    if (max.has_value() && pulse_height > max.value()) return false;
-    return true;
-  }
+//  ///\brief Use the optional threshold values to decide if a pulse height value is acceptable
+//  ///\param pulse_height the total pulse height as provided elsewhere
+//  ///\returns false if less than the minimum or more than the maximum, otherwise true
+//  [[nodiscard]] inline bool pulse_height_ok(int pulse_height) const {
+//    if (min.has_value() && pulse_height < min.value()) return false;
+//    if (max.has_value() && pulse_height > max.value()) return false;
+//    return true;
+//  }
 };
 
 class CalibrationGroup {
@@ -119,7 +123,7 @@ public:
   [[nodiscard]] double posCorrection(int group, int unit, double pos) const;
   [[nodiscard]] int getUnitId(int group, double pos) const;
   [[nodiscard]] double unitPosition(int group, int unit, double global_position) const;
-  [[nodiscard]] int pulseHeightOK(int group, int unit, int pulse_height) const;
+//  [[nodiscard]] int pulseHeightOK(int group, int unit, int pulse_height) const;
 
   CalibrationUnit * unit_pointer(int group, int unit){
     return &(groups_[group].elements[unit]);
