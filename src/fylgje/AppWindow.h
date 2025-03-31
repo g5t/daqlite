@@ -7,11 +7,11 @@
 #include <optional>
 
 #include "WorkerThread.h"
-#include "plot_manager.h"
-#include "data_manager.h"
-#include "two_spin_box.h"
-#include "table_item_types.h"
-#include "cycles.h"
+#include "PlotManager.h"
+#include "DataManager.h"
+#include "TwoSpinBox.h"
+#include "TableItemTypes.h"
+#include "Cycles.h"
 #include "Configuration.h"
 #include "Calibration.h"
 
@@ -161,7 +161,7 @@ private:
     bool _type_fixed{false};
     int _fixed_arc{0};
     int _fixed_triplet{0};
-    int_t _fixed_type{int_t::ab}; // should match the default in fylgje_window.ui
+    int_t _fixed_type{int_t::ab}; // should match the default in AppWindow.ui
 
     std::map<std::pair<int_t, int>, TwoSpinBox *> bin_boxes{};
     intensity_map_t max;

@@ -1,26 +1,29 @@
-#include "Calibration.h"
+// Copyright (C) 2025 European Spallation Source, ERIC. See LICENSE file
 #include <iomanip>
 #include <sstream>
 #include <iostream>
+#include "Calibration.h"
 
+///\brief CalibrationGroup creation, checking CalibrationUnit vector is sorted by index and that all indexes are present
 CalibrationGroup::CalibrationGroup(int i, std::vector<CalibrationUnit> && els)
 : index{i}, elements{std::move(els)} {
   // check that the provided elements have exclusive position ranges, and are sorted + all present
   check_sorted_index_is_iota(els, "unit");
   for (auto ptr = els.begin(); ptr != els.end() && ptr+1 != els.end(); ++ptr){
     auto nxt = ptr+1;
-    if (ptr->max_x() > nxt->min_x()) {
+    if (ptr->maxEdge() > nxt->minEdge()) {
       std::stringstream ss;
-      ss << fmt::format("Units ({}, {}) ({}, {}) error!", ptr->min_x(), ptr->max_x(), nxt->min_x(), nxt->max_x());
+      ss << fmt::format("Units ({}, {}) ({}, {}) error!", ptr->minEdge(), ptr->maxEdge(), nxt->minEdge(), nxt->maxEdge());
       throw std::runtime_error(ss.str());
     }
   }
 }
 
+///\brief Calibration creation, with groupCount groups, each with elementCount elements
 Calibration::Calibration(int group_count, int element_count)
     : version_{0}, date_{std::time({})}, info_{"generated"}, instrument_{"generated"} {
   // use the same element ranges for all groups
-  double step = 1.0 / static_cast<double>(element_count);
+  double step = 1.0 / element_count;
   std::vector<double> edges(1, 0.);
   edges.reserve(element_count + 1);
   for (int i=0; i<element_count - 1; ++i){
@@ -40,12 +43,16 @@ Calibration::Calibration(int group_count, int element_count)
     groups_.emplace_back(i, make_elements());
   }
 }
-[[nodiscard]] std::string Calibration::date_str() const {
+
+///\brief Retrieve the Calibration date-time point as a string
+[[nodiscard]] std::string Calibration::dateString() const {
   char timeString[std::size("yyyy-mm-ddThh:mm:ssZ")];
   std::strftime(std::data(timeString), std::size(timeString), "%FT%TZ", std::gmtime(&date_));
   return timeString;
 }
-void Calibration::set_date(const std::string & date_str) {
+
+///\brief Set the Calibration date-time point from a string
+void Calibration::setDate(const std::string & date_str) {
   struct std::tm tm{};
   std::istringstream ss(date_str);
   ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
@@ -64,14 +71,9 @@ void Calibration::set_date(const std::string & date_str) {
       date_ += std::chrono::duration_cast<std::chrono::seconds>(microseconds).count();
     }
   }
-//  char * const result = strptime(date_str.c_str(), "%Y-%m-%dT%TZ", &tm);
-//  if (result != date_str.c_str() + date_str.size()){
-//    throw std::runtime_error(fmt::format("Failed to parse UTC time from '{}'", date_str));
-//  }
-//  date_ = timegm(&tm);
 }
 
-void Calibration::set_groups(Groups groups) {
+void Calibration::setGroups(Groups groups) {
   // ensure consistent group sizes
   auto els = groups.empty() ? 0 : groups.front().size();
   if (std::any_of(groups.begin(), groups.end(), [els](const auto & p){return p.size() != els;})){
@@ -89,7 +91,7 @@ void Calibration::set_groups(Groups groups) {
 
 
 [[nodiscard]] double Calibration::posCorrection(int group, int unit, double pos) const {
-  double corrected = pos - groups_[group].elements[unit].position_correction(pos);
+  auto corrected = pos - groups_[group].elements[unit].positionCorrection(pos);
   return corrected < 0 ? 0 : corrected > 1 ? 1 : corrected;
 }
 
@@ -112,9 +114,17 @@ void Calibration::set_groups(Groups groups) {
   if (unit >= static_cast<int>(groups_[group].elements.size())){
     return -1;
   }
-  return groups_[group].elements[unit].unit_position(global_position);
+  return groups_[group].elements[unit].unitPosition(global_position);
 }
-//
+
+/* This pulseHeightOK function is commented out because it was decided to implement the threshold
+ * as part of the *configuration* JSON instead of the calibration JSON. This is because the threshold
+ * as currently envisaged is a constant for all detectors of a given type, and not a calibration parameter.
+ *
+ * It is left here as a reminder to re-implement this functionality, using the configuration value,
+ * to allow user-interaction when setting its value.
+ * */
+
 //[[nodiscard]] int Calibration::pulseHeightOK(int group, int unit, int pulse_height) const {
 //  if (group >= static_cast<int>(groups_.size())){
 //    return false;
@@ -125,92 +135,85 @@ void Calibration::set_groups(Groups groups) {
 //  return groups_[group].elements[unit].pulse_height_ok(pulse_height);
 //}
 
-//
-//void to_json(nlohmann::json & j, const CalibrationUnit & el){
-//  auto jel = nlohmann::json{{"unit", el.index}, {"left", el.left}, {"right", el.right}};
-//  if (el.c0.has_value()) jel["c0"] = el.c0.value();
-//  if (el.c1.has_value()) jel["c1"] = el.c1.value();
-//  if (el.c2.has_value()) jel["c2"] = el.c2.value();
-//  if (el.c3.has_value()) jel["c3"] = el.c3.value();
-//  if (el.min.has_value()) jel["min"] = el.min.value();
-//  if (el.max.has_value()) jel["max"] = el.max.value();
-//  j = jel;
-//}
-//
-//void from_json(const nlohmann::json & j, CalibrationUnit & el){
-//  auto jel = j;
-//  el.index = jel["unit"];
-//  el.left = jel["left"];
-//  el.right = jel["right"];
-//  el.c0 = jel.contains("c0") ? std::optional(jel["c0"].get<double>()) : std::nullopt;
-//  el.c1 = jel.contains("c1") ? std::optional(jel["c1"].get<double>()) : std::nullopt;
-//  el.c2 = jel.contains("c2") ? std::optional(jel["c2"].get<double>()) : std::nullopt;
-//  el.c3 = jel.contains("c3") ? std::optional(jel["c3"].get<double>()) : std::nullopt;
-//  el.min = jel.contains("min") ? std::optional(jel["min"].get<int>()) : std::nullopt;
-//  el.max = jel.contains("max") ? std::optional(jel["max"].get<int>()) : std::nullopt;
-//}
 
-void to_json(nlohmann::json & j, const CalibrationGroup & gr){
-  // j = nlohmann::json {{"units", gr.elements}, {"group", gr.index}};
-  auto n = gr.elements.size();
-  std::vector<std::pair<double, double>> division(n);
-  std::vector<std::pair<int, int>> threshold(n);
-  std::vector<std::array<double, 4>> polynomial(n);
-  for (const auto & el: gr.elements){
+///\brief CalibrationGroup JSON serialization
+///\param json_out the json object to serialize to
+///\param group_in the CalibrationGroup object to serialize
+///\note The name of this function is set by the nlohmann::json library
+///      https://json.nlohmann.me/api/adl_serializer/to_json/
+[[maybe_unused]] void to_json(nlohmann::json & json_out, const CalibrationGroup & group_in){
+  auto size = group_in.elements.size();
+  std::vector<std::pair<double, double>> division(size);
+  std::vector<std::array<double, 4>> polynomial(size);
+  for (const auto & el: group_in.elements){
     division[el.index] = {el.left, el.right};
-//    threshold[el.index] = {el.min.value_or(0), el.max.value_or(0)};
     polynomial[el.index] = {el.c0.value_or(0), el.c1.value_or(0), el.c2.value_or(0), el.c3.value_or(0)};
   }
-  j = nlohmann::json {{"groupindex", gr.index}, {"intervals", division}, {"thresholds", threshold}, {"polynomials", polynomial}};
+  json_out = nlohmann::json {{"groupindex", group_in.index}, {"intervals", division}, {"polynomials", polynomial}};
 }
-void from_json(const nlohmann::json & j, CalibrationGroup & gr){
+
+
+///\brief CalibrationGroup JSON deserialization
+///\param json_in the json object to deserialize from
+///\param group_out the CalibrationGroup object to deserialize into
+///\note The name of this function is set by the nlohmann::json library
+///      https://json.nlohmann.me/api/adl_serializer/from_json/
+[[maybe_unused]] void from_json(const nlohmann::json & json_in, CalibrationGroup & group_out){
   auto index_name = "groupindex";
-  auto index = j[index_name].get<int>();
-  auto divisions = j["intervals"].get<std::vector<std::pair<double, double>>>();
-  auto polynomials = j["polynomials"].get<std::vector<std::array<double, 4>>>();
-  auto s = divisions.size();
+  auto index = json_in[index_name].get<int>();
+  auto divisions = json_in["intervals"].get<std::vector<std::pair<double, double>>>();
+  auto polynomials = json_in["polynomials"].get<std::vector<std::array<double, 4>>>();
+  auto size = divisions.size();
   std::vector<CalibrationUnit> elements;
-  elements.reserve(s);
-  for (size_t i=0; i<s; ++i){
+  elements.reserve(size);
+  for (size_t i=0; i<size; ++i){
     elements.emplace_back(i, divisions.at(i), polynomials.at(i));
   }
-  gr.index = index; // j[index_name].get<int>();
-  /* If "parameters" contains "units" as a list of objects (again) we can handle parsing the easy way: */
-  //  auto elements = j["units"].get<std::vector<CalibrationUnit>>();
-  //  std::sort(elements.begin(), elements.end(), [](const auto & a, const auto & b){return a.index < b.index;});
-  gr.elements = elements;
+  group_out.index = index;
+  group_out.elements = elements;
 }
 
 
-void to_json(nlohmann::json & j, const Calibration & cal){
-  j = nlohmann::json{{"Calibration", {
-    {"version", cal.version()},
-    {"date", cal.date_str()},
-    {"info", cal.info()},
-    {"instrument", cal.instrument()},
-    {"groups", cal.group_count()},
-    {"groupsize", cal.element_count()}, // {"units", cal.element_count()},
-    {"parameters", cal.groups()}}
+///\brief Calibration JSON serialization
+///\param json_out the json object to serialize to
+///\param calibration_in the Calibration object to serialize
+///\note The name of this function is set by the nlohmann::json library
+///      https://json.nlohmann.me/api/adl_serializer/to_json/
+[[maybe_unused]] void to_json(nlohmann::json & json_out, const Calibration & calibration_in){
+  json_out = nlohmann::json{{"Calibration", {
+    {"version", calibration_in.version()},
+    {"date", calibration_in.dateString()},
+    {"info", calibration_in.info()},
+    {"instrument", calibration_in.instrument()},
+    {"groups", calibration_in.groupCount()},
+    {"groupsize", calibration_in.elementCount()},
+    {"parameters", calibration_in.groups()}}
   }};
 }
 
-void from_json(const nlohmann::json & j, Calibration & cal){
-  auto jc = j["Calibration"];
-  auto parameters = jc["Parameters"].get<Calibration::Groups>();
+
+///\brief Calibration JSON deserialization
+///\param json_in the json object to deserialize from
+///\param calibration_out the Calibration object to deserialize into
+///\note The name of this function is set by the nlohmann::json library
+///      https://json.nlohmann.me/api/adl_serializer/from_json/
+[[maybe_unused]] void from_json(const nlohmann::json & json_in, Calibration & calibration_out){
+  auto json_calibration_in = json_in["Calibration"];
+  auto parameters = json_calibration_in["Parameters"].get<Calibration::Groups>();
   auto groups_name = "groups";
-  if (auto groups = jc[groups_name].get<int>(); groups != static_cast<int>(parameters.size())){
+  if (auto groups = json_calibration_in[groups_name].get<int>(); groups != static_cast<int>(parameters.size())){
     auto message = fmt::format("Expected {} groups but json specifies {}={} instead!", parameters.size(), groups_name, groups);
     throw std::runtime_error(message);
   }
   auto els = parameters.empty() ? 0 : parameters.front().size();
   auto elements_name = "groupsize"; // "units";
-  if (auto elements = jc[elements_name].get<int>(); elements != static_cast<int>(els)){
+  if (auto elements = json_calibration_in[elements_name].get<int>(); elements != static_cast<int>(els)){
     auto message = fmt::format("Expected {} units per group but json specifies {}={} instead!", els, elements_name, elements);
     throw std::runtime_error(message);
   }
-  cal.set_version(jc["version"].get<int>());
-  cal.set_date(jc["date"].get<std::string>());
-  cal.set_info(jc["info"].get<std::string>());
-  cal.set_instrument(jc["instrument"].get<std::string>());
-  cal.set_groups(parameters);
+  calibration_out.setVersion(json_calibration_in["version"].get<int>());
+  calibration_out.setDate(json_calibration_in["date"].get<std::string>());
+  calibration_out.setInfo(json_calibration_in["info"].get<std::string>());
+  calibration_out.setInstrument(json_calibration_in["instrument"].get<std::string>());
+  calibration_out.setGroups(parameters);
 }

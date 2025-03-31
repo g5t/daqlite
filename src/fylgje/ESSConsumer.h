@@ -13,7 +13,7 @@
 #include "Configuration.h"
 #include "ar51_readout_data_generated.h"
 #include <librdkafka/rdkafkacpp.h>
-#include "data_manager.h"
+#include "DataManager.h"
 
 class ESSConsumer {
 public:
@@ -36,7 +36,7 @@ public:
     uint32_t SeqNum;
   } __attribute__((packed));
 
-  struct caen_readout {
+  struct CAENReadout {
     uint8_t Fiber;
     uint8_t FEN;
     uint16_t Length;
@@ -74,10 +74,10 @@ public:
 
   static std::string randomGroupString(size_t length);
 
-  void consume_all();
-  void consume_forever();
-  void consume_from(int64_t);
-  void consume_until(int64_t);
+  [[maybe_unused]] void consumeAll();
+  void consumeForever();
+  void consumeFrom(int64_t ms_since_utc_epoch);
+  void consumeUntil(int64_t ms_since_utc_epoch);
 
 private:
   Configuration & configuration;
@@ -91,6 +91,6 @@ private:
   /// \brief loadable Kafka-specific configuration
   std::vector<std::pair<std::string, std::string>> &mKafkaConfig;
 
-  void set_consumer_offset(Start start, int64_t ms_since_utc_epoch);
-  void set_topic_partition_offset(std::vector<RdKafka::TopicPartition*>&, Start, int64_t);
+  void setConsumerOffset(Start start, int64_t ms_since_utc_epoch);
+  void setTopicPartitionOffset(std::vector<RdKafka::TopicPartition*>& tps, Start start, int64_t ms_since_utc_epoch);
 };

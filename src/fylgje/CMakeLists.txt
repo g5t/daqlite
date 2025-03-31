@@ -4,37 +4,36 @@ find_package(qplot REQUIRED)
 find_package(h5cpp REQUIRED)
 
 set(fylgje_src
-  fylgje_main.cpp
-  fylgje_window.cpp
-  fylgje_overview.cpp
-  fylgje_calibration.cpp
-  fylgje_data.cpp
+  AppMain.cpp
+  AppWindow.cpp
+  AppOverview.cpp
+  AppCalibration.cpp
+  AppData.cpp
   WorkerThread.cpp
   KafkaConfig.cpp
   ESSConsumer.cpp
-  data_manager.cpp
+  DataManager.cpp
   Configuration.cpp
   Calibration.cpp
-  Interval.cpp
-  )
+  PlotManager.cpp
+)
 
 set(fylgje_inc
   Calibration.h
   Configuration.h
   ESSConsumer.h
   KafkaConfig.h
-  fylgje_window.h
-  plot_manager.h
-  two_spin_box.h
-  data_manager.h
+  AppWindow.h
+  PlotManager.h
+  TwoSpinBox.h
+  DataManager.h
   WorkerThread.h
   JsonFile.h
-  cycles.h
-  Interval.h
-  )
+  Cycles.h
+)
 
 set(fylgje_ui
-  fylgje_window.ui
+  AppWindow.ui
   )
 
 set(CMAKE_AUTOUIC ON)

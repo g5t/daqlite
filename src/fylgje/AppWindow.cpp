@@ -1,8 +1,8 @@
 #include <iostream>
 #include <sstream>
 #include <fmt/core.h>
-#include "fylgje_window.h"
-#include "./ui_fylgje_window.h"
+#include "AppWindow.h"
+#include "./ui_AppWindow.h"
 
 MainWindow::MainWindow(Configuration & Config, Calibration & calibration, QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow), configuration(Config), calibration(calibration)
@@ -127,8 +127,8 @@ void MainWindow::set_time_live(){
     dt->setDateTime(now);
     dt->setEnabled(false);
   }
-  consumer->Consumer->consume_forever();
-  consumer->Consumer->consume_from(now.toMSecsSinceEpoch());
+  consumer->Consumer->consumeForever();
+  consumer->Consumer->consumeFrom(now.toMSecsSinceEpoch());
 }
 void MainWindow::set_time_historical(){
   time_status = Time::Historical;
@@ -141,8 +141,8 @@ void MainWindow::set_time_fixed(){
   for (auto & dt: {ui->timeBeginning, ui->timeEnding}){
     dt->setEnabled(false);
   }
-  consumer->Consumer->consume_until(ui->timeEnding->dateTime().toMSecsSinceEpoch());
-  consumer->Consumer->consume_from(ui->timeBeginning->dateTime().toMSecsSinceEpoch());
+  consumer->Consumer->consumeUntil(ui->timeEnding->dateTime().toMSecsSinceEpoch());
+  consumer->Consumer->consumeFrom(ui->timeBeginning->dateTime().toMSecsSinceEpoch());
 }
 
 void MainWindow::set_time_early(const QDateTime & time){

@@ -1,3 +1,10 @@
+// Copyright (C) 2025 European Spallation Source, ERIC. See LICENSE file
+//===----------------------------------------------------------------------===//
+///
+/// \file
+///
+/// \brief Custom QTableWidgetItem types for the Fylgje application
+//===----------------------------------------------------------------------===//
 #pragma once
 #include <QTableWidgetItem>
 #include <optional>
@@ -75,25 +82,6 @@ public:
 protected:
   std::optional<int> data_;
 };
-
-//class CalibrationUnitMinItem: public OptIntItem {
-//public:
-//  CalibrationUnitMinItem(CalibrationUnit * unit): OptIntItem(unit->min), unit_(unit){}
-//protected:
-//  void setCalibrationUnit(){unit_->min = data_;}
-//  CalibrationUnit * unit_;
-//public:
-//  std::string CalibrationUnitStr(){return std::to_string(unit_->min.value_or(-1));}
-//};
-//class CalibrationUnitMaxItem: public OptIntItem {
-//public:
-//  CalibrationUnitMaxItem(CalibrationUnit * unit): OptIntItem(unit->max), unit_(unit){}
-//protected:
-//  void setCalibrationUnit(){unit_->max = data_;}
-//  CalibrationUnit * unit_;
-//public:
-//  std::string CalibrationUnitStr(){return std::to_string(unit_->max.value_or(-1));}
-//};
 
 
 class FloatTableItem: public FylgjeTableItem {

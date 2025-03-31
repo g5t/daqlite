@@ -1,45 +1,50 @@
 #include <iostream>
 #include <fmt/format.h>
 #include <sstream>
-#include "data_manager.h"
+#include "DataManager.h"
+
+
 
 
 int bifrost::data::hist_a_or_b(int x, int shift, int bins){
-    int y = x >> shift;
-    if (y < 0 || y >= bins) y = -1;
-    return y;
+  int y = x >> shift;
+  if (y < 0 || y >= bins) y = -1;
+  return y;
 }
+
 int bifrost::data::hist_p(int x, int shift, int bins){
-    // a and b are effectively 15-bit integers
-    // so a+b is 16-bits, but we want this to fit into BIN2D bins,
-    // so we must shift by an extra bit compared to a or b above
-    int y = x >> (shift + 1);
-    if (y < 0 || y >= bins) y = -1;
-    return y;
+  // a and b are effectively 15-bit integers
+  // so a+b is 16-bits, but we want this to fit into BIN2D bins,
+  // so we must shift by an extra bit compared to a or b above
+  int y = x >> (shift + 1);
+  if (y < 0 || y >= bins) y = -1;
+  return y;
 }
+
 int bifrost::data::hist_t(double x, int bins){
-    // time at ESS resets every 1/14 Hz ~= 70 msec.
-    // find the modulus and bin that range
-    double period = 1.0 / 14.0;
-    auto frac = fmod(x, period) / period;
-    auto y = static_cast<int>(frac * bins);
-    if (y < 0 || y >= bins) y = -1;
-    return y;
+  // time at ESS resets every 1/14 Hz ~= 70 msec.
+  // find the modulus and bin that range
+  double period = 1.0 / 14.0;
+  auto frac = fmod(x, period) / period;
+  auto y = static_cast<int>(frac * bins);
+  if (y < 0 || y >= bins) y = -1;
+  return y;
 }
+
 int bifrost::data::hist_x(int a, int b, int bins){
-    int num = a - b;
-    int den = a + b;
-    if (den == 0) {
-        return false;
-    }
-    double ratio = static_cast<double>(num) / static_cast<double>(den);
-    if (ratio < -1.0 || ratio > 1.0) {
-        return false;
-    }
-    // full range is (-1, 1) so shift up by 1, multiply by 512 and convert to an integer
-    auto x = static_cast<int>((ratio + 1.0) / 2.0 * (bins - 1));
-    if (x < 0 || x >= bins) x = -1;
-    return x;
+  int num = a - b;
+  int den = a + b;
+  if (den == 0) {
+    return false;
+  }
+  double ratio = static_cast<double>(num) / static_cast<double>(den);
+  if (ratio < -1.0 || ratio > 1.0) {
+    return false;
+  }
+  // full range is (-1, 1) so shift up by 1, multiply by 512 and convert to an integer
+  auto x = static_cast<int>((ratio + 1.0) / 2.0 * (bins - 1));
+  if (x < 0 || x >= bins) x = -1;
+  return x;
 }
 
 int bifrost::data::Manager::group(int arc, int triplet) const {
@@ -79,7 +84,6 @@ bool bifrost::data::Manager::includes(int arc, int triplet, int a, int b) const 
 //  return calibration.pulseHeightOK(g, tube, a+b);
   return true;
 }
-
 
 
 bool bifrost::data::Manager::add(int fiber, int group, int a, int b, double time){
@@ -455,20 +459,6 @@ std::ostream & operator<<(std::ostream & os, ::bifrost::data::Type type){
   }
   return os;
 }
-//
-//bool bifrost::data::key_less(const bifrost::data::key_t & a, const bifrost::data::key_t & b){
-//  return key_compare(a, b) == -1;
-//}
-//
-//int bifrost::data::key_compare(const bifrost::data::key_t & a, const bifrost::data::key_t & b){
-//  if (std::get<0>(a) < std::get<0>(b)) return -1;
-//  if (std::get<0>(a) > std::get<0>(b)) return 1;
-//  if (std::get<1>(a) < std::get<1>(b)) return -1;
-//  if (std::get<1>(a) > std::get<1>(b)) return 1;
-//  if (std::get<2>(a) < std::get<2>(b)) return -1;
-//  if (std::get<2>(a) > std::get<2>(b)) return 1;
-//  return 0;
-//}
 
 std::vector<std::string> bifrost::data::axes_names(Type type){
   switch (type){
@@ -484,6 +474,7 @@ std::vector<std::string> bifrost::data::axes_names(Type type){
     default: return {};
   }
 }
+
 std::string bifrost::data::type_dataset_name(Type type){
   switch (type){
     case Type::a: {return "A";}

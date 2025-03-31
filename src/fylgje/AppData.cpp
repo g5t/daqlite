@@ -1,5 +1,5 @@
-#include "fylgje_window.h"
-#include "./ui_fylgje_window.h"
+#include "AppWindow.h"
+#include "./ui_AppWindow.h"
 
 void MainWindow::setup_data(){
   connect(ui->actionSaveHDF5, &QAction::triggered, this, &MainWindow::save_data);

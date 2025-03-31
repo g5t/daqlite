@@ -1,3 +1,10 @@
+// Copyright (C) 2025 European Spallation Source, ERIC. See LICENSE file
+//===----------------------------------------------------------------------===//
+///
+/// \file
+///
+/// \brief Custom QSpinBox which allows only powers of two
+//===----------------------------------------------------------------------===//
 #pragma once
 #include <QSpinBox>
 

@@ -49,7 +49,7 @@ ESSConsumer::ESSConsumer(data_t * data, Configuration & config,
   mConsumer = subscribeTopic();
   assert(mConsumer != nullptr);
   // if ... something is set in the gui, then seek the consumer offset before consuming
-  set_consumer_offset(End, -1);
+    setConsumerOffset(End, -1);
 }
 
 RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
@@ -91,15 +91,15 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
   return ret;
 }
 
-void ESSConsumer::consume_from(int64_t ms_since_utc_epoch){
+void ESSConsumer::consumeFrom(int64_t ms_since_utc_epoch){
   earliest_timestamp = ms_since_utc_epoch < 0 ? 0 : ms_since_utc_epoch;
   std::vector<RdKafka::TopicPartition*> tps;
   mConsumer->assignment(tps);
-  set_topic_partition_offset(tps, Time, ms_since_utc_epoch);
+  setTopicPartitionOffset(tps, Time, ms_since_utc_epoch);
   mConsumer->seek(*tps.front(), 1);
 }
 
-void ESSConsumer::consume_until(int64_t ms_since_utc_epoch){
+void ESSConsumer::consumeUntil(int64_t ms_since_utc_epoch){
   auto duration = std::chrono::system_clock::now().time_since_epoch();
   auto milliseconds= std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
   latest_timestamp = ms_since_utc_epoch < 0 ? -1 : ms_since_utc_epoch;
@@ -107,23 +107,23 @@ void ESSConsumer::consume_until(int64_t ms_since_utc_epoch){
     // consume only in the past; do we _need_ to seek backwards?
     std::vector<RdKafka::TopicPartition*> tps;
     mConsumer->assignment(tps);
-    set_topic_partition_offset(tps, earliest_timestamp < 0 ? Beginning : Time, earliest_timestamp);
+    setTopicPartitionOffset(tps, earliest_timestamp < 0 ? Beginning : Time, earliest_timestamp);
     mConsumer->seek(*tps.front(), 1);
   }
 }
 
-void ESSConsumer::consume_all(){
+void ESSConsumer::consumeAll(){
   std::vector<RdKafka::TopicPartition*> tps;
   mConsumer->assignment(tps);
-  set_topic_partition_offset(tps, Beginning, 0);
+  setTopicPartitionOffset(tps, Beginning, 0);
   mConsumer->seek(*tps.front(), 1);
 }
 
-void ESSConsumer::consume_forever(){
+void ESSConsumer::consumeForever(){
   latest_timestamp = -1;
 }
 
-void ESSConsumer::set_consumer_offset(ESSConsumer::Start start, int64_t ms_since_utc_epoch) {
+void ESSConsumer::setConsumerOffset(Start start, int64_t ms_since_utc_epoch) {
   // set the consumer starting point, using the partition's known offsets ...
   RdKafka::Topic * only_rkt{nullptr};
   RdKafka::Metadata * metadataptr;
@@ -162,11 +162,11 @@ void ESSConsumer::set_consumer_offset(ESSConsumer::Start start, int64_t ms_since
 
   std::vector<RdKafka::TopicPartition*> tps;
   tps.push_back(RdKafka::TopicPartition::create(configuration.Kafka.Topic, my_partition));
-  set_topic_partition_offset(tps, start, ms_since_utc_epoch);
+  setTopicPartitionOffset(tps, start, ms_since_utc_epoch);
   mConsumer->assign(tps); // since consumption hasn't started, we seek by assigning the (topic, partition, offset)
 }
 
-void ESSConsumer::set_topic_partition_offset(std::vector<RdKafka::TopicPartition*>& tps, ESSConsumer::Start start, int64_t ms_since_utc_epoch){
+void ESSConsumer::setTopicPartitionOffset(std::vector<RdKafka::TopicPartition*>& tps, Start start, int64_t ms_since_utc_epoch){
   int64_t low{0}, high{0};
   auto resp = mConsumer->get_watermark_offsets(configuration.Kafka.Topic, my_partition, &low, &high);
   if (resp != RdKafka::ERR_NO_ERROR) {
@@ -196,8 +196,8 @@ void ESSConsumer::set_topic_partition_offset(std::vector<RdKafka::TopicPartition
 uint32_t ESSConsumer::parseCAENData(uint8_t * Readout, int Size, uint32_t hi, uint32_t lo, uint32_t p_hi, uint32_t p_lo) {
   uint32_t processed{0};
   int BytesLeft = Size;
-  while (BytesLeft >= static_cast<int>(sizeof(caen_readout))) {
-    auto * crd = (caen_readout *)Readout;
+  while (BytesLeft >= static_cast<int>(sizeof(CAENReadout))) {
+    auto * crd = (CAENReadout *)Readout;
     if (crd->FEN != 0){
       printf("FEN %u, Length %u, HighTime %u, LowTime %u, Flags %u, Group %u\n",
              crd->FEN, crd->Length, crd->HighTime, crd->LowTime, crd->Flags_OM, crd->Group);
@@ -205,8 +205,8 @@ uint32_t ESSConsumer::parseCAENData(uint8_t * Readout, int Size, uint32_t hi, ui
       auto time = frame_time(hi, lo, p_hi, p_lo, crd->HighTime, crd->LowTime);
       histograms->add(crd->Fiber, crd->Group, crd->A, crd->B, time);
     }
-    BytesLeft -= sizeof(caen_readout);
-    Readout += sizeof(caen_readout);
+    BytesLeft -= sizeof(CAENReadout);
+    Readout += sizeof(CAENReadout);
     ++processed;
   }
   return processed;

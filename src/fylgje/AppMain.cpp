@@ -1,6 +1,6 @@
 #include "Configuration.h"
 #include "Calibration.h"
-#include "fylgje_window.h"
+#include "AppWindow.h"
 
 #include <map>
 #include <QApplication>
@@ -60,8 +60,6 @@ int main(int argc, char *argv[])
     if (CLI.isSet(cliOptions.at("calibration"))) {
       if (auto calib = CLI.value(cliOptions.at("calibration")).toStdString(); !calib.empty()) {
         calibration = from_json_file(calib);
-//        nlohmann::json j = calibration;
-        to_json_file(calibration, "test_output.json");
       }
     }
 

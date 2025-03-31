@@ -2,8 +2,8 @@
 #include <QStringList>
 #include <QLineEdit>
 
-#include "fylgje_window.h"
-#include "./ui_fylgje_window.h"
+#include "AppWindow.h"
+#include "./ui_AppWindow.h"
 
 void MainWindow::setup_calibration(){
   setup_calibration_info();
@@ -18,7 +18,7 @@ void MainWindow::setup_calibration_info(){
   ui->calibrationInfo->setToolTip("Info");
   layout->addWidget(ui->calibrationInfo);
   connect(ui->calibrationInfo, &QLineEdit::textChanged, this, [&](const QString & text){
-    calibration.set_info(text.toStdString());
+    calibration.setInfo(text.toStdString());
   });
 
   std::string date_time_format{"yyyy.MM.ddThh:mm:ss"};
@@ -28,6 +28,7 @@ void MainWindow::setup_calibration_info(){
   ui->calibrationTime->setDateTime(then);
   ui->calibrationTime->setReadOnly(true);
 }
+
 void MainWindow::update_calibration_info(){
   ui->calibrationInfo->setText(calibration.info().c_str());
   ui->calibrationTime->setDateTime(QDateTime::fromSecsSinceEpoch(calibration.date()));
@@ -55,12 +56,6 @@ void MainWindow::setup_calibration_table(){
       {"x right", [](int, int, int, CalibrationUnit * unit){
         return new CalibrationUnitRightItem(unit); // Item(tr("%1").arg(unit.right));
       }},
-//      {"height min", [](int, int, int, CalibrationUnit * unit){
-//        return new CalibrationUnitMinItem(unit);
-//      }},
-//      {"height max", [](int, int, int, CalibrationUnit * unit){
-//        return new CalibrationUnitMaxItem(unit);
-//      }},
       {"c0", [](int, int, int, CalibrationUnit * unit){
         return new CalibrationUnitC0Item(unit);
       }},
@@ -108,7 +103,7 @@ void MainWindow::setup_calibration_table_items(){
       auto row = group * configuration.Instrument.units_per_group + unit;
       for (int column=0; column < columns; ++column){
         // this item handles updating the editable unit fields without a separate callback
-        auto item = calibration_table_columns[column].second(arc, triplet, unit, calibration.unit_pointer(group, unit));
+        auto item = calibration_table_columns[column].second(arc, triplet, unit, calibration.unitPointer(group, unit));
         calibration_table->setItem(row, column, item);
         calibration_table_items.push_back(item);
       }
@@ -128,7 +123,7 @@ void MainWindow::save_calibration() {
     p.replace_extension(path(".json"));
   }
   nlohmann::json j;
-  calibration.set_date();
+  calibration.setDate();
   j = calibration;
   to_json_file(j, std::string(p));
 }
