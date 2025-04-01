@@ -27,7 +27,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabViewsWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="tabsClosable">
        <bool>false</bool>
@@ -405,12 +405,10 @@
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_3">
                  <item>
-                  <widget class="QDateTimeEdit" name="timeBeginning">
-                  </widget>
+                  <widget class="QDateTimeEdit" name="timeBeginning"/>
                  </item>
                  <item>
-                  <widget class="QDateTimeEdit" name="timeEnding">
-                  </widget>
+                  <widget class="QDateTimeEdit" name="timeEnding"/>
                  </item>
                 </layout>
                </widget>

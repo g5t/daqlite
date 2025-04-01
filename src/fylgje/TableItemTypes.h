@@ -9,7 +9,10 @@
 #include <QTableWidgetItem>
 #include <optional>
 #include <iostream>
+#include "Calibration.h"
 
+
+///\brief Base class for all table items in the Fylgje application
 class FylgjeTableItem: public QTableWidgetItem {
 public:
   std::string CalibrationUnitStr(){return "";}
@@ -17,104 +20,56 @@ protected:
   virtual void setCalibrationUnit(){}
 };
 
+
+///\brief Table item for integer values
 class IntTableItem: public FylgjeTableItem {
 public:
-  IntTableItem(qint32 data=0, bool editable=true){
-    data_ = data;
-    auto flags = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
-    if (editable){
-      flags |= Qt::ItemIsEditable;
-    }
-    setFlags(flags);
-    setSelected(false);
-  }
-  QVariant data(int role) const {
-    if (role == Qt::EditRole) return data_;
-    if (role == Qt::DisplayRole) return data_;
-    if (role == Qt::TextAlignmentRole) return QVariant(Qt::AlignHCenter | Qt::AlignVCenter);
-    return QTableWidgetItem::data(role);
-  }
-  void setData(int role, const QVariant &value){
-    if (role == Qt::EditRole) {
-      data_ = value.toInt();
-      tableWidget()->itemChanged(this);
-    }
-  }
-  bool operator<(const IntTableItem & other) const {
-    return data_ < other.data_;
-  }
+  IntTableItem(qint32 data=0, bool editable=true);
+  QVariant data(int role) const;
+  void setData(int role, const QVariant &value);
+  bool operator<(const IntTableItem & other) const;
 protected:
   qint32 data_;
 };
 
+
+///\brief Table item for optional integer values
 class OptIntItem: public FylgjeTableItem {
 public:
-  OptIntItem(std::optional<int> data){
-    data_ = data;
-    setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable);
-    setSelected(false);
-  }
-  QVariant data(int role) const {
-    if (role == Qt::EditRole) return data_.has_value() ? data_.value() : QVariant();
-    if (role == Qt::DisplayRole) return data_.has_value() ? data_.value() : QVariant();
-    if (role == Qt::TextAlignmentRole) return QVariant(Qt::AlignHCenter | Qt::AlignVCenter);
-    return QTableWidgetItem::data(role);
-  }
-  void setData(int role, const QVariant &value){
-    if (role == Qt::EditRole) {
-      auto v = value.toInt();
-      if (v == data_.value_or(std::numeric_limits<int>::lowest())){
-        data_ = std::nullopt;
-      } else {
-        data_ = v;
-      }
-      setCalibrationUnit();
-      tableWidget()->itemChanged(this);
-    }
-  }
-  bool operator<(const OptIntItem & other) const {
-    if (data_.has_value() && other.data_.has_value()){
-      return data_.value() < other.data_.value();
-    }
-    if (data_.has_value()) return false;
-    return true;
-  }
+  OptIntItem(std::optional<int> data);
+  QVariant data(int role) const;
+  void setData(int role, const QVariant &value);
+  bool operator<(const OptIntItem & other) const;
 protected:
   std::optional<int> data_;
 };
 
 
+///\brief Table item for float values
 class FloatTableItem: public FylgjeTableItem {
 public:
-  FloatTableItem(float data=0, bool editable=true){
-    data_ = data;
-    auto flags = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
-    if (editable){
-      flags |= Qt::ItemIsEditable;
-    }
-    setFlags(flags);
-    setSelected(false);
-  }
-  QVariant data(int role) const {
-    if (role == Qt::EditRole) return data_;
-    if (role == Qt::DisplayRole) return data_;
-    if (role == Qt::TextAlignmentRole) return QVariant(Qt::AlignHCenter | Qt::AlignVCenter);
-    return QTableWidgetItem::data(role);
-  }
-  void setData(int role, const QVariant &value){
-    if (role == Qt::EditRole) {
-      data_ = value.toFloat();
-      setCalibrationUnit();
-      tableWidget()->itemChanged(this);
-    }
-  }
-  bool operator<(const FloatTableItem & other) const {
-    return data_ < other.data_;
-  }
+  FloatTableItem(float data=0, bool editable=true);
+  QVariant data(int role) const;
+  void setData(int role, const QVariant &value);
+  bool operator<(const FloatTableItem & other) const;
 protected:
   float data_;
 };
 
+
+///\brief Table item for optional double values
+class OptDoubleItem: public FylgjeTableItem {
+public:
+  OptDoubleItem(std::optional<double> data=0);
+  QVariant data(int role) const;
+  void setData(int role, const QVariant &value);
+  bool operator<(const OptDoubleItem & other) const;
+protected:
+  std::optional<double> data_;
+};
+
+
+///\brief Table float value with callback to update the calibration unit left limit value
 class CalibrationUnitLeftItem: public FloatTableItem {
 public:
   CalibrationUnitLeftItem(CalibrationUnit * unit): FloatTableItem(unit->left), unit_(unit){}
@@ -124,6 +79,8 @@ protected:
   }
   CalibrationUnit * unit_;
 };
+
+///\brief Table float value with callback to update the calibration unit right limit value
 class CalibrationUnitRightItem: public FloatTableItem {
 public:
   CalibrationUnitRightItem(CalibrationUnit * unit): FloatTableItem(unit->right), unit_(unit){}
@@ -134,43 +91,7 @@ protected:
   CalibrationUnit * unit_;
 };
 
-
-class OptDoubleItem: public FylgjeTableItem {
-public:
-  OptDoubleItem(std::optional<double> data=0){
-    data_ = data;
-    setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable);
-    setSelected(false);
-  }
-  QVariant data(int role) const {
-    if (role == Qt::EditRole) return data_.has_value() ? data_.value() : QVariant();
-    if (role == Qt::DisplayRole) return data_.has_value() ? data_.value() : QVariant();
-    if (role == Qt::TextAlignmentRole) return QVariant(Qt::AlignHCenter | Qt::AlignVCenter);
-    return QTableWidgetItem::data(role);
-  }
-  void setData(int role, const QVariant &value){
-    if (role == Qt::EditRole) {
-      auto v = value.toDouble();
-      if (v == data_.value_or(std::numeric_limits<double>::lowest())){
-        data_ = std::nullopt;
-      } else {
-        data_ = v;
-      }
-      setCalibrationUnit();
-      tableWidget()->itemChanged(this);
-    }
-  }
-  bool operator<(const OptDoubleItem & other) const {
-    if (data_.has_value() && other.data_.has_value()){
-      return data_.value() < other.data_.value();
-    }
-    if (data_.has_value()) return false;
-    return true;
-  }
-protected:
-  std::optional<double> data_;
-};
-
+///\brief Table double value with callback to update the calibration unit constant position correction value
 class CalibrationUnitC0Item: public OptDoubleItem {
 public:
   CalibrationUnitC0Item(CalibrationUnit * unit): OptDoubleItem(unit->c0), unit_(unit){}
@@ -180,6 +101,8 @@ protected:
   }
   CalibrationUnit * unit_;
 };
+
+///\brief Table double value with callback to update the calibration unit linear position correction value
 class CalibrationUnitC1Item: public OptDoubleItem {
 public:
   CalibrationUnitC1Item(CalibrationUnit * unit): OptDoubleItem(unit->c1), unit_(unit){}
@@ -190,6 +113,7 @@ protected:
   CalibrationUnit * unit_;
 };
 
+///\brief Table double value with callback to update the calibration unit quadratic position correction value
 class CalibrationUnitC2Item: public OptDoubleItem {
 public:
   CalibrationUnitC2Item(CalibrationUnit * unit): OptDoubleItem(unit->c2), unit_(unit){}
@@ -199,6 +123,8 @@ protected:
   }
   CalibrationUnit * unit_;
 };
+
+///\brief Table double value with callback to update the calibration unit cubic position correction value
 class CalibrationUnitC3Item: public OptDoubleItem {
 public:
   CalibrationUnitC3Item(CalibrationUnit * unit): OptDoubleItem(unit->c3), unit_(unit){}

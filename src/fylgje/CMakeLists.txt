@@ -16,6 +16,7 @@ set(fylgje_src
   Configuration.cpp
   Calibration.cpp
   PlotManager.cpp
+  TableItemTypes.cpp
 )
 
 set(fylgje_inc
