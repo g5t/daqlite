@@ -122,9 +122,8 @@ void MainWindow::save_calibration() {
   if (ext != ".json"){
     p.replace_extension(path(".json"));
   }
-  nlohmann::json j;
   calibration.setDate();
-  j = calibration;
+  nlohmann::json j = calibration;
   to_json_file(j, std::string(p));
 }
 
