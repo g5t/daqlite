@@ -65,7 +65,8 @@ public:
     assert(mConsumer != nullptr);
     earliest_timestamp = from.count();
     latest_timestamp = to.count();
-    setConsumerOffset(Beginning, 0);
+    //setConsumerOffset(Beginning, 0);
+    setConsumerOffset(Time, earliest_timestamp);
   };
 
   /// \brief wrapper function for librdkafka consumer
