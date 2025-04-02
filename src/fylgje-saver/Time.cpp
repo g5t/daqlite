@@ -12,7 +12,7 @@ std::time_t now_to_time_t() {
 std::time_t string_to_time_t(const std::string & time_str) {
   struct std::tm tm{};
   std::istringstream ss(time_str);
-  ss >> std::get_time(&tm, "%FT%TZ");
+  ss >> std::get_time(&tm, "%Y-%m-%dT%TZ");
   if (ss.fail()){
     throw std::runtime_error(fmt::format("Failed to parse UTC time from '{}'", time_str));
   }
