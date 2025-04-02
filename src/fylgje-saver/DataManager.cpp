@@ -332,6 +332,7 @@ void bifrost::data::Manager::save_to(hdf5::node::Group group) const {
   auto compound = bifrost::message_type();
   auto message_dataset = group.create_dataset("messages", compound, message_dataspace, datasetCreationList);
   message_dataset.write(messages);
+  std::cout << "Saved data including " << messages.size() << " readouts to HDF5 file\n";
 }
 
 hdf5::datatype::Compound bifrost::message_type() {
