@@ -1,8 +1,8 @@
 #include <iostream>
 #include <map>
-#include <QApplication>
-#include <QCommandLineParser>
 #include <fmt/format.h>
+
+#include "args.hxx"
 
 #include "Configuration.h"
 #include "Calibration.h"
@@ -27,89 +27,89 @@ void do_work(Configuration & configuration, Calibration & calibration, std::time
   data->save_to(output_file);
 }
 
-int main(int argc, char *argv[])
-{
-    QApplication app(argc, argv);
+int main(int argc, char *argv[]){
+    args::ArgumentParser parser("Save data from Kafka to HDF5",
+                                "Uses fylgje internals to grab messages.");
+
+    args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
+    args::Flag verbose(parser, "verbose", "Print additional information", {'v', "verbose"});
+
     auto now = std::time({});
     char timeString[std::size("yyyy-mm-ddThh:mm:ssZ")];
     std::strftime(std::data(timeString), std::size(timeString), "%FT%TZ", std::gmtime(&now));
-
-
-    QCommandLineParser CLI;
-    CLI.setApplicationDescription("fylgje-saver - your mythical instrument following data storer");
-    std::map<std::string, QCommandLineOption> cliOptions{
-        {"file",        QCommandLineOption("f", "JSON configuration <file>.", "file")},
-        {"broker",      QCommandLineOption("b", "Kafka <broker> url.", "broker"),},
-        {"topic",       QCommandLineOption("t", "Kafka <topic>.", "kafka"),},
-        {"config",      QCommandLineOption("k", "Kafka <configuration> file.", "configuration"),},
-        {"calibration", QCommandLineOption({"c", "calibration"}, "Detector calibration JSON file", "calibration.json")},
-        {"output",      QCommandLineOption({"o", "output"}, "Output file", "output.h5")},
-        {"from",        QCommandLineOption("from", "Start time for accumulation", "from", timeString)},
-        {"to",          QCommandLineOption("to", "End time for accumulation", "to", timeString)},
-        {"duration",   QCommandLineOption("duration", "Duration for accumulation", "duration", "1h")},
-        {"verbose",     QCommandLineOption("v", "Verbose output")},
-    };
-    CLI.addHelpOption();
-    for (const auto & [name, opt]: cliOptions) {
-      CLI.addOption(opt);
-    }
-    CLI.process(app);
-
     Configuration Config;
-    if (CLI.isSet(cliOptions.at("file"))) {
-      if (auto fileName = CLI.value(cliOptions.at("file")).toStdString(); !fileName.empty()) {
-        Config.fromJsonFile(fileName);
+    Calibration calibration;
+
+    args::ValueFlag<std::string> file_flag(parser, "file", "JSON configuration <file>.", {'f', "file"});
+    args::ValueFlag<std::string> broker_flag(parser, "broker", "Kafka <broker> url.", {'b', "broker"});
+    args::ValueFlag<std::string> topic_flag(parser, "topic", "Kafka <topic>.", {'t', "topic"});
+    args::ValueFlag<std::string> config_flag(parser, "config", "Kafka <configuration> file.", {'k', "config"});
+    args::ValueFlag<std::string> calibration_flag(parser, "calibration", "Detector calibration JSON file", {'c', "calibration"});
+    args::ValueFlag<std::string> output_flag(parser, "output", "Output file", {'o', "output"});
+    args::ValueFlag<std::string> from_flag(parser, "from", "Start time for accumulation", {"from"}, timeString);
+    args::ValueFlag<std::string> to_flag(parser, "to", "End time for accumulation", {"to"}, timeString);
+    args::ValueFlag<std::string> duration_flag(parser, "duration", "Duration for accumulation", {"duration"}, "1h");
+
+    try {
+      parser.ParseCLI(argc, argv);
+    }
+    catch (const args::Help&) {
+      std::cout << parser;
+      return 0;
+    }
+    catch (const args::ParseError& e) {
+      std::cerr << e.what() << std::endl;
+      std::cerr << parser;
+      return 1;
+    }
+
+    if (file_flag) {
+      if (auto file = args::get(file_flag); !file.empty()) {
+        Config.fromJsonFile(file);
       }
     }
-    if (CLI.isSet(cliOptions.at("broker"))) {
-      if (auto broker = CLI.value(cliOptions.at("broker")).toStdString(); !broker.empty()) {
+    if (broker_flag){
+      if (auto broker = args::get(broker_flag); !broker.empty()) {
         Config.Kafka.Broker = broker;
         std::cout << fmt::format("<<<<\n WARNING Override kafka broker to {} \n>>>>\n", Config.Kafka.Broker);
       }
     }
-    if (CLI.isSet(cliOptions.at("topic"))) {
-      if (auto topic = CLI.value(cliOptions.at("topic")).toStdString(); !topic.empty()) {
+    if (topic_flag){
+      if (auto topic = args::get(topic_flag); !topic.empty()) {
         Config.Kafka.Topic = topic;
         std::cout << fmt::format("<<<<\n WARNING Override kafka topic to {} \n>>>>\n", Config.Kafka.Topic);
       }
     }
-    if (CLI.isSet(cliOptions.at("config"))) {
-      if (auto config = CLI.value(cliOptions.at("config")).toStdString(); !config.empty()){
+    if (config_flag){
+      if (auto config = args::get(config_flag); !config.empty()) {
         Config.KafkaConfigFile = config;
       }
     }
-
-    Calibration calibration{};
-    if (CLI.isSet(cliOptions.at("calibration"))) {
-      if (auto calib = CLI.value(cliOptions.at("calibration")).toStdString(); !calib.empty()) {
+    if (calibration_flag){
+      if (auto calib = args::get(calibration_flag); !calib.empty()) {
         calibration = from_json_file(calib);
       }
     }
-
     std::string output_file{"output.h5"};
-    if (CLI.isSet(cliOptions.at("output"))) {
-      if (auto output = CLI.value(cliOptions.at("output")).toStdString(); !output.empty()) {
+    if (output_flag){
+      if (auto output = args::get(output_flag); !output.empty()) {
         output_file = output;
       }
     }
 
-    auto from_set{CLI.isSet(cliOptions.at("from"))};
-    auto to_set{CLI.isSet(cliOptions.at("to"))};
-    auto duration_set{CLI.isSet(cliOptions.at("duration"))};
     std::time_t from_time{now}, to_time{now};
-    if (from_set && to_set && duration_set) {
+    if (from_flag && to_flag && duration_flag) {
       std::cout << "Setting all of from, to, and duration is likely to cause inconsistencies. Duration ignored\n";
-      duration_set = false;
     }
-    if (from_set) {
-      from_time = string_to_time_t(CLI.value(cliOptions.at("from")).toStdString());
+    if (from_flag) {
+      from_time = string_to_time_t(args::get(from_flag));
     }
-    if (to_set) {
-      to_time = string_to_time_t(CLI.value(cliOptions.at("to")).toStdString());
+    if (to_flag) {
+      to_time = string_to_time_t(args::get(to_flag));
     }
-    if (duration_set){
-      auto duration = duration_string_to_seconds(CLI.value(cliOptions.at("duration")).toStdString());
-      if (from_set) {
+    if (duration_flag && (from_flag ^ to_flag)){
+      auto duration = duration_string_to_seconds(args::get(duration_flag));
+      if (from_flag) {
         to_time = from_time + duration.count();
       } else {
         from_time = to_time - duration.count();
@@ -118,3 +118,5 @@ int main(int argc, char *argv[])
 
     do_work(Config, calibration, from_time, to_time, output_file);
 }
+
+

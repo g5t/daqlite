@@ -55,7 +55,8 @@ ESSConsumer::ESSConsumer(data_t * data, Configuration & config,
   mConsumer = subscribeTopic();
   assert(mConsumer != nullptr);
   // if ... something is set in the gui, then seek the consumer offset before consuming
-    setConsumerOffset(End, -1);
+//    setConsumerOffset(End, -1);
+    setConsumerOffset(Beginning, 0);
 }
 
 RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
