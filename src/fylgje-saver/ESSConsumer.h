@@ -14,9 +14,11 @@
 #include "ar51_readout_data_generated.h"
 #include <librdkafka/rdkafkacpp.h>
 #include "DataManager.h"
+#include "KafkaConfig.h"
 
 class ESSConsumer {
 public:
+  using kafka_config_t = std::vector<std::pair<std::string, std::string>>;
   using data_t = ::bifrost::data::Manager;
   enum Status {Continue, Update, Halt};
   enum Start {Beginning, End, Time};
@@ -53,8 +55,19 @@ public:
 
 
   /// \brief Constructor needs the configured Broker and Topic
-  ESSConsumer(data_t * data, Configuration & configuration,
-              std::vector<std::pair<std::string, std::string>> &KafkaConfig);
+
+  ESSConsumer(data_t * data, Configuration & Config, int64_t from, int64_t to):
+  configuration{Config}, histograms{data} {
+    kafkaConfig = KafkaConfig(Config.KafkaConfigFile).CfgParms;
+    mConsumer = subscribeTopic();
+    assert(mConsumer != nullptr);
+//    setConsumerOffset(End, -1);
+    setConsumerOffset(Beginning, 0);
+
+//    consumeAll();
+//    consumeFrom(from);
+      consumeUntil(to);
+  };
 
   /// \brief wrapper function for librdkafka consumer
   RdKafka::Message *consume();
@@ -79,6 +92,8 @@ public:
   void consumeFrom(int64_t ms_since_utc_epoch);
   void consumeUntil(int64_t ms_since_utc_epoch);
 
+  void run();
+
 private:
   Configuration & configuration;
 
@@ -89,7 +104,8 @@ private:
   data_t * histograms;
 
   /// \brief loadable Kafka-specific configuration
-  std::vector<std::pair<std::string, std::string>> &mKafkaConfig;
+  kafka_config_t kafkaConfig;
+
 
   void setConsumerOffset(Start start, int64_t ms_since_utc_epoch);
   void setTopicPartitionOffset(std::vector<RdKafka::TopicPartition*>& tps, Start start, int64_t ms_since_utc_epoch);

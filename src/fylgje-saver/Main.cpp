@@ -7,16 +7,15 @@
 #include "Configuration.h"
 #include "Calibration.h"
 #include "Time.h"
-#include "Worker.h"
+#include "ESSConsumer.h"
 #include "DataManager.h"
 
 void do_work(Configuration & configuration, Calibration & calibration, std::time_t from, std::time_t to, const std::string& output_file) {
   auto tubes = configuration.Instrument.units_per_group;
   auto pixelation = configuration.Instrument.pixels_per_unit;
   auto data = new ::bifrost::data::Manager(5, 9, tubes, pixelation, calibration);
-  Worker worker{data, configuration, from, to};
+  ESSConsumer worker{data, configuration, from, to};
   worker.run();
-  // store the data
   data->save_to(output_file);
   delete data;
 }

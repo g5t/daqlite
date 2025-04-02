@@ -4,7 +4,6 @@ find_package(h5cpp REQUIRED)
 set(target fylgje-saver)
 
 set(${target}_src
-  Worker.cpp
   KafkaConfig.cpp
   ESSConsumer.cpp
   DataManager.cpp
@@ -20,7 +19,6 @@ set(${target}_inc
   ESSConsumer.h
   KafkaConfig.h
   DataManager.h
-  Worker.h
   JsonFile.h
   Time.h
 )

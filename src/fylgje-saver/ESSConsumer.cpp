@@ -46,18 +46,6 @@ static std::tuple<double, uint32_t, uint32_t> frame_time(uint32_t pulse_hi, uint
   return {time, p_hi, p_lo};
 }
 
-ESSConsumer::ESSConsumer(data_t * data, Configuration & config,
-                         std::vector<std::pair<std::string, std::string>> &KafkaConfig) :
-  configuration(config),
-  histograms(data),
-  mKafkaConfig(KafkaConfig)
-  {
-  mConsumer = subscribeTopic();
-  assert(mConsumer != nullptr);
-  // if ... something is set in the gui, then seek the consumer offset before consuming
-//    setConsumerOffset(End, -1);
-    setConsumerOffset(Beginning, 0);
-}
 
 RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
   auto mConf = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
@@ -78,7 +66,7 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
   mConf->set("enable.auto.commit", configuration.Kafka.EnableAutoCommit, ErrStr);
   mConf->set("enable.auto.offset.store", configuration.Kafka.EnableAutoOffsetStore, ErrStr);
 
-  for (auto &Config : mKafkaConfig) {
+  for (auto &Config : kafkaConfig) {
     mConf->set(Config.first, Config.second, ErrStr);
   }
 
@@ -280,9 +268,14 @@ ESSConsumer::Status ESSConsumer::handleMessage(RdKafka::Message *Message) {
           printf("Not a ar51 Kafka message!\n");
         }
       } else if (Message->timestamp().timestamp >= latest_timestamp) {
+        std::cout << Message->timestamp().timestamp << " >= " << latest_timestamp << " halting\n";
         return Halt;
       }
       return count ? Update : Continue;
+  }
+  case RdKafka::ERR__PARTITION_EOF: {
+    fmt::print("Reached end of partition\n");
+    return Halt;
   }
   default:
     fmt::print("Consume failed: {}", Message->errstr());
@@ -307,3 +300,17 @@ std::string ESSConsumer::randomGroupString(size_t length) {
 
 /// \todo is timeout reasonable?
 RdKafka::Message *ESSConsumer::consume() { return mConsumer->consume(1000); }
+
+
+void ESSConsumer::run() {
+  Status intent{Status::Continue};
+  while (intent != Status::Halt) {
+    auto Msg = consume();
+    intent = handleMessage(Msg);
+    delete Msg;
+    if (Status::Update == intent){
+      intent = Status::Continue;
+    }
+  }
+  std::cout << "Done consuming\n";
+}
