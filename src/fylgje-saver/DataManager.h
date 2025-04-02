@@ -45,8 +45,8 @@ namespace bifrost {
     int a;
     int b;
     double time;
-    size_t high;
-    size_t low;
+    uint32_t high;
+    uint32_t low;
   };
   typedef struct message message_t;
 
