@@ -1,13 +1,16 @@
 // Copyright (C) 2023 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
-/// \file WorkerThread.cpp
+/// \file Worker.cpp
 ///
 //===----------------------------------------------------------------------===//
 
-#include "WorkerThread.h"
+#include "Worker.h"
 
-void WorkerThread::run() {
+void Worker::run() {
+  Consumer->consumeFrom(from);
+  Consumer->consumeUntil(to);
+
   ESSConsumer::Status intent{ESSConsumer::Status::Continue};
   while (intent != ESSConsumer::Status::Halt) {
     auto Msg = Consumer->consume();
@@ -20,11 +23,3 @@ void WorkerThread::run() {
   std::cout << "Done consuming\n";
 }
 
-void WorkerThread::consume_from(int64_t ms_since_utc_epoch){
-  Consumer->consumeFrom(ms_since_utc_epoch);
-}
-
-
-void WorkerThread::consume_until(int64_t ms_since_utc_epoch){
-  Consumer->consumeUntil(ms_since_utc_epoch);
-}

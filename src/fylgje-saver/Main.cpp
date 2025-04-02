@@ -7,24 +7,18 @@
 #include "Configuration.h"
 #include "Calibration.h"
 #include "Time.h"
-#include "WorkerThread.h"
+#include "Worker.h"
 #include "DataManager.h"
 
 void do_work(Configuration & configuration, Calibration & calibration, std::time_t from, std::time_t to, const std::string& output_file) {
   auto tubes = configuration.Instrument.units_per_group;
   auto pixelation = configuration.Instrument.pixels_per_unit;
   auto data = new ::bifrost::data::Manager(5, 9, tubes, pixelation, calibration);
-  auto worker = new WorkerThread(data, configuration);
-  // setting the time range does not work until the consumer is running due to how librdkafka seeks/assigns the partition
-  // consume messages
-  worker->start();
-  // now we can update the time range
-  worker->consume_from(from);
-  worker->consume_until(to);
-  // wait for worker to finish
-  worker->wait();
+  Worker worker{data, configuration, from, to};
+  worker.run();
   // store the data
   data->save_to(output_file);
+  delete data;
 }
 
 int main(int argc, char *argv[]){

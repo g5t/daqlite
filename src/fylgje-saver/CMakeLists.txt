@@ -1,12 +1,10 @@
-include(QtLibraryConfig)
 find_package(RdKafka REQUIRED)
-#find_package(qplot REQUIRED)
 find_package(h5cpp REQUIRED)
 
 set(target fylgje-saver)
 
 set(${target}_src
-  WorkerThread.cpp
+  Worker.cpp
   KafkaConfig.cpp
   ESSConsumer.cpp
   DataManager.cpp
@@ -22,12 +20,10 @@ set(${target}_inc
   ESSConsumer.h
   KafkaConfig.h
   DataManager.h
-  WorkerThread.h
+  Worker.h
   JsonFile.h
   Time.h
 )
-
-set(CMAKE_AUTOUIC ON)
 
 add_executable(
   ${target}
@@ -40,8 +36,6 @@ target_link_libraries(
   PUBLIC fmt::fmt
   PRIVATE RdKafka::rdkafka++
   PRIVATE RdKafka::rdkafka
-#  PRIVATE QPlot
-  PRIVATE Qt6::Widgets
   PRIVATE h5cpp::h5cpp
 )
 

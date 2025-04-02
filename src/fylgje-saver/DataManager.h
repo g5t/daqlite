@@ -8,8 +8,6 @@
 #pragma once
 #include <map>
 #include <vector>
-#include <QVector>
-#include <QPlot/qcustomplot/qcustomplot.h>
 #include <fmt/format.h>
 #include <h5cpp/hdf5.hpp>
 #include "Calibration.h"
@@ -165,8 +163,6 @@ namespace bifrost::data {
   class Manager{
   public:
     using AX = std::vector<double>;
-    using D1 = std::vector<double>;
-    using D2 = QCPColorMapData;
     using data_t = std::vector<int>;
   private:
     ///\param messages The ordered messages received by the consumer
