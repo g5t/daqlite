@@ -10,9 +10,9 @@
 #include <fmt/format.h>
 #include <iostream>
 #include <unistd.h>
-#include <utility>
 #include <vector>
 #include <tuple>
+
 
 /**
  * @brief Convert packet header and data times to seconds since reference time
@@ -82,9 +82,9 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
 //  if (resp != RdKafka::ERR_NO_ERROR) {
 //    fmt::print("Failed to subscribe consumer to '{}': {}\n", configuration.Kafka.Topic, err2str(resp));
 //  }
-
   return ret;
 }
+
 
 void ESSConsumer::consumeFrom(std::optional<kafka_time_t> since_epoch){
   earliest_timestamp = since_epoch.has_value() ? since_epoch.value().count() : 0;
@@ -93,6 +93,7 @@ void ESSConsumer::consumeFrom(std::optional<kafka_time_t> since_epoch){
   setTopicPartitionOffset(tps, Time, earliest_timestamp);
   mConsumer->seek(*tps.front(), 1);
 }
+
 
 void ESSConsumer::consumeUntil(std::optional<kafka_time_t> since_epoch){
   auto duration = std::chrono::system_clock::now().time_since_epoch();
@@ -106,6 +107,7 @@ void ESSConsumer::consumeUntil(std::optional<kafka_time_t> since_epoch){
     mConsumer->seek(*tps.front(), 1);
   }
 }
+
 
 void ESSConsumer::consumeAll(){
   std::vector<RdKafka::TopicPartition*> tps;
@@ -133,13 +135,14 @@ void ESSConsumer::setConsumerOffset(Start start, int64_t ms_since_utc_epoch) {
     auto topic_metadata = metadataptr->topics();
     fmt::print("Got metadata about on {} topics\n", topic_metadata->size());
     for (const auto & topic_meta: *topic_metadata){
-      fmt::print(" {} has {} partitions [", topic_meta->topic(), topic_meta->partitions()->size());
-      const auto & partitions = topic_meta->partitions();
-      for (const auto & partition: *partitions){
-        fmt::print(" {},", partition->id());
-      }
-      fmt::print("]\n");
       if (topic_meta->topic() == configuration.Kafka.Topic){
+        fmt::print(" {} has {} partitions [", topic_meta->topic(), topic_meta->partitions()->size());
+        const auto & partitions = topic_meta->partitions();
+        for (const auto & partition: *partitions){
+          fmt::print(" {},", partition->id());
+        }
+        fmt::print("]\n");
+        // pick one at random? or the first one?
         my_partition =  topic_meta->partitions()->front()->id();
       }
     }
@@ -160,6 +163,7 @@ void ESSConsumer::setConsumerOffset(Start start, int64_t ms_since_utc_epoch) {
   setTopicPartitionOffset(tps, start, ms_since_utc_epoch);
   mConsumer->assign(tps); // since consumption hasn't started, we seek by assigning the (topic, partition, offset)
 }
+
 
 void ESSConsumer::setTopicPartitionOffset(std::vector<RdKafka::TopicPartition*>& tps, Start start, int64_t ms_since_utc_epoch){
   int64_t low{0}, high{0};
@@ -205,8 +209,10 @@ uint32_t ESSConsumer::parseCAENData(uint8_t * Readout, int Size, uint32_t hi, ui
     Readout += sizeof(CAENReadout);
     ++processed;
   }
+  total_caen += processed;
   return processed;
 }
+
 
 /// Main processing function for AR51 data
 uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
@@ -244,6 +250,7 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
   //TODO Is this correct for Version 1 headers too?
   auto DataLength = Header->TotalLength - sizeof(struct PacketHeaderV0);
 
+  total_ar51 += 1;
   // Dispatch technology specific
   if (3 == Type){
       return parseCAENData(DataPtr, static_cast<int>(DataLength), pulse_hi, pulse_lo, prev_hi, prev_lo);
@@ -253,39 +260,6 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
   return 0;
 }
 
-
-///\brief Main entry for kafka message processing
-ESSConsumer::Status ESSConsumer::handleMessage(RdKafka::Message *Message) {
-  switch (Message->err()) {
-  case RdKafka::ERR__TIMED_OUT:
-    return Continue;
-
-  case RdKafka::ERR_NO_ERROR: {
-      uint32_t count{0};
-      auto message_timestamp = Message->timestamp().timestamp;
-      if (latest_timestamp < 0 || message_timestamp < latest_timestamp) {
-        if (RawReadoutMessageBufferHasIdentifier(Message->payload())) {
-          count = processAR51Data(Message);
-        } else {
-          printf("Not a ar51 Kafka message!\n");
-        }
-      } else if (message_timestamp >= latest_timestamp) {
-        fmt::print("Message timestamp {} is after range {} to {} -- halting\n", message_timestamp, earliest_timestamp, latest_timestamp);
-        return Halt;
-      } else {
-        fmt::print("Message timestamp {} is not within range {} to {}?\n", message_timestamp, earliest_timestamp, latest_timestamp);
-      }
-      return count ? Update : Continue;
-  }
-  case RdKafka::ERR__PARTITION_EOF: {
-    fmt::print("Reached end of partition\n");
-    return Halt;
-  }
-  default:
-    fmt::print("Consume failed: {}", Message->errstr());
-    return Halt;
-  }
-}
 
 // Copied from daqlite - modified to not reinstantiate charset 'length' times
 std::string ESSConsumer::randomGroupString(size_t length) {
@@ -302,6 +276,40 @@ std::string ESSConsumer::randomGroupString(size_t length) {
   return str;
 }
 
+
+///\brief Main entry for kafka message processing
+ESSConsumer::Status ESSConsumer::handleMessage(RdKafka::Message *Message) {
+  switch (Message->err()) {
+  case RdKafka::ERR__TIMED_OUT:
+    return Continue;
+
+  case RdKafka::ERR_NO_ERROR: {
+      uint32_t count{0};
+      auto message_timestamp = Message->timestamp().timestamp;
+      if (latest_timestamp < 0 || message_timestamp < latest_timestamp) {
+        if (RawReadoutMessageBufferHasIdentifier(Message->payload())) {
+          count = processAR51Data(Message);
+        } else {
+          fmt::print("Not a ar51 Kafka message!\n");
+        }
+      } else if (message_timestamp >= latest_timestamp) {
+        return Halt;
+      } else {
+        fmt::print("Message timestamp {} is not within range {} to {}?\n", message_timestamp, earliest_timestamp, latest_timestamp);
+      }
+      return count ? Update : Continue;
+  }
+  case RdKafka::ERR__PARTITION_EOF: {
+    fmt::print("Reached end of partition\n");
+    return Halt;
+  }
+  default:
+    fmt::print("Consume failed: {}", Message->errstr());
+    return Halt;
+  }
+}
+
+
 /// \todo is timeout reasonable?
 RdKafka::Message *ESSConsumer::consume() { return mConsumer->consume(1000); }
 
@@ -316,5 +324,5 @@ void ESSConsumer::run() {
       intent = Status::Continue;
     }
   }
-  std::cout << "Done consuming\n";
+  fmt::print("Processed {} AR51 packets and {} CAEN readouts\n", total_ar51, total_caen);
 }

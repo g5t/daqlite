@@ -106,6 +106,9 @@ private:
   /// \brief loadable Kafka-specific configuration
   kafka_config_t kafkaConfig;
 
+  int64_t total_ar51{0};
+  int64_t total_caen{0};
+
 
   void setConsumerOffset(Start start, int64_t ms_since_utc_epoch);
   void setTopicPartitionOffset(std::vector<RdKafka::TopicPartition*>& tps, Start start, int64_t ms_since_utc_epoch);
