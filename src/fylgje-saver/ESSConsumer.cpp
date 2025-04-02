@@ -267,9 +267,9 @@ ESSConsumer::Status ESSConsumer::handleMessage(RdKafka::Message *Message) {
         } else {
           printf("Not a ar51 Kafka message!\n");
         }
-      } else if (Message->timestamp().timestamp >= latest_timestamp) {
-        std::cout << Message->timestamp().timestamp << " >= " << latest_timestamp << " halting\n";
-        return Halt;
+//      } else if (Message->timestamp().timestamp >= latest_timestamp) {
+//        std::cout << Message->timestamp().timestamp << " >= " << latest_timestamp << " halting\n";
+//        return Halt;
       }
       return count ? Update : Continue;
   }
