@@ -269,11 +269,11 @@ ESSConsumer::Status ESSConsumer::handleMessage(RdKafka::Message *Message) {
         } else {
           printf("Not a ar51 Kafka message!\n");
         }
-//      } else if (Message->timestamp().timestamp >= latest_timestamp) {
-//        std::cout << Message->timestamp().timestamp << " >= " << latest_timestamp << " halting\n";
-//        return Halt;
+      } else if (message_timestamp >= latest_timestamp) {
+        fmt::print("Message timestamp {} is after range {} to {} -- halting\n", message_timestamp, earliest_timestamp, latest_timestamp);
+        return Halt;
       } else {
-        fmt::print("Message timestamp {} is not within range {} to {}\n", message_timestamp, earliest_timestamp, latest_timestamp);
+        fmt::print("Message timestamp {} is not within range {} to {}?\n", message_timestamp, earliest_timestamp, latest_timestamp);
       }
       return count ? Update : Continue;
   }
