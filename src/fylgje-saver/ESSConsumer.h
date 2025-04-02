@@ -63,9 +63,9 @@ public:
     kafkaConfig = KafkaConfig(Config.KafkaConfigFile).CfgParms;
     mConsumer = subscribeTopic();
     assert(mConsumer != nullptr);
+    earliest_timestamp = from.count();
+    latest_timestamp = to.count();
     setConsumerOffset(Beginning, 0);
-    consumeFrom(from);
-    consumeUntil(to);
   };
 
   /// \brief wrapper function for librdkafka consumer

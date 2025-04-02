@@ -184,6 +184,7 @@ void ESSConsumer::setTopicPartitionOffset(std::vector<RdKafka::TopicPartition*>&
                  ms_since_utc_epoch, configuration.Kafka.Topic, my_partition, err2str(resp));
     }
   }
+  fmt::print("Offset set to {}\n", tps.front()->offset());
 }
 
 
@@ -261,7 +262,8 @@ ESSConsumer::Status ESSConsumer::handleMessage(RdKafka::Message *Message) {
 
   case RdKafka::ERR_NO_ERROR: {
       uint32_t count{0};
-      if (latest_timestamp < 0 || Message->timestamp().timestamp < latest_timestamp) {
+      auto message_timestamp = Message->timestamp().timestamp;
+      if (latest_timestamp < 0 || message_timestamp < latest_timestamp) {
         if (RawReadoutMessageBufferHasIdentifier(Message->payload())) {
           count = processAR51Data(Message);
         } else {
@@ -270,6 +272,8 @@ ESSConsumer::Status ESSConsumer::handleMessage(RdKafka::Message *Message) {
 //      } else if (Message->timestamp().timestamp >= latest_timestamp) {
 //        std::cout << Message->timestamp().timestamp << " >= " << latest_timestamp << " halting\n";
 //        return Halt;
+      } else {
+        fmt::print("Message timestamp {} is not within range {} to {}\n", message_timestamp, earliest_timestamp, latest_timestamp);
       }
       return count ? Update : Continue;
   }
