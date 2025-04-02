@@ -38,6 +38,40 @@ namespace bifrost {
     int type = group % 3;
     return module(fiber) * 3 + type;
   }
+
+  struct message {
+    int fiber;
+    int group;
+    int a;
+    int b;
+    double time;
+    size_t high;
+    size_t low;
+  };
+  typedef struct message message_t;
+
+  hdf5::datatype::Compound message_type();
+}
+
+/// \brief Specialization of the h5cpp datatype trait for bifrost::message_t
+namespace hdf5::datatype {
+    template<>
+    class TypeTrait<bifrost::message_t>
+    {
+      public:
+      using Type = bifrost::message_t;
+      using TypeClass = Compound;
+
+      static TypeClass create(const Type& = Type())
+      {
+        return bifrost::message_type();
+      }
+
+      const static TypeClass & get(const Type & = Type()) {
+        const static TypeClass & cref_ = create();
+        return cref_;
+      }
+    };
 }
 
 namespace bifrost::data {
@@ -135,6 +169,8 @@ namespace bifrost::data {
     using D2 = QCPColorMapData;
     using data_t = std::vector<int>;
   private:
+    ///\param messages The ordered messages received by the consumer
+    std::vector<bifrost::message_t> messages;
     ///\param everything histograms for all data received
     ///\param included histograms for data which passes the calibration filter
     ///\param excluded histograms for data which fails the calibration filter
@@ -206,7 +242,7 @@ namespace bifrost::data {
     }
 
     ///\brief Add a new data point to the histograms
-    bool add(int arc, int triplet, int a, int b, double time);
+    bool add(int arc, int triplet, int a, int b, double time, uint32_t high, uint32_t low);
 
 
     ///\brief Return the axis values for a given histogram type
@@ -300,7 +336,7 @@ namespace bifrost::data {
     }
 
   public:
-    std::vector<unsigned long long> type_dimensions(Type type) const;
+    [[nodiscard]] std::vector<unsigned long long> type_dimensions(Type type) const;
 
     void save_to(std::filesystem::path file, std::optional<std::string> group = std::nullopt) const;
     void save_to(hdf5::file::File file, std::optional<std::string> group = std::nullopt) const;

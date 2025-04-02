@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <tuple>
 
 /**
  * @brief Convert packet header and data times to seconds since reference time
@@ -23,7 +24,7 @@
  * @param low Event reference time 88.053 MHz ticks since high
  * @return A positive double representing the time in seconds since _a_ reference time
  */
-static double frame_time(uint32_t pulse_hi, uint32_t pulse_lo, uint32_t prev_hi, uint32_t prev_lo, uint32_t high, uint32_t low){
+static std::tuple<double, uint32_t, uint32_t> frame_time(uint32_t pulse_hi, uint32_t pulse_lo, uint32_t prev_hi, uint32_t prev_lo, uint32_t high, uint32_t low){
   auto converter = [high,low](uint32_t h, uint32_t l) {
     // low is allowed to be less than l, in which case direct subtraction would yield a large positive integer
     // if the cast to int is not done before subtraction.
@@ -32,12 +33,17 @@ static double frame_time(uint32_t pulse_hi, uint32_t pulse_lo, uint32_t prev_hi,
     return static_cast<double>(high-h) + static_cast<double>(diff) / ticks;
   };
   double time{0.};
+  uint32_t p_hi, p_lo;
   if (high > pulse_hi || (high == pulse_hi && low > pulse_lo)){
     time =  converter(pulse_hi, pulse_lo);
+    p_hi = pulse_hi;
+    p_lo = pulse_lo;
   } else if (high > prev_hi || (high == prev_hi && low > prev_lo)){
     time = converter(prev_hi, prev_lo);
+    p_hi = prev_hi;
+    p_lo = prev_lo;
   }
-  return time;
+  return {time, p_hi, p_lo};
 }
 
 ESSConsumer::ESSConsumer(data_t * data, Configuration & config,
@@ -202,8 +208,8 @@ uint32_t ESSConsumer::parseCAENData(uint8_t * Readout, int Size, uint32_t hi, ui
       printf("FEN %u, Length %u, HighTime %u, LowTime %u, Flags %u, Group %u\n",
              crd->FEN, crd->Length, crd->HighTime, crd->LowTime, crd->Flags_OM, crd->Group);
     } else {
-      auto time = frame_time(hi, lo, p_hi, p_lo, crd->HighTime, crd->LowTime);
-      histograms->add(crd->Fiber, crd->Group, crd->A, crd->B, time);
+      auto [time, h, l] = frame_time(hi, lo, p_hi, p_lo, crd->HighTime, crd->LowTime);
+      histograms->add(crd->Fiber, crd->Group, crd->A, crd->B, time, h, l);
     }
     BytesLeft -= sizeof(CAENReadout);
     Readout += sizeof(CAENReadout);

@@ -86,23 +86,28 @@ bool bifrost::data::Manager::includes(int arc, int triplet, int a, int b) const 
 }
 
 
-bool bifrost::data::Manager::add(int fiber, int group, int a, int b, double time){
-    auto arc_ = arc(group);
-    auto triplet_ = triplet(fiber, group);
-    if (arc_ < 0 || arc_ >= arcs || triplet_ < 0 || triplet_ >= triplets) {
-        return false;
-    }
-    auto allowed = includes(arc_, triplet_, a, b);
-    if (allowed) {
-      if (auto p = pixel(arc_, triplet_, a, b); (p > 0 && p <= total_pixels)) {
-        pixel_data[p - 1] += 1;
-      }
-    }
+bool bifrost::data::Manager::add(int fiber, int group, int a, int b, double time, uint32_t high, uint32_t low){
+  if (messages.capacity() - messages.size() < 1){
+    messages.reserve(messages.capacity() ? 10 * messages.capacity() : 10000u);
+  }
+  messages.push_back({fiber, group, a, b, time, high, low});
 
-    bool ok{true};
-    ok &= add_1D(arc_, triplet_, a, b, time, allowed);
-    ok &= add_2D(arc_, triplet_, a, b, time, allowed);
-    return ok;
+  auto arc_ = arc(group);
+  auto triplet_ = triplet(fiber, group);
+  if (arc_ < 0 || arc_ >= arcs || triplet_ < 0 || triplet_ >= triplets) {
+      return false;
+  }
+  auto allowed = includes(arc_, triplet_, a, b);
+  if (allowed) {
+    if (auto p = pixel(arc_, triplet_, a, b); (p > 0 && p <= total_pixels)) {
+      pixel_data[p - 1] += 1;
+    }
+  }
+
+  bool ok{true};
+  ok &= add_1D(arc_, triplet_, a, b, time, allowed);
+  ok &= add_2D(arc_, triplet_, a, b, time, allowed);
+  return ok;
 }
 
 bool bifrost::data::Manager::add_1D(int arc, int triplet, int a, int b, double time, bool allowed){
@@ -323,6 +328,26 @@ void bifrost::data::Manager::save_to(hdf5::node::Group group) const {
   auto pds = group.create_dataset("pixels", datatype, pixeldataspace, datasetCreationList);
   pds.attributes.create_from("wrap_order", pixel_order);
   pds.write(pixel_data);
+  // and the stored messages
+  dimensions = hdf5::Dimensions({messages.size()});
+  auto message_dataspace = hdf5::dataspace::Simple(dimensions);
+  auto compound = bifrost::message_type();
+  auto message_dataset = group.create_dataset("messages", compound, message_dataspace, datasetCreationList);
+  message_dataset.write(messages);
+}
+
+
+
+hdf5::datatype::Compound bifrost::message_type() {
+  auto compound = hdf5::datatype::Compound::create(sizeof(bifrost::message_t));
+  compound.insert("fiber", offsetof(bifrost::message_t, fiber), hdf5::datatype::create<int>());
+  compound.insert("group", offsetof(bifrost::message_t, group), hdf5::datatype::create<int>());
+  compound.insert("a", offsetof(bifrost::message_t, a), hdf5::datatype::create<int>());
+  compound.insert("b", offsetof(bifrost::message_t, b), hdf5::datatype::create<int>());
+  compound.insert("time", offsetof(bifrost::message_t, time), hdf5::datatype::create<double>());
+  compound.insert("high", offsetof(bifrost::message_t, high), hdf5::datatype::create<size_t>());
+  compound.insert("low", offsetof(bifrost::message_t, low), hdf5::datatype::create<size_t>());
+  return compound;
 }
 
 void bifrost::data::Manager::save_to(hdf5::file::File file, std::optional<std::string> group) const {
