@@ -15,10 +15,12 @@
 #include <librdkafka/rdkafkacpp.h>
 #include "DataManager.h"
 #include "KafkaConfig.h"
+#include "Time.h"
 
 class ESSConsumer {
 public:
   using kafka_config_t = std::vector<std::pair<std::string, std::string>>;
+  using kafka_time_t = kafka::time::milliseconds;
   using data_t = ::bifrost::data::Manager;
   enum Status {Continue, Update, Halt};
   enum Start {Beginning, End, Time};
@@ -56,17 +58,14 @@ public:
 
   /// \brief Constructor needs the configured Broker and Topic
 
-  ESSConsumer(data_t * data, Configuration & Config, int64_t from, int64_t to):
+  ESSConsumer(data_t * data, Configuration & Config, kafka::time::milliseconds from, kafka::time::milliseconds to):
   configuration{Config}, histograms{data} {
     kafkaConfig = KafkaConfig(Config.KafkaConfigFile).CfgParms;
     mConsumer = subscribeTopic();
     assert(mConsumer != nullptr);
-//    setConsumerOffset(End, -1);
     setConsumerOffset(Beginning, 0);
-
-//    consumeAll();
-//    consumeFrom(from);
-      consumeUntil(to);
+    consumeFrom(from);
+    consumeUntil(to);
   };
 
   /// \brief wrapper function for librdkafka consumer
@@ -89,8 +88,8 @@ public:
 
   [[maybe_unused]] void consumeAll();
   void consumeForever();
-  void consumeFrom(int64_t ms_since_utc_epoch);
-  void consumeUntil(int64_t ms_since_utc_epoch);
+  void consumeFrom(std::optional<kafka_time_t> ms_since_utc_epoch);
+  void consumeUntil(std::optional<kafka_time_t> ms_since_utc_epoch);
 
   void run();
 

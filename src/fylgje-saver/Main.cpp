@@ -10,7 +10,9 @@
 #include "ESSConsumer.h"
 #include "DataManager.h"
 
-void do_work(Configuration & configuration, Calibration & calibration, std::time_t from, std::time_t to, const std::string& output_file) {
+using namespace kafka::time;
+
+void do_work(Configuration & configuration, Calibration & calibration, milliseconds from, milliseconds to, const std::string& output_file) {
   auto tubes = configuration.Instrument.units_per_group;
   auto pixelation = configuration.Instrument.pixels_per_unit;
   auto data = new ::bifrost::data::Manager(5, 9, tubes, pixelation, calibration);
@@ -90,22 +92,24 @@ int main(int argc, char *argv[]){
       }
     }
 
-    std::time_t from_time{now}, to_time{now};
+    milliseconds from_time{time_t_to_milliseconds(now)};
+    auto to_time=from_time;
+
     if (from_flag && to_flag && duration_flag) {
       std::cout << "Setting all of from, to, and duration is likely to cause inconsistencies. Duration ignored\n";
     }
     if (from_flag) {
-      from_time = string_to_time_t(args::get(from_flag));
+      from_time = time_string_to_milliseconds(args::get(from_flag));
     }
     if (to_flag) {
-      to_time = string_to_time_t(args::get(to_flag));
+      to_time = time_string_to_milliseconds(args::get(to_flag));
     }
     if (duration_flag && (from_flag ^ to_flag)){
-      auto duration = duration_string_to_seconds(args::get(duration_flag));
+      auto duration = duration_string_to_milliseconds(args::get(duration_flag));
       if (from_flag) {
-        to_time = from_time + duration.count();
+        to_time = from_time + duration;
       } else {
-        from_time = to_time - duration.count();
+        from_time = to_time - duration;
       }
     }
 

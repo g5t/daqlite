@@ -86,19 +86,19 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
   return ret;
 }
 
-void ESSConsumer::consumeFrom(int64_t ms_since_utc_epoch){
-  earliest_timestamp = ms_since_utc_epoch < 0 ? 0 : ms_since_utc_epoch;
+void ESSConsumer::consumeFrom(std::optional<kafka_time_t> since_epoch){
+  earliest_timestamp = since_epoch.has_value() ? since_epoch.value().count() : 0;
   std::vector<RdKafka::TopicPartition*> tps;
   mConsumer->assignment(tps);
-  setTopicPartitionOffset(tps, Time, ms_since_utc_epoch);
+  setTopicPartitionOffset(tps, Time, earliest_timestamp);
   mConsumer->seek(*tps.front(), 1);
 }
 
-void ESSConsumer::consumeUntil(int64_t ms_since_utc_epoch){
+void ESSConsumer::consumeUntil(std::optional<kafka_time_t> since_epoch){
   auto duration = std::chrono::system_clock::now().time_since_epoch();
-  auto milliseconds= std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-  latest_timestamp = ms_since_utc_epoch < 0 ? -1 : ms_since_utc_epoch;
-  if (ms_since_utc_epoch < milliseconds){
+  auto ms_now= std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+  latest_timestamp = since_epoch.has_value() ? since_epoch.value().count() : -1;
+  if (since_epoch < ms_now){
     // consume only in the past; do we _need_ to seek backwards?
     std::vector<RdKafka::TopicPartition*> tps;
     mConsumer->assignment(tps);
