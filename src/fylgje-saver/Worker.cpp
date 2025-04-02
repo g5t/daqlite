@@ -8,9 +8,6 @@
 #include "Worker.h"
 
 void Worker::run() {
-  Consumer->consumeFrom(from);
-  Consumer->consumeUntil(to);
-
   ESSConsumer::Status intent{ESSConsumer::Status::Continue};
   while (intent != ESSConsumer::Status::Halt) {
     auto Msg = Consumer->consume();
