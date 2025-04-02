@@ -21,8 +21,9 @@ public:
   configuration(Config) {
     KafkaConfig kcfg(Config.KafkaConfigFile);
     Consumer = new ESSConsumer(data, configuration, kcfg.CfgParms);
-    Consumer->consumeFrom(from);
-    Consumer->consumeUntil(to);
+    Consumer->consumeAll();
+//    Consumer->consumeFrom(from);
+//    Consumer->consumeUntil(to);
   };
 
   ~Worker(){
