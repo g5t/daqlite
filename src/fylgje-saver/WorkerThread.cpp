@@ -8,7 +8,6 @@
 #include "WorkerThread.h"
 
 void WorkerThread::run() {
-  qDebug("Entering main consumer loop\n");
   ESSConsumer::Status intent{ESSConsumer::Status::Continue};
   while (intent != ESSConsumer::Status::Halt) {
     auto Msg = Consumer->consume();
@@ -18,6 +17,7 @@ void WorkerThread::run() {
         intent = ESSConsumer::Status::Continue;
     }
   }
+  std::cout << "Done consuming\n";
 }
 
 void WorkerThread::consume_from(int64_t ms_since_utc_epoch){
