@@ -8,18 +8,25 @@
 #include "Calibration.h"
 #include "Time.h"
 #include "ESSConsumer.h"
-#include "DataManager.h"
+#include "EventManager.h"
+#include "HistogramManager.h"
+#include "PixelManager.h"
 
 using namespace kafka::time;
 
 void do_work(Configuration & configuration, Calibration & calibration, milliseconds from, milliseconds to, const std::string& output_file) {
+  using namespace bifrost::data;
   auto tubes = configuration.Instrument.units_per_group;
   auto pixelation = configuration.Instrument.pixels_per_unit;
-  auto data = new ::bifrost::data::Manager(5, 9, tubes, pixelation, calibration);
+  int arcs{5}, triplets{9};
+  bool store_pixels{true};
+  auto data = std::make_shared<EventManager>(PixelManager(arcs, triplets, tubes, pixelation, calibration), HistogramManager(arcs ,triplets, calibration), store_pixels);
+
+  // auto just_events = std::make_shared<EventManager>(PixelManager(arcs, triplets, tubes, pixelation, calibration), false);
+
   ESSConsumer worker{data, configuration, from, to};
   worker.run();
   data->save_to(output_file);
-  delete data;
 }
 
 int main(int argc, char *argv[]){

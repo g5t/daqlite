@@ -13,7 +13,7 @@
 #include "Configuration.h"
 #include "ar51_readout_data_generated.h"
 #include <librdkafka/rdkafkacpp.h>
-#include "DataManager.h"
+#include "EventManager.h"
 #include "KafkaConfig.h"
 #include "Time.h"
 
@@ -21,7 +21,7 @@ class ESSConsumer {
 public:
   using kafka_config_t = std::vector<std::pair<std::string, std::string>>;
   using kafka_time_t = kafka::time::milliseconds;
-  using data_t = ::bifrost::data::Manager;
+  using data_t = std::shared_ptr<bifrost::data::EventManager>;
   enum Status {Continue, Update, Halt};
   enum Start {Beginning, End, Time};
 
@@ -58,7 +58,7 @@ public:
 
   /// \brief Constructor needs the configured Broker and Topic
 
-  ESSConsumer(data_t * data, Configuration & Config, kafka::time::milliseconds from, kafka::time::milliseconds to):
+  ESSConsumer(data_t data, Configuration & Config, kafka::time::milliseconds from, kafka::time::milliseconds to):
   configuration{Config}, histograms{data} {
     kafkaConfig = KafkaConfig(Config.KafkaConfigFile).CfgParms;
     mConsumer = subscribeTopic();
@@ -101,7 +101,7 @@ private:
   int32_t my_partition{0};
   int64_t earliest_timestamp{-1}, latest_timestamp{-1};
 
-  data_t * histograms;
+  data_t histograms;
 
   /// \brief loadable Kafka-specific configuration
   kafka_config_t kafkaConfig;

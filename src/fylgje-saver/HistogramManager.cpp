@@ -1,7 +1,9 @@
 #include <iostream>
 #include <fmt/format.h>
 #include <sstream>
-#include "DataManager.h"
+
+#include "HistogramManager.h"
+
 
 
 int bifrost::data::hist_a_or_b(int x, int shift, int bins){
@@ -45,77 +47,29 @@ int bifrost::data::hist_x(int a, int b, int bins){
   return x;
 }
 
-int bifrost::data::Manager::group(int arc, int triplet) const {
-  return arc * triplets + triplet;
-}
 
-///\brief Replicate the EFU calculations to identify a unique pixel number
-///\returns 0 if no valid pixel
-int bifrost::data::Manager::pixel(int arc, int triplet, int a, int b) const {
-  auto g = group(arc, triplet);
-  auto pos = static_cast<double>(a) / static_cast<double>(a + b);
-  auto tube = calibration.getUnitId(g, pos);
-  if (tube < 0) {
-    // invalid global position (outside any unit's range)
-    return 0;
-  }
-  auto cor_pos = calibration.posCorrection(g, tube, calibration.unitPosition(g, tube,  pos)); // in range (0, 1)
-  // corrected position in (0.0, 1.0) is mapped to a tube pixel in (0, pixels_per_tube - 1)
-  // its offset by which tube it is, which triplet its in, and which arc its in
-  int offset = pixels_per_tube * arc + pixels_per_tube * triplet + pixels_per_tube_arc * tube;
-  // and note that valid pixels index from 1 -- not 0.
-  return 1 + offset + static_cast<int>((pixels_per_tube - 1) * cor_pos);
-}
-
-///\brief Determine if the charge division would give a pixel number, and if the the pulse height is within threshold
-bool bifrost::data::Manager::includes(int arc, int triplet, int a, int b) const {
-  auto g = group(arc, triplet);
-  if (g < 0) return false;
-
-  auto pos = static_cast<double>(a) / static_cast<double>(a + b);
-  auto tube = calibration.getUnitId(g, pos);
-  if (tube < 0) return false;
-
-  auto unit_pos = calibration.unitPosition(g, tube, pos);
-  if (unit_pos < 0 || unit_pos > 1) return false;
-
-//  return calibration.pulseHeightOK(g, tube, a+b);
-  return true;
-}
-
-
-bool bifrost::data::Manager::add(int fiber, int group, int a, int b, double time, uint32_t high, uint32_t low){
-  if (messages.capacity() - messages.size() < 1){
-    messages.reserve(messages.capacity() ? 10 * messages.capacity() : 10000u);
-  }
-  messages.push_back({fiber, group, a, b, time, high, low});
-
-  auto arc_ = arc(group);
-  auto triplet_ = triplet(fiber, group);
+bool bifrost::data::HistogramManager::add(const bifrost::message_t & message, bool allowed) {
+  auto arc_ = arc(message.group);
+  auto triplet_ = triplet(message.fiber, message.group);
   if (arc_ < 0 || arc_ >= arcs || triplet_ < 0 || triplet_ >= triplets) {
-      return false;
-  }
-  auto allowed = includes(arc_, triplet_, a, b);
-  if (allowed) {
-    if (auto p = pixel(arc_, triplet_, a, b); (p > 0 && p <= total_pixels)) {
-      pixel_data[p - 1] += 1;
-    }
+    return false;
   }
 
   bool ok{true};
-  ok &= add_1D(arc_, triplet_, a, b, time, allowed);
-  ok &= add_2D(arc_, triplet_, a, b, time, allowed);
+  ok &= add_1D(arc_, triplet_, message.a, message.b, message.time, allowed);
+  ok &= add_2D(arc_, triplet_, message.a, message.b, message.time, allowed);
   return ok;
 }
 
-bool bifrost::data::Manager::add_1D(int arc, int triplet, int a, int b, double time, bool allowed){
+
+bool bifrost::data::HistogramManager::add_1D(int arc, int triplet, int a, int b, double time, bool allowed){
   auto t_a = std::make_pair(Type::a, hist_a_or_b(a, SHIFT1D, BIN1D));
   auto t_b = std::make_pair(Type::b, hist_a_or_b(b, SHIFT1D, BIN1D));
   auto t_p = std::make_pair(Type::p, hist_p(a+b, SHIFT1D, BIN1D));
   auto t_x = std::make_pair(Type::x, hist_x(a, b, BIN1D));
   auto t_t = std::make_pair(Type::t, hist_t(time, BIN1D));
   if (t_a.second < 0 || t_b.second < 0 || t_p.second < 0 || t_x.second < 0 || t_t.second < 0) {
-      return false;
+    return false;
   }
   std::vector<std::pair<map_t<data_t> *, bool>> each{{{&everything, true}, {&included, allowed}, {&excluded, !allowed}}};
   for (auto & [data, tf]: each) {
@@ -142,7 +96,8 @@ bool bifrost::data::Manager::add_1D(int arc, int triplet, int a, int b, double t
   return true;
 }
 
-bool bifrost::data::Manager::add_2D(int arc, int triplet, int full_a, int full_b, double full_t, bool allowed){
+
+bool bifrost::data::HistogramManager::add_2D(int arc, int triplet, int full_a, int full_b, double full_t, bool allowed){
   auto a = hist_a_or_b(full_a, SHIFT2D, BIN2D);
   auto b = hist_a_or_b(full_b, SHIFT2D, BIN2D);
   auto p = hist_p(full_a+full_b, SHIFT2D, BIN2D);
@@ -182,10 +137,12 @@ bool bifrost::data::is_1D(bifrost::data::Type t) {
   return std::find(std::begin(TYPE1D), std::end(TYPE1D), t) != std::end(TYPE1D);
 }
 
+
 bool bifrost::data::is_2D(bifrost::data::Type t) {
   using bifrost::data::TYPE2D;
   return std::find(std::begin(TYPE2D), std::end(TYPE2D), t) != std::end(TYPE2D);
 }
+
 
 std::ostream & operator<<(std::ostream & os, ::bifrost::data::Type type){
   using ::bifrost::data::Type;
@@ -204,6 +161,7 @@ std::ostream & operator<<(std::ostream & os, ::bifrost::data::Type type){
   return os;
 }
 
+
 std::vector<std::string> bifrost::data::axes_names(Type type){
   switch (type){
     case Type::a: {return {"A"};}
@@ -218,6 +176,7 @@ std::vector<std::string> bifrost::data::axes_names(Type type){
     default: return {};
   }
 }
+
 
 std::string bifrost::data::type_dataset_name(Type type){
   switch (type){
@@ -234,7 +193,8 @@ std::string bifrost::data::type_dataset_name(Type type){
   }
 }
 
-std::vector<unsigned long long> bifrost::data::Manager::type_dimensions(Type type) const{
+
+std::vector<unsigned long long> bifrost::data::HistogramManager::type_dimensions(Type type) const{
   switch (type){
     case Type::a: {return {BIN1D};}
     case Type::x: {return {BIN1D};}
@@ -249,7 +209,8 @@ std::vector<unsigned long long> bifrost::data::Manager::type_dimensions(Type typ
   }
 }
 
-void bifrost::data::Manager::save_to(hdf5::node::Group group) const {
+
+void bifrost::data::HistogramManager::save_to(hdf5::node::Group group) const {
   std::string creator{"fylgje"};
   std::string version{"v0.0.1"};
   std::string instrument{"BIFROST"};
@@ -259,12 +220,8 @@ void bifrost::data::Manager::save_to(hdf5::node::Group group) const {
   group.attributes.create_from("instrument", instrument);
   group.attributes.create_from("arcs", arcs);
   group.attributes.create_from("triplets", triplets);
-  group.attributes.create_from("tubes", tubes_per_triplet);
-  group.attributes.create_from("pixels", pixels_per_tube);
 
-  std::vector<std::string> pixel_order{{"arcs", "tubes", "triplets"}};
   std::vector<std::string> data_order{{"arc"}, {"triplets"}, {"type"}};
-  group.attributes.create_from("pixel_order", pixel_order);
   group.attributes.create_from("data_order", data_order);
 
   std::vector<std::pair<std::string, const map_t<data_t>*>> pairs{
@@ -320,34 +277,10 @@ void bifrost::data::Manager::save_to(hdf5::node::Group group) const {
       }
     }
   }
-  // plus stash the pixel data:
-  auto dimensions = hdf5::Dimensions({pixel_data.size()});
-  auto pixeldataspace = hdf5::dataspace::Simple(dimensions);
-  auto pds = group.create_dataset("pixels", datatype, pixeldataspace, datasetCreationList);
-  pds.attributes.create_from("wrap_order", pixel_order);
-  pds.write(pixel_data);
-  // and the stored messages
-  dimensions = hdf5::Dimensions({messages.size()});
-  auto message_dataspace = hdf5::dataspace::Simple(dimensions);
-  auto compound = bifrost::message_type();
-  auto message_dataset = group.create_dataset("messages", compound, message_dataspace, datasetCreationList);
-  message_dataset.write(messages);
-  std::cout << "Saved data including " << messages.size() << " readouts to HDF5 file\n";
 }
 
-hdf5::datatype::Compound bifrost::message_type() {
-  auto compound = hdf5::datatype::Compound::create(sizeof(bifrost::message_t));
-  compound.insert("fiber", offsetof(bifrost::message_t, fiber), hdf5::datatype::create<int>());
-  compound.insert("group", offsetof(bifrost::message_t, group), hdf5::datatype::create<int>());
-  compound.insert("a", offsetof(bifrost::message_t, a), hdf5::datatype::create<int>());
-  compound.insert("b", offsetof(bifrost::message_t, b), hdf5::datatype::create<int>());
-  compound.insert("time", offsetof(bifrost::message_t, time), hdf5::datatype::create<double>());
-  compound.insert("high", offsetof(bifrost::message_t, high), hdf5::datatype::create<uint32_t>());
-  compound.insert("low", offsetof(bifrost::message_t, low), hdf5::datatype::create<uint32_t>());
-  return compound;
-}
 
-void bifrost::data::Manager::save_to(hdf5::file::File file, std::optional<std::string> group) const {
+void bifrost::data::HistogramManager::save_to(hdf5::file::File file, std::optional<std::string> group) const {
   auto root = file.root();
   std::string name = group.value_or("fylgje");
   if (root.has_group(name)){
@@ -357,7 +290,8 @@ void bifrost::data::Manager::save_to(hdf5::file::File file, std::optional<std::s
   save_to(gr);
 }
 
-void bifrost::data::Manager::save_to(std::filesystem::path file, std::optional<std::string> group) const{
+
+void bifrost::data::HistogramManager::save_to(std::filesystem::path file, std::optional<std::string> group) const{
   namespace fs = std::filesystem;
   auto status = fs::status(file);
   hdf5::file::File hdf5_file;
@@ -372,6 +306,5 @@ void bifrost::data::Manager::save_to(std::filesystem::path file, std::optional<s
   } else {
     throw std::runtime_error(fmt::format("{} exists but is not a file", std::string(file)));
   }
-
   save_to(hdf5_file, group);
 }

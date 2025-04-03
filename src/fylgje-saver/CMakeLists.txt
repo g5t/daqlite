@@ -6,11 +6,14 @@ set(target fylgje-saver)
 set(${target}_src
   KafkaConfig.cpp
   ESSConsumer.cpp
-  DataManager.cpp
   Configuration.cpp
   Calibration.cpp
   Time.cpp
   Main.cpp
+  Message.cpp
+  EventManager.cpp
+  HistogramManager.cpp
+  PixelManager.cpp
 )
 
 set(${target}_inc
@@ -18,9 +21,12 @@ set(${target}_inc
   Configuration.h
   ESSConsumer.h
   KafkaConfig.h
-  DataManager.h
   JsonFile.h
   Time.h
+  Message.h
+  EventManager.h
+  HistogramManager.h
+  PixelManager.h
 )
 
 add_executable(
