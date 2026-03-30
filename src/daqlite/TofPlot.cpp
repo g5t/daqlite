@@ -107,7 +107,7 @@ void TofPlot::updateData() {
   std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
 
   // Get histogram data from Consumer and clear it
-  const std::string source = mConfig.mPlot.Source;
+  const auto &source = mConfig.mPlot.Source;
   vector<uint32_t> HistogramTof = mConsumer.readData(DataType::HISTOGRAM_TOF, source);
 
   // Periodically clear the histogram

@@ -15,15 +15,16 @@
 #include <iostream>
 #include <stdexcept>
 
+using std::optional;
 using std::string;
 using std::vector;
 
-void Configuration::prettyJSON(nlohmann::json &obj, const std::string &header, int indent) {
+void Configuration::prettyJSON(nlohmann::json &obj, const string &header, int indent) {
   fmt::print("{}:\n", header);
   std::cout << obj.dump(indent) << "\n\n" << std::endl;
 }
 
-vector<Configuration> Configuration::getConfigurations(const std::string &Path) {
+vector<Configuration> Configuration::getConfigurations(const string &Path) {
   vector<Configuration> Configurations;
 
   // Open JSON file for reading
@@ -91,7 +92,7 @@ void Configuration::fromJsonObj(const nlohmann::json &obj) {
   print();
 }
 
-void Configuration::fromJsonFile(const std::string &fname) {
+void Configuration::fromJsonFile(const string &fname) {
   std::ifstream ifs(fname, std::ofstream::in);
   if (!ifs.good()) {
     throw(std::runtime_error("Unable to create ifstream (bad filename?), exiting ..."));
@@ -123,7 +124,7 @@ void Configuration::getKafkaConfig() {
   using std::operator""s;
   mKafka.Broker = getVal("kafka", "broker", "n/a"s, true);
   mKafka.Topic = getVal("kafka", "topic", "n/a"s, true);
-  mKafka.Source = getVal("kafka", "source", ""s, false);
+  mKafka.Source = getVal("kafka", "source", mKafka.Source);
   /// The rest are optional, using default values
   mKafka.MessageMaxBytes =
       getVal("kafka", "message.max.bytes", mKafka.MessageMaxBytes);
@@ -199,10 +200,19 @@ void Configuration::print() {
   fmt::print("  Auto scale y {}\n", mTOF.AutoScaleY);
 }
 
+optional<string>
+Configuration::getVal(const string &Group, const string &Option,
+                      optional<string> Default) {
+  if (mJsonObj.contains(Group) && mJsonObj[Group].contains(Option)) {
+    return mJsonObj[Group][Option].get<string>();
+  }
+  return Default;
+}
+
 //\brief getVal() template is used to effectively achieve
 // getInt(), getString() and getBool() functionality through T
 template <typename T>
-T Configuration::getVal(const std::string &Group, const std::string &Option, T Default,
+T Configuration::getVal(const string &Group, const string &Option, T Default,
                         bool Throw) {
   T ConfigVal;
 
