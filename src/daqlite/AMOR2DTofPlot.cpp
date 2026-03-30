@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 
+using std::string;
 using std::vector;
 
 AMOR2DTofPlot::AMOR2DTofPlot(Configuration &Config,
@@ -111,7 +112,7 @@ void AMOR2DTofPlot::setCustomParameters() {
 // Try the user supplied gradient name, then fall back to 'hot' and
 // provide a list of options
 QCPColorGradient
-AMOR2DTofPlot::getColorGradient(const std::string &GradientName) {
+AMOR2DTofPlot::getColorGradient(const string &GradientName) {
   if (const auto search = GRADIENTS.find(GradientName); search != GRADIENTS.end()) {
     return search->second;
   } else {
@@ -153,8 +154,9 @@ void AMOR2DTofPlot::plotDetectorImage(bool Force) {
 
 void AMOR2DTofPlot::updateData() {
   // Get newest histogram data from Consumer
-  vector<uint32_t> PixelIDs = mConsumer.readData(DataType::PIXEL_ID);
-  vector<uint32_t> TOFs = mConsumer.readData(DataType::TOF);
+  const auto &source = mConfig.mPlot.Source;
+  vector<uint32_t> PixelIDs = mConsumer.readData(DataType::PIXEL_ID, source);
+  vector<uint32_t> TOFs = mConsumer.readData(DataType::TOF, source);
 
   // Accumulate counts, PixelId 0 does not exist
   if (PixelIDs.size() == 0) {

@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <utility>
@@ -115,28 +116,29 @@ public:
   /// \return          Vector containing the requested data. Returns empty
   ///                  vector if source not found or dataType is invalid
   std::vector<uint32_t> readData(DataType dataType,
-                                 const std::string &source = "",
+                                 std::optional<std::string> source = std::nullopt,
                                  bool reset = true);
 
   /// \brief Get the data container size for a specific source and data type
   /// \param dataType  Type of the data
-  /// \param source    Flat buffer source name (empty string returns 0)
+  /// \param source    Flat buffer source name, or std::nullopt for all sources
   /// \return          Size of the data container for the specified source, or 0
   ///                  if not found
-  size_t getDataSize(DataType dataType, const std::string &source = "") const;
+  size_t getDataSize(DataType dataType,
+                     std::optional<std::string> source = std::nullopt) const;
 
   /// \brief Get the number of bins for the TOF data container
-  /// \param source    Flat buffer source name
+  /// \param source    Flat buffer source name, or std::nullopt for all sources
   /// \return          Number of bins (TOF data size - 1), or 0 if source not
   ///                  found or empty
-  size_t getBinSize(const std::string &source = "") const;
+  size_t getBinSize(std::optional<std::string> source = std::nullopt) const;
 
   /// \brief Register a flat buffer source for processing
-  /// \param source  The flat buffer source name to register. Empty strings are
-  ///                ignored.
+  /// \param source  The flat buffer source name to register. std::nullopt is
+  ///                ignored (means "no filtering").
   /// \note Only messages from registered sources will be processed
   ///       when sources are defined
-  void addSource(const std::string &source);
+  void addSource(const std::optional<std::string> &source);
 
 private:
   /// \brief Get a pointer to the data container map for a given data type
@@ -149,6 +151,13 @@ private:
   /// \brief Check if a flat buffer source has been registered for processing
   /// \param source  The flat buffer source
   bool hasSource(const std::string &source) const;
+
+  /// \brief Resolve the storage key for an incoming message's source name.
+  ///
+  /// \param msgSourceName  The source_name from the flatbuffer message
+  /// \return  The key to use for storing the message data, or std::nullopt if
+  ///          the source is not registered and the message should be discarded
+  std::optional<std::string> resolveSource(const std::string &msgSourceName) const;
 
   RdKafka::Conf *mConf;
   RdKafka::Conf *mTConf;
@@ -211,10 +220,11 @@ private:
   /// \note Only resets data when checkDelivery confirms all subscribers have
   /// received data
   inline void resetDataIfNeeded(TSVectorMap *dataMap, DataType dataType,
-                                const std::string &source, bool reset) {
+                                const std::optional<std::string> &source,
+                                bool reset) {
     if (reset && checkDelivery(dataType)) {
-      if (!source.empty()) {
-        auto iter = dataMap->find(source);
+      if (source.has_value()) {
+        auto iter = dataMap->find(*source);
         if (iter != dataMap->end()) {
           iter->second.clear();
         }

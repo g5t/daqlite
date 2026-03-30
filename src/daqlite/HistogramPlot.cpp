@@ -120,7 +120,7 @@ void HistogramPlot::updateData() {
   std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
 
   // continue the the update only if we have data available from the consumer
-  const std::string source = mConfig.mPlot.Source;
+  const auto &source = mConfig.mPlot.Source;
   if (mConsumer.getDataSize(DataType::HISTOGRAM, source) == 0 or mConsumer.getDataSize(DataType::TOF, source) == 0) {
     return;
   }

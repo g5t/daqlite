@@ -120,7 +120,7 @@ void PixelsPlot::setCustomParameters() {
 
 // Try the user supplied gradient name, then fall back to 'hot' and
 // provide a list of options
-QCPColorGradient PixelsPlot::getColorGradient(const std::string &GradientName) {
+QCPColorGradient PixelsPlot::getColorGradient(const string &GradientName) {
   if (const auto search = GRADIENTS.find(GradientName);
       search != GRADIENTS.end()) {
     return search->second;
@@ -184,7 +184,7 @@ void PixelsPlot::updateData() {
 
   // update histogram data from Consumer according to the source specified in
   // the config
-  const std::string source = mConfig.mPlot.Source;
+  const auto &source = mConfig.mPlot.Source;
   vector<uint32_t> Histogram = mConsumer.readData(DataType::HISTOGRAM, source);
 
   int64_t nsBetweenClear = 1000000000LL * mConfig.mPlot.ClearEverySeconds;

@@ -27,8 +27,12 @@
 #include <unistd.h>
 #include <vector>
 
+using std::optional;
 using std::string;
 using std::vector;
+
+// Internal key used when no source filtering is specified in JSON config file
+static constexpr std::string_view UnfilteredKey{""};
 
 // clang-format off
 ESSConsumer::ESSConsumer(Configuration &Config,
@@ -112,13 +116,8 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
     return 0;
   }
 
-  // Determine source key for data storage
-  // If no sources registered, use empty string for combined storage
-  // Otherwise, use the message's source name
-  const std::string source =
-      mSources.empty() ? std::string(Configuration::EMPTY_SOURCE)
-                       : std::string(EvMsg->source_name()->str());
-  if (!mSources.empty() && !hasSource(source)) {
+  auto source = resolveSource(EvMsg->source_name()->str());
+  if (!source) {
     return 0;
   }
 
@@ -133,8 +132,8 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
     // accumulate events for 2D TOF
     uint32_t TofBin = std::min(Tof, mConfig.mTOF.MaxValue) *
                       (mConfig.mTOF.BinSize - 1) / mConfig.mTOF.MaxValue;
-    mPixelIDs[source].push_back(Pixel);
-    mTOFs[source].push_back(TofBin);
+    mPixelIDs[*source].push_back(Pixel);
+    mTOFs[*source].push_back(TofBin);
 
     if ((Pixel > mMaxPixel) or (Pixel < mMinPixel)) {
       mEventDiscard++;
@@ -150,8 +149,8 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
   }
 
   // update thread safe histograms storage with new data
-  mHistograms[source].add_values(PixelVector);
-  mHistogramTOFs[source].add_values(TofBinVector);
+  mHistograms[*source].add_values(PixelVector);
+  mHistogramTOFs[*source].add_values(TofBinVector);
 
   mEventCount += PixelIds->size();
 
@@ -164,13 +163,8 @@ uint32_t ESSConsumer::processDA00Data(RdKafka::Message *Msg) {
     return 0;
   }
 
-  // Determine source key for data storage
-  // If no sources registered, use empty string for combined storage
-  // Otherwise, use the message's source name
-  const std::string source =
-      mSources.empty() ? std::string(Configuration::EMPTY_SOURCE)
-                       : std::string(EvMsg->source_name()->str());
-  if (!mSources.empty() && !hasSource(source)) {
+  auto source = resolveSource(EvMsg->source_name()->str());
+  if (!source) {
     return 0;
   }
 
@@ -193,13 +187,13 @@ uint32_t ESSConsumer::processDA00Data(RdKafka::Message *Msg) {
     return 0;
   }
 
-  mHistograms[source].add_values(DataBins);
-  mTOFs[source] = BinEdges;
+  mHistograms[*source].add_values(DataBins);
+  mTOFs[*source] = BinEdges;
 
   mEventCount++;
   mEventAccept++;
 
-  return mHistograms[source].size();
+  return mHistograms[*source].size();
 }
 
 uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
@@ -211,13 +205,8 @@ uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
     return 0;
   }
 
-  // Determine source key for data storage
-  // If no sources registered, use empty string for combined storage
-  // Otherwise, use the message's source name
-  const std::string source =
-      mSources.empty() ? std::string(Configuration::EMPTY_SOURCE)
-                       : std::string(EvMsg->source_name()->str());
-  if (!mSources.empty() && !hasSource(source)) {
+  auto source = resolveSource(EvMsg->source_name()->str());
+  if (!source) {
     return 0;
   }
 
@@ -231,8 +220,8 @@ uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
     // accumulate events for 2D TOF
     uint32_t TofBin = std::min(Tof, mConfig.mTOF.MaxValue) *
                       (mConfig.mTOF.BinSize - 1) / mConfig.mTOF.MaxValue;
-    mPixelIDs[source].push_back(Pixel);
-    mTOFs[source].push_back(TofBin);
+    mPixelIDs[*source].push_back(Pixel);
+    mTOFs[*source].push_back(TofBin);
 
     if ((Pixel > mMaxPixel) or (Pixel < mMinPixel)) {
       mEventDiscard++;
@@ -245,8 +234,8 @@ uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
     }
   }
 
-  mHistograms[source].add_values(PixelVector);
-  mHistogramTOFs[source].add_values(TofBinVector);
+  mHistograms[*source].add_values(PixelVector);
+  mHistogramTOFs[*source].add_values(TofBinVector);
 
   mEventCount += PixelIds->size();
   return PixelIds->size();
@@ -390,7 +379,8 @@ const ESSConsumer::TSVectorMap *ESSConsumer::getData(DataType dataType) const {
 }
 
 vector<uint32_t> ESSConsumer::readData(DataType dataType,
-                                       const std::string &source, bool reset) {
+                                       optional<string> source,
+                                       bool reset) {
   // Get non-const pointer to data container for the specified data type
   TSVectorMap *dataMap = const_cast<TSVectorMap *>(getData(dataType));
 
@@ -401,12 +391,10 @@ vector<uint32_t> ESSConsumer::readData(DataType dataType,
 
   vector<uint32_t> result;
 
-  auto iter = dataMap->begin();
-
   // If a source is specified, get data for that source only
-  if (source != Configuration::EMPTY_SOURCE) {
+  if (source.has_value()) {
     // Check that data exists for the requested source
-    iter = dataMap->find(source);
+    auto iter = dataMap->find(*source);
     if (iter == dataMap->cend()) {
       return {};
     }
@@ -439,37 +427,52 @@ vector<uint32_t> ESSConsumer::readData(DataType dataType,
 }
 
 size_t ESSConsumer::getDataSize(DataType dataType,
-                                const std::string &source) const {
-  // Get pointer to data container for the specified data type
+                                optional<string> source) const {
   const TSVectorMap *dataMap = getData(dataType);
-
-  // Check that data is valid
   if (dataMap == nullptr) {
     return 0;
   }
 
-  // Check that data exists for the requested source
-  const auto iter = dataMap->find(source);
+  if (source.has_value()) {
+    const auto iter = dataMap->find(*source);
+    return (iter != dataMap->cend()) ? iter->second.size() : 0;
+  }
 
-  return (iter != dataMap->cend()) ? iter->second.size() : 0;
+  // No source specified — return total size across all sources
+  size_t total = 0;
+  for (const auto &[key, data] : *dataMap) {
+    total += data.size();
+  }
+  return total;
 }
 
-size_t ESSConsumer::getBinSize(const std::string &source) const {
+size_t ESSConsumer::getBinSize(optional<string> source) const {
   const size_t size = getDataSize(DataType::TOF, source);
 
   return size > 0 ? size - 1 : size;
 };
 
-void ESSConsumer::addSource(const std::string &source) {
-  // Empty string and EMPTY_SOURCE are ignored - they mean "no filtering"
-  if (source.empty() || source == Configuration::EMPTY_SOURCE) {
+void ESSConsumer::addSource(const optional<string> &source) {
+  // nullopt means "no filtering" - ignore
+  if (!source.has_value() || source->empty()) {
     return;
   }
 
-  mSources.insert(source);
+  mSources.insert(*source);
 }
 
-bool ESSConsumer::hasSource(const std::string &source) const {
+optional<string>
+ESSConsumer::resolveSource(const string &msgSourceName) const {
+  if (mSources.empty()) {
+    return string{UnfilteredKey};
+  }
+  if (!hasSource(msgSourceName)) {
+    return std::nullopt;
+  }
+  return msgSourceName;
+}
+
+bool ESSConsumer::hasSource(const string &source) const {
   const auto it = mSources.find(source);
 
   return it != mSources.cend();

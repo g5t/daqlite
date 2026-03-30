@@ -14,6 +14,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -24,8 +25,6 @@ public:
   /// Default are likely to be unsuitable and this should probably
   /// always be followed by a call to fromJsonFile()
   Configuration() {}
-
-  static constexpr std::string_view EMPTY_SOURCE{"__EMPTY_SOURCE__"};
 
   /// \brief loads configuration from JSON file
   void fromJsonObj(const nlohmann::json &obj);
@@ -54,11 +53,33 @@ public:
   /// \brief prints the settings
   void print();
 
-  /// \brief return value of type T from the json object, possibly default,
-  // and optionally throws if value is not found
+  /// \brief Read a typed value from the JSON configuration.
+  ///
+  /// Looks up \p Option inside \p Group. If found, returns the value cast to T.
+  /// If not found and \p Throw is false, prints a warning and returns \p Default.
+  /// If not found and \p Throw is true, throws std::runtime_error.
+  ///
+  /// \tparam T         Target type (bool, int, unsigned int, std::string, …)
+  /// \param Group      Top-level JSON key (e.g. "kafka", "geometry")
+  /// \param Option     Key within \p Group (e.g. "broker", "xdim")
+  /// \param Default    Value to return when the option is absent
+  /// \param Throw      If true, throw instead of returning the default
   template <typename T>
   T getVal(const std::string &Group, const std::string &Option, T Default,
            bool Throw = false);
+
+  /// \brief Read an optional string value from the JSON configuration.
+  ///
+  /// Overload for \c std::optional<std::string> source fields. Returns the
+  /// string value wrapped in an optional if the key is present, otherwise
+  /// returns \p Default (typically \c std::nullopt). Never throws.
+  ///
+  /// \param Group    Top-level JSON key (e.g. "plot")
+  /// \param Option   Key within \p Group (e.g. "source")
+  /// \param Default  Value to return when the option is absent
+  std::optional<std::string> getVal(const std::string &Group,
+                                    const std::string &Option,
+                                    std::optional<std::string> Default);
 
   // Configurable options
   struct TOFOptions {
@@ -79,7 +100,7 @@ public:
   struct KafkaOptions {
     std::string Topic{"nmx_detector"};
     std::string Broker{"172.17.5.38:9092"};
-    std::string Source{Configuration::EMPTY_SOURCE};
+    std::optional<std::string> Source{std::nullopt};
     std::string MessageMaxBytes{"10000000"};
     std::string FetchMessageMaxBytes{"10000000"};
     std::string ReplicaFetchMaxBytes{"10000000"};
@@ -98,7 +119,7 @@ public:
     std::string WindowTitle{"Daquiri Lite - Daqlite"};
     std::string PlotTitle{""};
     std::string XAxis{""};
-    std::string Source{Configuration::EMPTY_SOURCE};
+    std::optional<std::string> Source{std::nullopt};
 
     int Width{600};             // Default window width
     int Height{400};            // Default window height
