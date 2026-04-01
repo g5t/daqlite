@@ -10,9 +10,9 @@
 #include <nlohmann/json.hpp>
 
 #include <fmt/core.h>
+
 #include <fstream>
 #include <initializer_list>
-#include <iostream>
 #include <stdexcept>
 
 using std::optional;
@@ -21,7 +21,7 @@ using std::vector;
 
 void Configuration::prettyJSON(nlohmann::json &obj, const string &header, int indent) {
   fmt::print("{}:\n", header);
-  std::cout << obj.dump(indent) << "\n\n" << std::endl;
+  fmt::print("{}\n\n", obj.dump(indent));
 }
 
 vector<Configuration> Configuration::getConfigurations(const string &Path) {
@@ -30,7 +30,7 @@ vector<Configuration> Configuration::getConfigurations(const string &Path) {
   // Open JSON file for reading
   std::ifstream ifs(Path, std::ofstream::in);
   if (!ifs.good()) {
-    throw(std::runtime_error("Unable to create ifstream (bad filename?), exiting ..."));
+    throw std::runtime_error("Unable to create ifstream (bad filename?), exiting ...");
   }
 
   // Load JSON file
@@ -95,13 +95,13 @@ void Configuration::fromJsonObj(const nlohmann::json &obj) {
 void Configuration::fromJsonFile(const string &fname) {
   std::ifstream ifs(fname, std::ofstream::in);
   if (!ifs.good()) {
-    throw(std::runtime_error("Unable to create ifstream (bad filename?), exiting ..."));
+    throw std::runtime_error("Unable to create ifstream (bad filename?), exiting ...");
   }
 
   try {
     ifs >> mJsonObj;
   } catch (...) {
-    throw(std::runtime_error("File is not valid JSON"));
+    throw std::runtime_error("File is not valid JSON");
   }
 
   getGeometryConfig();

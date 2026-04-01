@@ -20,10 +20,12 @@
 
 #include <fmt/format.h>
 
-#include <stdio.h>
 #include <memory>
 #include <string>
 #include <vector>
+
+using std::string;
+using std::vector;
 
 namespace {
   /// \brief Extract specified command line options and add them to the plot configuration
@@ -59,7 +61,7 @@ int main(int argc, char *argv[]) {
   CLI.addHelpOption();
 
   // Add specified options
-  std::vector<std::tuple<QString, QString, QString>> Options = {
+  vector<std::tuple<QString, QString, QString>> Options = {
     {"f", "Configuration file",       "unusedDefault"},
     {"b", "Kafka broker",             "unusedDefault"},
     {"t", "Kafka topic",              "unusedDefault"},
@@ -77,8 +79,8 @@ int main(int argc, char *argv[]) {
 
   // ---------------------------------------------------------------------------
   // Get top configuration
-  const std::string FileName = CLI.value("f").toStdString();
-  std::vector<Configuration> confs = Configuration::getConfigurations(FileName);
+  const string FileName = CLI.value("f").toStdString();
+  vector<Configuration> confs = Configuration::getConfigurations(FileName);
   Configuration MainConfig = confs.front();
   setKafkaOptions(CLI, MainConfig);
 

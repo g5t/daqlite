@@ -40,8 +40,6 @@ set(daqlite_ui
   MainWindow.ui
   )
 
-set(CMAKE_AUTOUIC ON)
-
 add_executable(
   daqlite
   ${daqlite_src}
@@ -49,17 +47,20 @@ add_executable(
   ${daqlite_ui}
 )
 
+set_target_properties(daqlite PROPERTIES AUTOUIC ON)
+
+target_compile_options(daqlite PRIVATE
+  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wshadow>
+  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=shadow>)
+
 target_link_libraries(
   daqlite
-  PUBLIC fmt::fmt
+  PRIVATE fmt::fmt
   PRIVATE RdKafka::rdkafka++
   PRIVATE RdKafka::rdkafka
   PRIVATE QPlot
   PRIVATE Qt6::Widgets
   PRIVATE Qt6::Core5Compat
+  PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>
+  PRIVATE $<$<AND:$<CXX_COMPILER_ID:AppleClang>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,11.0>>:c++fs>
 )
-
-target_link_libraries(daqlite
-  PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
-target_link_libraries(daqlite
-  PRIVATE $<$<AND:$<CXX_COMPILER_ID:AppleClang>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,11.0>>:c++fs>)

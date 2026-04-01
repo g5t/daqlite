@@ -147,6 +147,7 @@ private:
   /// \return          Pointer to the TSVectorMap containing data for all
   ///                  sources, or nullptr if dataType is invalid
   const TSVectorMap *getData(DataType dataType) const;
+  TSVectorMap *getData(DataType dataType);
 
   /// \brief Check if a flat buffer source has been registered for processing
   /// \param source  The flat buffer source

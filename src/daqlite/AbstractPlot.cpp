@@ -8,8 +8,28 @@
 #include <AbstractPlot.h>
 #include <Configuration.h>
 #include <ESSConsumer.h>
+#include <types/Gradients.h>
 
 #include <fmt/format.h>
+
+using std::string;
+
+// Try the user supplied gradient name, then fall back to 'hot' and
+// provide a list of options
+QCPColorGradient AbstractPlot::getColorGradient(const string &GradientName) {
+  if (const auto search = GRADIENTS.find(GradientName); search != GRADIENTS.end()) {
+    return search->second;
+  }
+
+  fmt::print("Gradient {} not found, using 'hot' instead.\n", GradientName);
+  fmt::print("Supported gradients are: ");
+  for (auto &Gradient : GRADIENTS) {
+    fmt::print("{} ", Gradient.first);
+  }
+  fmt::print("\n");
+
+  return GRADIENTS["hot"];
+}
 
 AbstractPlot::AbstractPlot(PlotType Type, ESSConsumer &Consumer, Configuration &Config)
     : mConsumer(Consumer)

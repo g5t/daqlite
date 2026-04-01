@@ -20,12 +20,15 @@
 #include <QEvent>
 
 #include <fmt/format.h>
+
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <ratio>
 #include <string>
 #include <vector>
 
+using std::string;
 using std::vector;
 
 HistogramPlot::HistogramPlot(Configuration &Config, ESSConsumer &Consumer)

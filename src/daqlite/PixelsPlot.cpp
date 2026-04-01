@@ -15,8 +15,10 @@
 #include <types/Gradients.h>
 #include <types/PlotType.h>
 
-#include <algorithm>
 #include <fmt/format.h>
+
+#include <algorithm>
+#include <chrono>
 #include <ratio>
 #include <string>
 
@@ -118,23 +120,6 @@ void PixelsPlot::setCustomParameters() {
   }
 }
 
-// Try the user supplied gradient name, then fall back to 'hot' and
-// provide a list of options
-QCPColorGradient PixelsPlot::getColorGradient(const string &GradientName) {
-  if (const auto search = GRADIENTS.find(GradientName);
-      search != GRADIENTS.end()) {
-    return search->second;
-  } else {
-    fmt::print("Gradient {} not found, using 'hot' instead.\n", GradientName);
-    fmt::print("Supported gradients are: ");
-    for (auto &Gradient : GRADIENTS) {
-      fmt::print("{} ", Gradient.first);
-    }
-    fmt::print("\n");
-
-    return GRADIENTS["hot"];
-  }
-}
 
 void PixelsPlot::clearDetectorImage() {
   std::fill(HistogramData.begin(), HistogramData.end(), 0);

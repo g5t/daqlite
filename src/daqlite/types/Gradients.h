@@ -11,6 +11,7 @@
 #include <QPlot/qcustomplot/qcustomplot.h>
 
 #include <map>
+#include <string>
 
 inline std::map<std::string, QCPColorGradient> GRADIENTS = {
   {"candy",     QCPColorGradient::gpCandy},

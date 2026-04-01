@@ -9,6 +9,10 @@
 
 #include <fmt/format.h>
 
+#include <cmath>
+#include <string>
+#include <vector>
+
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QLineEdit>
@@ -16,8 +20,11 @@
 #include <QScrollBar>
 #include <QToolButton>
 
+using std::string;
+using std::vector;
+
 namespace {
-std::string HELP_TEXT = R"(
+string HELP_TEXT = R"(
 <!DOCTYPE html>
 <html>
 <head>
@@ -57,7 +64,7 @@ std::string HELP_TEXT = R"(
 </html>
 )";
 
-std::string HEADER = R"(
+string HEADER = R"(
   <tr>
     <th>{}</th>
     <th>{}</th>
@@ -65,7 +72,7 @@ std::string HEADER = R"(
   </tr>
 )";
 
-std::string ROW = R"(
+string ROW = R"(
   <tr>
     <td>{}</td>
     <td>{}</td>
@@ -87,7 +94,7 @@ HelpWindow::HelpWindow(QWidget *parent)
   setFont(f);
 
   // Row entries
-  std::vector<std::vector<std::string>> data = {
+  vector<vector<string>> tableData = {
     {"Reset view",          "Ctrl+R",          "Cmd+R"},
     {"Store current view",  "Ctrl+S",          "Cmd+S"},
     {"Draw zoom rectangle", "Ctrl+Left mouse", "Cmd+Left mouse"},
@@ -100,12 +107,12 @@ HelpWindow::HelpWindow(QWidget *parent)
   };
 
   // Setup HTML help text
-  std::string header =  fmt::format(HEADER, "Action", "Linux", "Mac");
-  std::string rows =  "";
-  for (const auto &row: data) {
+  string header =  fmt::format(HEADER, "Action", "Linux", "Mac");
+  string rows =  "";
+  for (const auto &row: tableData) {
     rows += fmt::format(ROW, row[0], row[1], row[2]);
   }
-  std::string html = fmt::format(HELP_TEXT, header, rows);
+  string html = fmt::format(HELP_TEXT, header, rows);
   setHtml(QString::fromStdString(html));
 
   // We extract/steal the clear button from a QLineEdit and use this as

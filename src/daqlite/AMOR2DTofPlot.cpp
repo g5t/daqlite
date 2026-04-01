@@ -19,7 +19,8 @@
 #include <QEvent>
 
 #include <fmt/format.h>
-#include <string.h>
+
+#include <chrono>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -109,23 +110,6 @@ void AMOR2DTofPlot::setCustomParameters() {
   }
 }
 
-// Try the user supplied gradient name, then fall back to 'hot' and
-// provide a list of options
-QCPColorGradient
-AMOR2DTofPlot::getColorGradient(const string &GradientName) {
-  if (const auto search = GRADIENTS.find(GradientName); search != GRADIENTS.end()) {
-    return search->second;
-  } else {
-    fmt::print("Gradient {} not found, using 'hot' instead.\n", GradientName);
-    fmt::print("Supported gradients are: ");
-    for (auto &Gradient : GRADIENTS) {
-      fmt::print("{} ", Gradient.first);
-    }
-    fmt::print("\n");
-
-    return GRADIENTS["hot"];
-  }
-}
 
 void AMOR2DTofPlot::clearDetectorImage() {
   memset(HistogramData2D, 0, sizeof(HistogramData2D));
