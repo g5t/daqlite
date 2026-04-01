@@ -10,7 +10,8 @@
 
 #include <AbstractPlot.h>
 
-#include <stdint.h>
+#include <chrono>
+#include <cstdint>
 #include <vector>
 
 // Forward declarations

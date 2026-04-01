@@ -27,9 +27,8 @@
 #include <QImage>
 #include <QToolButton>
 
-#include <stdint.h>
-#include <string.h>
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>

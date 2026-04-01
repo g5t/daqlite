@@ -10,6 +10,7 @@
 
 #include <ESSConsumer.h>
 
+#include <chrono>
 #include <ratio>
 
 void WorkerThread::run() {

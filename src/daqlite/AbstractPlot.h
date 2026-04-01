@@ -13,6 +13,7 @@
 #include <QPlot/QPlot.h>
 
 #include <optional>
+#include <string>
 
 // Forward declarations
 class Configuration;
@@ -33,6 +34,10 @@ public:
 protected:
   // AbstractPlot is abstract and can ONLY be instantiated from a derived class
   AbstractPlot(PlotType Type, ESSConsumer &Consumer, Configuration &Config);
+
+  /// \brief Returns the QCPColorGradient for the given name, falling back to
+  ///        'hot' if not found
+  QCPColorGradient getColorGradient(const std::string &GradientName);
 
   /// \brief Consumer thread used to deliver data to the plot
   ESSConsumer &mConsumer;

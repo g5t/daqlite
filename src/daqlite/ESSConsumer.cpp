@@ -17,14 +17,13 @@
 #include <flatbuffers/flatbuffers.h>
 
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <fmt/format.h>
 #include <memory>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include <random>
+#include <string_view>
 #include <vector>
 
 using std::optional;
@@ -65,9 +64,9 @@ ESSConsumer::ESSConsumer(Configuration &Config,
 // clang-format on
 
 RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
-  auto mConf = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
+  auto Conf = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
 
-  if (!mConf) {
+  if (!Conf) {
     fmt::print("Unable to create global Conf object\n");
     return nullptr;
   }
@@ -75,23 +74,23 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
   string ErrStr;
   /// \todo figure out good values for these
   /// \todo some may be obsolete
-  mConf->set("metadata.broker.list", mConfig.mKafka.Broker, ErrStr);
-  mConf->set("message.max.bytes", mConfig.mKafka.MessageMaxBytes, ErrStr);
-  mConf->set("fetch.message.max.bytes", mConfig.mKafka.FetchMessageMaxBytes,
+  Conf->set("metadata.broker.list", mConfig.mKafka.Broker, ErrStr);
+  Conf->set("message.max.bytes", mConfig.mKafka.MessageMaxBytes, ErrStr);
+  Conf->set("fetch.message.max.bytes", mConfig.mKafka.FetchMessageMaxBytes,
              ErrStr);
-  mConf->set("replica.fetch.max.bytes", mConfig.mKafka.ReplicaFetchMaxBytes,
+  Conf->set("replica.fetch.max.bytes", mConfig.mKafka.ReplicaFetchMaxBytes,
              ErrStr);
   string GroupId = randomGroupString(16);
-  mConf->set("group.id", GroupId, ErrStr);
-  mConf->set("enable.auto.commit", mConfig.mKafka.EnableAutoCommit, ErrStr);
-  mConf->set("enable.auto.offset.store", mConfig.mKafka.EnableAutoOffsetStore,
+  Conf->set("group.id", GroupId, ErrStr);
+  Conf->set("enable.auto.commit", mConfig.mKafka.EnableAutoCommit, ErrStr);
+  Conf->set("enable.auto.offset.store", mConfig.mKafka.EnableAutoOffsetStore,
              ErrStr);
 
   for (auto &Config : mKafkaConfig) {
-    mConf->set(Config.first, Config.second, ErrStr);
+    Conf->set(Config.first, Config.second, ErrStr);
   }
 
-  auto ret = RdKafka::KafkaConsumer::create(mConf, ErrStr);
+  auto ret = RdKafka::KafkaConsumer::create(Conf, ErrStr);
   if (!ret) {
     fmt::print("Failed to create consumer: {}\n", ErrStr);
     return nullptr;
@@ -113,11 +112,13 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
   auto TOFs = EvMsg->time_of_flight();
 
   if (PixelIds->size() != TOFs->size()) {
+    mEventDiscard++;
     return 0;
   }
 
   auto source = resolveSource(EvMsg->source_name()->str());
   if (!source) {
+    mEventDiscard++;
     return 0;
   }
 
@@ -160,11 +161,13 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
 uint32_t ESSConsumer::processDA00Data(RdKafka::Message *Msg) {
   auto EvMsg = Getda00_DataArray(Msg->payload());
   if (EvMsg->data()->size() == 0) {
+    mEventDiscard++;
     return 0;
   }
 
   auto source = resolveSource(EvMsg->source_name()->str());
   if (!source) {
+    mEventDiscard++;
     return 0;
   }
 
@@ -202,11 +205,13 @@ uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
   auto TOFs = EvMsg->time_of_flight();
 
   if (PixelIds->size() != TOFs->size()) {
+    mEventDiscard++;
     return 0;
   }
 
   auto source = resolveSource(EvMsg->source_name()->str());
   if (!source) {
+    mEventDiscard++;
     return 0;
   }
 
@@ -291,18 +296,18 @@ bool ESSConsumer::handleMessage(RdKafka::Message *Message) {
   }
 }
 
-// Copied from daquiri - added seed based on pid
 string ESSConsumer::randomGroupString(size_t length) {
-  srand(getpid());
-  auto randomChar = []() -> char {
-    const char charset[] = "0123456789"
-                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                           "abcdefghijklmnopqrstuvwxyz";
-    const size_t max_index = (sizeof(charset) - 1);
-    return charset[rand() % max_index];
-  };
+  static constexpr std::string_view charset = "0123456789"
+                                              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                              "abcdefghijklmnopqrstuvwxyz";
+  std::mt19937 gen(std::random_device{}());
+  std::uniform_int_distribution<size_t> dist(0, charset.size() - 1);
+
   string str(length, 0);
-  std::generate_n(str.begin(), length, randomChar);
+  std::generate_n(str.begin(), length, [&]() -> char {
+    return charset[dist(gen)];
+  });
+
   return str;
 }
 
@@ -358,6 +363,10 @@ std::unique_ptr<RdKafka::Message> ESSConsumer::consume() {
   return msg;
 }
 
+ESSConsumer::TSVectorMap *ESSConsumer::getData(DataType dataType) {
+  return const_cast<TSVectorMap *>(std::as_const(*this).getData(dataType));
+}
+
 const ESSConsumer::TSVectorMap *ESSConsumer::getData(DataType dataType) const {
   switch (dataType) {
   case DataType::HISTOGRAM:
@@ -382,7 +391,7 @@ vector<uint32_t> ESSConsumer::readData(DataType dataType,
                                        optional<string> source,
                                        bool reset) {
   // Get non-const pointer to data container for the specified data type
-  TSVectorMap *dataMap = const_cast<TSVectorMap *>(getData(dataType));
+  TSVectorMap *dataMap = getData(dataType);
 
   // Check that data exists
   if (dataMap == nullptr) {

@@ -19,9 +19,11 @@
 #include <QEvent>
 
 #include <algorithm>
+#include <chrono>
 #include <ratio>
 #include <string>
 
+using std::string;
 using std::vector;
 
 TofPlot::TofPlot(Configuration &Config, ESSConsumer &Consumer)

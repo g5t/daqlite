@@ -12,24 +12,26 @@
 
 #include <nlohmann/json.hpp>
 
-#include <cstdio>
+#include <fmt/format.h>
+
 #include <map>
 #include <stdexcept>
 
+using std::map;
 using std::string;
 
 KafkaConfig::KafkaConfig(const string &KafkaConfigFile) {
   if (KafkaConfigFile == "") {
     return;
   }
-  printf("KAFKA CONFIG FROM FILE");
+  fmt::print("KAFKA CONFIG FROM FILE\n");
   nlohmann::json root = from_json_file(KafkaConfigFile);
 
   try {
     nlohmann::json KafkaParms = root["KafkaParms"];
 
     for (const auto &Parm : KafkaParms) {
-      std::map<string, string> MyMap = Parm;
+      map<string, string> MyMap = Parm;
       for (auto it = MyMap.begin(); it != MyMap.end(); it++) {
         std::pair<string, string> CfgPair{it->first, it->second};
         CfgParms.push_back(CfgPair);
@@ -37,8 +39,8 @@ KafkaConfig::KafkaConfig(const string &KafkaConfigFile) {
     }
 
   } catch (...) {
-    printf("Kafka JSON config - error: Invalid Json file: %s",
-        KafkaConfigFile.c_str());
+    fmt::print("Kafka JSON config - error: Invalid Json file: {}\n",
+        KafkaConfigFile);
     throw std::runtime_error("Invalid Json file for Kafka config");
   }
 }

@@ -12,10 +12,8 @@
 
 #include <QPlot/qcustomplot/qcustomplot.h>
 
-#include <stdint.h>
-#include <map>
-#include <string>
-#include <utility>
+#include <chrono>
+#include <cstdint>
 #include <vector>
 
 // Forward declarations
@@ -34,9 +32,6 @@ public:
   /// \brief adds histogram data, clears periodically then calls
   /// plotDetectorImage()
   void updateData() override;
-
-  /// \brief Support for different gradients
-  QCPColorGradient getColorGradient(const std::string &GradientName);
 
   /// \brief update plot based on (possibly dynamic) config settings
   void setCustomParameters();
