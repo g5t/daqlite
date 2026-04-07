@@ -14,6 +14,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <utility>
@@ -83,18 +84,18 @@ public:
 
   // Configurable options
   struct TOFOptions {
-    unsigned int Scale{1000};     // ns -> us
-    unsigned int MaxValue{25000}; // us
-    unsigned int BinSize{512};    // initial bin size
+    uint32_t Scale{1000};     // ns -> us
+    uint32_t MaxValue{25000}; // us
+    uint32_t BinSize{512};    // initial bin size
     bool AutoScaleX{true};
     bool AutoScaleY{true};
   };
 
   struct GeometryOptions {
-    int XDim{1};
-    int YDim{1};
-    int ZDim{1};
-    int Offset{0};
+    uint32_t XDim{1};
+    uint32_t YDim{1};
+    uint32_t ZDim{1};
+    uint32_t Offset{0};
   };
 
   struct KafkaOptions {

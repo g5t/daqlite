@@ -54,25 +54,28 @@ PixelsPlot::PixelsPlot(Configuration &Config, ESSConsumer &Consumer,
   mColorMap = new QCPColorMap(xAxis, yAxis);
 
   // we want the color map to have nx * ny data points
+  const int XDim = static_cast<int>(geom.XDim);
+  const int YDim = static_cast<int>(geom.YDim);
+  const int ZDim = static_cast<int>(geom.ZDim);
   if (mProjection == ProjectionXY) {
     xAxis->setLabel("X");
     yAxis->setLabel("Y");
-    mColorMap->data()->setSize(geom.XDim, geom.YDim);
-    mColorMap->data()->setRange(QCPRange(0, geom.XDim - 1),
-                                QCPRange(0, geom.YDim - 1)); //
+    mColorMap->data()->setSize(XDim, YDim);
+    mColorMap->data()->setRange(QCPRange(0, XDim - 1),
+                                QCPRange(0, YDim - 1)); //
   } else if (mProjection == ProjectionXZ) {
     xAxis->setLabel("X");
     yAxis->setLabel("Z");
-    mColorMap->data()->setSize(geom.XDim, geom.ZDim);
-    mColorMap->data()->setRange(QCPRange(0, geom.XDim - 1),
-                                QCPRange(0, geom.ZDim - 1));
+    mColorMap->data()->setSize(XDim, ZDim);
+    mColorMap->data()->setRange(QCPRange(0, XDim - 1),
+                                QCPRange(0, ZDim - 1));
   } else {
     xAxis->setLabel("Y");
     yAxis->setLabel("Z");
-    mColorMap->data()->setSize(geom.YDim, geom.ZDim);
+    mColorMap->data()->setSize(YDim, ZDim);
 
-    mColorMap->data()->setRange(QCPRange(0, geom.YDim - 1),
-                                QCPRange(0, geom.ZDim - 1));
+    mColorMap->data()->setRange(QCPRange(0, YDim - 1),
+                                QCPRange(0, ZDim - 1));
   }
   // add a color scale:
   mColorScale = new QCPColorScale(this);
@@ -131,11 +134,11 @@ void PixelsPlot::plotDetectorImage(bool Force) {
 
   // if scales match the dimensions (xdim 400, range 0, 399) then cell indexes
   // and coordinates match. PixelId 0 does not exist.
-  for (unsigned int i = 1; i < HistogramData.size(); i++) {
+  for (size_t i = 1; i < HistogramData.size(); i++) {
     if ((HistogramData[i] != 0) or (Force)) {
-      auto xIndex = LogicalGeometry->x(i);
-      auto yIndex = LogicalGeometry->y(i);
-      auto zIndex = LogicalGeometry->z(i);
+      int xIndex = static_cast<int>(LogicalGeometry->x(i));
+      int yIndex = static_cast<int>(LogicalGeometry->y(i));
+      int zIndex = static_cast<int>(LogicalGeometry->z(i));
 
       // here we could
       // x, y, z = pos(i)
@@ -182,7 +185,7 @@ void PixelsPlot::updateData() {
   }
 
   // Accumulate counts, PixelId 0 does not exist
-  for (unsigned int i = 1; i < Histogram.size(); i++) {
+  for (size_t i = 1; i < Histogram.size(); i++) {
     HistogramData[i] += Histogram[i];
   }
   plotDetectorImage(false);
@@ -192,8 +195,8 @@ void PixelsPlot::updateData() {
 
 // MouseOver, display coordinate and data in tooltip
 void PixelsPlot::showPointToolTip(QMouseEvent *event) {
-  int x = this->xAxis->pixelToCoord(event->pos().x());
-  int y = this->yAxis->pixelToCoord(event->pos().y());
+  int x = qRound(this->xAxis->pixelToCoord(event->position().x()));
+  int y = qRound(this->yAxis->pixelToCoord(event->position().y()));
 
   double count = mColorMap->data()->data(x, y);
 

@@ -26,6 +26,7 @@
 #include <QPixmap>
 #include <QImage>
 #include <QToolButton>
+#include <QSizeF>
 
 #include <algorithm>
 #include <cstdint>
@@ -76,8 +77,8 @@ MainWindow::MainWindow(const Configuration &Config, WorkerThread *Worker, QWidge
   // - Pixel and Tof2D plots are square
   // - Other plots are long and narrow
   adjustSize();
-  int &h = mConfig.mPlot.Height;
-  int &w = mConfig.mPlot.Width;
+  double h = mConfig.mPlot.Height;
+  double w = mConfig.mPlot.Width;
   if (mConfig.mPlot.defaultGeometry) {
     // Adjust size and get minimum required size
     double size = std::max(minimumWidth(), minimumHeight());
@@ -99,7 +100,8 @@ MainWindow::MainWindow(const Configuration &Config, WorkerThread *Worker, QWidge
       h = 0.4 * size;
     }
   }
-  resize(w, h);
+
+  resize(QSizeF(w, h).toSize());
 
   show();
   startKafkaConsumerThread();
@@ -191,9 +193,10 @@ void MainWindow::startKafkaConsumerThread() {
 void MainWindow::handleKafkaData(int ElapsedCountMS) {
   auto &Consumer = mWorker->getConsumer();
 
-  uint64_t EventRate = Consumer.getEventCount() * 1000ULL / ElapsedCountMS;
-  uint64_t EventAccept = Consumer.getEventAccept() * 1000ULL / ElapsedCountMS;
-  uint64_t EventDiscardRate = Consumer.getEventDiscard() * 1000ULL / ElapsedCountMS;
+  uint64_t Counts = static_cast<uint64_t>(ElapsedCountMS);
+  uint64_t EventRate = Consumer.getEventCount() * 1000ULL / Counts;
+  uint64_t EventAccept = Consumer.getEventAccept() * 1000ULL / Counts;
+  uint64_t EventDiscardRate = Consumer.getEventDiscard() * 1000ULL / Counts;
   uint32_t BinSize = Consumer.getBinSize(mConfig.mPlot.Source);
 
   ui->lblEventRateText->setText(QString::number(EventRate));
@@ -225,7 +228,7 @@ void MainWindow::initGradientComboBox() {
   ui->comboGradient->clear();
 
   // Initialize vars
-  int currentIndex = -1;
+  size_t currentIndex = 0;
 
   // Loop through all gradient and add them to the combo
   for (auto &[name, gradient]: GRADIENTS) {
@@ -285,7 +288,8 @@ void MainWindow::handleAutoScaleYButton() {
   }
 }
 
-void MainWindow::handleGradientComboBox(int index) {
+void MainWindow::handleGradientComboBox(int comboIndex) {
+  const size_t index = static_cast<size_t>(comboIndex);
   for (auto &Plot : Plots) {
     const auto PlotType = Plot->getPlotType();
     if (PlotType == PlotType::PIXELS || PlotType == PlotType::TOF2D) {
@@ -300,10 +304,10 @@ void MainWindow::handleGradientComboBox(int index) {
 }
 
 QIcon MainWindow::makeIcon(std::string key) {
-  const size_t width = mGradientIconSize.width();
+  const int width = mGradientIconSize.width();
   const auto range = QCPRange(0, width - 1);
   QImage image(width, 1, QImage::Format_RGB32);
-  for (size_t i=0; i<width; ++i) {
+  for (int i=0; i<width; ++i) {
     const QColor color(GRADIENTS[key].color(mConfig.mPlot.InvertGradient ? width - i : i, range));
     image.setPixelColor(i, 0, color);
   }

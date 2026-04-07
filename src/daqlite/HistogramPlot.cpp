@@ -88,7 +88,7 @@ void HistogramPlot::plotDetectorImage(bool) {
   setCustomParameters();
   mGraph->data()->clear();
 
-  for (unsigned int i = 0; i < HistogramYAxisValues.size(); i++) {
+  for (size_t i = 0; i < HistogramYAxisValues.size(); i++) {
     // calculate the middle x value of the bin to place the data point
     auto binWidth = HistogramXAxisValues[i + 1] - HistogramXAxisValues[i];
     auto middleXValue = HistogramXAxisValues[i] + binWidth / 2.0;
@@ -151,7 +151,7 @@ void HistogramPlot::updateData() {
     HistogramYAxisValues.resize(YAxisValues.size());
   }
 
-  for (unsigned int i = 0; i < YAxisValues.size(); i++) {
+  for (size_t i = 0; i < YAxisValues.size(); i++) {
     HistogramYAxisValues[i] += YAxisValues[i];
   }
 
@@ -166,16 +166,16 @@ void HistogramPlot::clearDetectorImage() {
 
 // MouseOver, display coordinate and data in tooltip
 void HistogramPlot::showPointToolTip(QMouseEvent *event) {
-  int x = this->xAxis->pixelToCoord(event->pos().x());
+  int x = qRound(this->xAxis->pixelToCoord(event->position().x()));
 
   // Calculate x coord width of the graphical representation of the column
-  int xCoordStep = int(mConfig.mTOF.MaxValue / mConfig.mTOF.BinSize);
+  int xCoordStep = static_cast<int>(mConfig.mTOF.MaxValue / mConfig.mTOF.BinSize);
 
   // Get the index in data store for the x coordinate
-  int xCoordDataIndex = int((x - xCoordStep / 2) / xCoordStep);
+  int xCoordDataIndex = (x - xCoordStep / 2) / xCoordStep;
 
   // Get column middle TOF value for the x coordinate
-  int xCoordTofValue = int((x + xCoordStep / 2) / xCoordStep) * xCoordStep;
+  int xCoordTofValue = (x + xCoordStep / 2) / xCoordStep * xCoordStep;
 
   // Get the count value from the data store
   const bool empty = mGraph->data()->isEmpty();

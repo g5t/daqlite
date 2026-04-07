@@ -58,11 +58,13 @@ AMOR2DTofPlot::AMOR2DTofPlot(Configuration &Config,
   mColorMap = new QCPColorMap(xAxis, yAxis);
 
   // we want the color map to have nx * ny data points
+  const int BinSize = static_cast<int>(mConfig.mTOF.BinSize);
+  const int YDim    = static_cast<int>(geom.YDim);
   xAxis->setLabel("TOF");
   yAxis->setLabel("Y");
-  mColorMap->data()->setSize(mConfig.mTOF.BinSize, geom.YDim);
+  mColorMap->data()->setSize(BinSize, YDim);
   mColorMap->data()->setRange(QCPRange(0, mConfig.mTOF.MaxValue),
-                              QCPRange(0, mConfig.mGeometry.YDim)); //
+                              QCPRange(0, YDim)); //
 
   // add a color scale:
   mColorScale = new QCPColorScale(this);
@@ -119,8 +121,11 @@ void AMOR2DTofPlot::clearDetectorImage() {
 void AMOR2DTofPlot::plotDetectorImage(bool Force) {
   setCustomParameters();
 
-  for (int y = 0; y < mConfig.mGeometry.YDim; y++) {
-    for (unsigned int x = 0; x < mConfig.mTOF.BinSize; x++) {
+  const int BinSize = static_cast<int>(mConfig.mTOF.BinSize);
+  const int YDim    = static_cast<int>(mConfig.mGeometry.YDim);
+
+  for (int y = 0; y < YDim; y++) {
+    for (int x = 0; x < BinSize; x++) {
       if ((HistogramData2D[x][y] == 0) and (not Force)) {
         continue;
       }
@@ -147,12 +152,12 @@ void AMOR2DTofPlot::updateData() {
     return;
   }
 
-  for (uint i = 0; i < PixelIDs.size(); i++) {
+  for (size_t i = 0; i < PixelIDs.size(); i++) {
     if (PixelIDs[i] == 0) {
       continue;
     }
-    int tof = TOFs[i];
-    int yvals = (PixelIDs[i] - 1) / mConfig.mGeometry.XDim;
+    auto tof   = static_cast<size_t>(TOFs[i]);
+    auto yvals = static_cast<size_t>((PixelIDs[i] - 1) / mConfig.mGeometry.XDim);
     HistogramData2D[tof][yvals]++;
   }
   plotDetectorImage(false);
@@ -162,8 +167,8 @@ void AMOR2DTofPlot::updateData() {
 
 // MouseOver
 void AMOR2DTofPlot::showPointToolTip(QMouseEvent *event) {
-  int x = this->xAxis->pixelToCoord(event->pos().x());
-  int y = this->yAxis->pixelToCoord(event->pos().y());
+  int x = qRound(this->xAxis->pixelToCoord(event->position().x()));
+  int y = qRound(this->yAxis->pixelToCoord(event->position().y()));
 
   setToolTip(QString("%1 , %2").arg(x).arg(y));
 }
