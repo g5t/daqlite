@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2020 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file HistogramPlot.cpp
@@ -62,7 +62,7 @@ HistogramPlot::HistogramPlot(Configuration &Config, ESSConsumer &Consumer)
   // we want the color map to have nx * ny data points
 
   if (mConfig.mPlot.XAxis.empty()) {
-    xAxis->setLabel("TOF (us)");
+    xAxis->setLabel("TOF (μs)");
   } else {
     xAxis->setLabel(mConfig.mPlot.XAxis.c_str());
   }
@@ -97,7 +97,6 @@ void HistogramPlot::plotDetectorImage(bool) {
     mGraph->addData(ScaledXValue, HistogramYAxisValues[i]);
   }
 
-  // yAxis->rescale();
   if (mConfig.mTOF.AutoScaleX && !HistogramXAxisValues.empty()) {
     double MaxX = *std::max_element(HistogramXAxisValues.begin(),
                                     HistogramXAxisValues.end());
@@ -122,7 +121,7 @@ void HistogramPlot::updateData() {
 
   // continue the update only if we have data available from the consumer
   const auto &source = mConfig.mPlot.Source;
-  if (mConsumer.getDataSize(DataType::HISTOGRAM, source) == 0 or mConsumer.getDataSize(DataType::TOF, source) == 0) {
+  if (mConsumer.getDataSize(DataType::HISTOGRAM, source) == 0 || mConsumer.getDataSize(DataType::TOF, source) == 0) {
     return;
   }
 
@@ -131,7 +130,7 @@ void HistogramPlot::updateData() {
 
   HistogramXAxisValues = TofValues;
   if (YAxisValues.size() != HistogramXAxisValues.size() - 1) {
-    fmt::print("HistogramPlot::updateData() - Y axis values does not match x "
+    fmt::print("HistogramPlot::updateData() - Y axis values do not match x "
                "axis values. Skip processing!\n");
     return;
   }
@@ -139,7 +138,7 @@ void HistogramPlot::updateData() {
   // Periodically clear the histogram data sets
   //
   int64_t nsBetweenClear = 1000000000LL * mConfig.mPlot.ClearEverySeconds;
-  if (mConfig.mPlot.ClearPeriodic and (elapsed.count() >= nsBetweenClear)) {
+  if (mConfig.mPlot.ClearPeriodic && (elapsed.count() >= nsBetweenClear)) {
     std::fill(HistogramYAxisValues.begin(), HistogramYAxisValues.end(), 0);
     std::fill(HistogramXAxisValues.begin(), HistogramXAxisValues.end(), 0);
     t1 = std::chrono::high_resolution_clock::now();

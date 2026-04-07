@@ -23,7 +23,7 @@ class AbstractPlot : public QCustomPlot {
   Q_OBJECT
 
 public:
-  PlotType getPlotType() { return mPlotType; }
+  PlotType getPlotType() const { return mPlotType; }
 
   virtual void clearDetectorImage() = 0;
 

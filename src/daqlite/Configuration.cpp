@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2020 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file Configuration.cpp
@@ -28,7 +28,7 @@ vector<Configuration> Configuration::getConfigurations(const string &Path) {
   vector<Configuration> Configurations;
 
   // Open JSON file for reading
-  std::ifstream ifs(Path, std::ofstream::in);
+  std::ifstream ifs(Path);
   if (!ifs.good()) {
     throw std::runtime_error("Unable to create ifstream (bad filename?), exiting ...");
   }
@@ -93,7 +93,7 @@ void Configuration::fromJsonObj(const nlohmann::json &obj) {
 }
 
 void Configuration::fromJsonFile(const string &fname) {
-  std::ifstream ifs(fname, std::ofstream::in);
+  std::ifstream ifs(fname);
   if (!ifs.good()) {
     throw std::runtime_error("Unable to create ifstream (bad filename?), exiting ...");
   }
