@@ -1,4 +1,4 @@
-// Copyright (C) 2025 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2025 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file HelpWindow.cpp
@@ -24,7 +24,7 @@ using std::string;
 using std::vector;
 
 namespace {
-string HELP_TEXT = R"(
+const string HELP_TEXT = R"(
 <!DOCTYPE html>
 <html>
 <head>
@@ -64,7 +64,7 @@ string HELP_TEXT = R"(
 </html>
 )";
 
-string HEADER = R"(
+const string HEADER = R"(
   <tr>
     <th>{}</th>
     <th>{}</th>
@@ -72,7 +72,7 @@ string HEADER = R"(
   </tr>
 )";
 
-string ROW = R"(
+const string ROW = R"(
   <tr>
     <td>{}</td>
     <td>{}</td>
@@ -151,7 +151,7 @@ void HelpWindow::resizeEvent(QResizeEvent *event) {
 }
 
 QSize HelpWindow::sizeHint() const {
-  // Adjust size, then calculate new width that includes the clearbutton
+  // Adjust size, then calculate new width that includes the clear button
   document()->adjustSize();
   double w = document()->idealWidth() + mClearButton->rect().width();
   document()->setTextWidth(w);
@@ -170,8 +170,6 @@ void HelpWindow::updateClearPosition()
 void HelpWindow::placeHelp(const QPoint &pos) {
   const QScreen *screen = QGuiApplication::screenAt(pos);
   const QRect screenRect = screen->geometry();
-
-  QPoint offset(4, 4);
 
   QPoint p = pos;
   if (p.x() + this->width() > screenRect.x() + screenRect.width())

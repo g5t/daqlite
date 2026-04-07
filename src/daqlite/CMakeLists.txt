@@ -33,7 +33,6 @@ set(daqlite_inc
 
   # Types
   types/PlotType.h
-  types/CommonTypes.h
   )
 
 set(daqlite_ui
@@ -54,7 +53,8 @@ target_compile_options(daqlite PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=float-conversion>
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=sign-conversion>
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=old-style-cast>
-  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=null-dereference>)
+  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=null-dereference>
+  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=unused-variable>)
 
 target_link_libraries(
   daqlite

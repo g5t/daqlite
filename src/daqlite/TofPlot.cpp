@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2020 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file TofPlot.cpp
@@ -82,7 +82,7 @@ void TofPlot::plotDetectorImage(bool Force) {
   mGraph->data()->clear();
   uint32_t MaxY{0};
   for (size_t i = 0; i < HistogramTofData.size(); i++) {
-    if ((HistogramTofData[i] != 0) or (Force)) {
+    if ((HistogramTofData[i] != 0) || (Force)) {
       uint32_t x = i * mConfig.mTOF.MaxValue / mConfig.mTOF.BinSize;
       uint32_t y = HistogramTofData[i];
       if (y > MaxY) {
@@ -92,7 +92,6 @@ void TofPlot::plotDetectorImage(bool Force) {
     }
   }
 
-  // yAxis->rescale();
   if (mConfig.mTOF.AutoScaleX) {
     xAxis->setRange(0, mConfig.mTOF.MaxValue * 1.05);
   }
@@ -112,7 +111,7 @@ void TofPlot::updateData() {
 
   // Periodically clear the histogram
   int64_t nsBetweenClear = 1000000000LL * mConfig.mPlot.ClearEverySeconds;
-  if (mConfig.mPlot.ClearPeriodic and (elapsed.count() >= nsBetweenClear)) {
+  if (mConfig.mPlot.ClearPeriodic && (elapsed.count() >= nsBetweenClear)) {
     std::fill(HistogramTofData.begin(), HistogramTofData.end(), 0);
     t1 = std::chrono::high_resolution_clock::now();
   }

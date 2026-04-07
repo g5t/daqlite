@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2020 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file MainWindow.cpp
@@ -34,6 +34,8 @@
 #include <stdexcept>
 #include <string>
 
+using std::string;
+
 class QWidget;
 
 // Initialize helper to nullptr
@@ -58,7 +60,6 @@ MainWindow::MainWindow(const Configuration &Config, WorkerThread *Worker, QWidge
   connect(ui->checkBoxLog,        signal, this, &MainWindow::handleLogButton);
   connect(ui->checkBoxInvert,     signal, this, &MainWindow::handleInvertButton);
   connect(ui->checkBoxAutoScaleX, signal, this, &MainWindow::handleAutoScaleXButton);
-  connect(ui->checkBoxAutoScaleY, signal, this, &MainWindow::handleAutoScaleYButton);
   connect(ui->checkBoxAutoScaleY, signal, this, &MainWindow::handleAutoScaleYButton);
   connect(ui->helpButton,         signal, this, &MainWindow::showHelp);
 
@@ -259,14 +260,14 @@ void MainWindow::updateGradientComboBox() {
 
 // toggle the log scale flag
 void MainWindow::handleLogButton() {
-  mConfig.mPlot.LogScale = not mConfig.mPlot.LogScale;
+  mConfig.mPlot.LogScale = !mConfig.mPlot.LogScale;
 }
 
 // toggle the invert gradient flag (irrelevant for TOF)
 void MainWindow::handleInvertButton() {
   const auto PlotType = Plots[0]->getPlotType();
   if (PlotType == PlotType::PIXELS || PlotType == PlotType::TOF2D) {
-    mConfig.mPlot.InvertGradient = not mConfig.mPlot.InvertGradient;
+    mConfig.mPlot.InvertGradient = !mConfig.mPlot.InvertGradient;
     updateGradientComboBox();
   }
 }
@@ -275,7 +276,7 @@ void MainWindow::handleInvertButton() {
 void MainWindow::handleAutoScaleXButton() {
   const auto PlotType = Plots[0]->getPlotType();
   if (PlotType == PlotType::TOF || PlotType == PlotType::HISTOGRAM) {
-    mConfig.mTOF.AutoScaleX = not mConfig.mTOF.AutoScaleX;
+    mConfig.mTOF.AutoScaleX = !mConfig.mTOF.AutoScaleX;
   }
 }
 
@@ -283,7 +284,7 @@ void MainWindow::handleAutoScaleXButton() {
 void MainWindow::handleAutoScaleYButton() {
   const auto PlotType = Plots[0]->getPlotType();
   if (PlotType == PlotType::TOF || PlotType == PlotType::HISTOGRAM) {
-    mConfig.mTOF.AutoScaleY = not mConfig.mTOF.AutoScaleY;
+    mConfig.mTOF.AutoScaleY = !mConfig.mTOF.AutoScaleY;
   }
 }
 
@@ -302,7 +303,7 @@ void MainWindow::handleGradientComboBox(int comboIndex) {
   }
 }
 
-QIcon MainWindow::makeIcon(std::string key) {
+QIcon MainWindow::makeIcon(const string &key) {
   const size_t width = static_cast<size_t>(mGradientIconSize.width());
   const auto range = QCPRange(0, static_cast<double>(width - 1));
   QCPColorGradient gradient = GRADIENTS.at(key);

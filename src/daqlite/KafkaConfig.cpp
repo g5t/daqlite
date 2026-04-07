@@ -32,9 +32,8 @@ KafkaConfig::KafkaConfig(const string &KafkaConfigFile) {
 
     for (const auto &Parm : KafkaParms) {
       map<string, string> MyMap = Parm;
-      for (auto it = MyMap.begin(); it != MyMap.end(); it++) {
-        std::pair<string, string> CfgPair{it->first, it->second};
-        CfgParms.push_back(CfgPair);
+      for (const auto &[key, value] : MyMap) {
+        CfgParms.push_back({key, value});
       }
     }
 

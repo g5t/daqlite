@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2020 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file MainWindow.h
@@ -58,7 +58,7 @@ public:
   /// \brief Generate a gradient icon for the gradient combo box
   /// \param Key  The name of the gradient (see Gradients.h for the list)
   /// \return the generated icon
-  QIcon makeIcon(std::string Key);
+  QIcon makeIcon(const std::string &Key);
 
   /// \brief Detect if the plot window is closed
   /// \param event Close event
@@ -71,7 +71,7 @@ public slots:
   void handleInvertButton();
   void handleAutoScaleXButton();
   void handleAutoScaleYButton();
-  void handleKafkaData(int ElapsedCountNS);
+  void handleKafkaData(int ElapsedCountMS);
   void handleGradientComboBox(int index);
 
   /// Display the help window

@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2020 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file ESSConsumer.h
@@ -71,13 +71,14 @@ public:
 
   /// \brief Constructor needs the configured Broker and Topic
   ESSConsumer(Configuration &Config,
-              std::vector<std::pair<std::string, std::string>> &KafkaConfig);
+              const std::vector<std::pair<std::string, std::string>> &KafkaConfig);
 
   /// \brief wrapper function for librdkafka consumer
   std::unique_ptr<RdKafka::Message> consume();
 
   /// \brief setup librdkafka parameters for Broker and Topic
-  RdKafka::KafkaConsumer *subscribeTopic() const;
+  RdKafka::KafkaConsumer *subscribeTopic(
+      const std::vector<std::pair<std::string, std::string>> &KafkaConfig) const;
 
   /// \brief initial checks for kafka error messages
   /// \return true if message contains data, false otherwise
@@ -181,9 +182,6 @@ private:
 
   /// \brief all registered flat buffer sources
   std::set<std::string> mSources;
-
-  /// \brief loadable Kafka-specific configuration
-  std::vector<std::pair<std::string, std::string>> &mKafkaConfig;
 
   /// \brief histograms the event pixelids and ignores TOF
   uint32_t processEV42Data(RdKafka::Message *Msg);

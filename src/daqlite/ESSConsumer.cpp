@@ -39,9 +39,8 @@ static constexpr std::string_view UnfilteredKey{""};
 
 // clang-format off
 ESSConsumer::ESSConsumer(Configuration &Config,
-                         vector<std::pair<string, string>> &KafkaConfig)
-    : mConfig(Config)
-    , mKafkaConfig(KafkaConfig) {
+                         const vector<std::pair<string, string>> &KafkaConfig)
+    : mConfig(Config) {
   auto &geom = mConfig.mGeometry;
   mNumPixels = geom.XDim * geom.YDim * geom.ZDim;
   mMinPixel = geom.Offset + 1;
@@ -49,7 +48,7 @@ ESSConsumer::ESSConsumer(Configuration &Config,
   assert(mMaxPixel != 0);
   assert(mMinPixel < mMaxPixel);
 
-  mConsumer = subscribeTopic();
+  mConsumer = subscribeTopic(KafkaConfig);
   assert(mConsumer != nullptr);
 
   const auto types = {
@@ -67,7 +66,8 @@ ESSConsumer::ESSConsumer(Configuration &Config,
 }
 // clang-format on
 
-RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
+RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic(
+    const vector<std::pair<string, string>> &KafkaConfig) const {
   auto Conf = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
 
   if (!Conf) {
@@ -90,7 +90,7 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
   Conf->set("enable.auto.offset.store", mConfig.mKafka.EnableAutoOffsetStore,
              ErrStr);
 
-  for (auto &Config : mKafkaConfig) {
+  for (const auto &Config : KafkaConfig) {
     Conf->set(Config.first, Config.second, ErrStr);
   }
 
@@ -109,6 +109,11 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
 
   return ret;
 }
+
+// Suppress false-positive null-dereference warnings from flatbuffers
+// inlined code at higher optimization levels (Release builds)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 
 uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
   auto EvMsg = GetEvent44Message(Msg->payload());
@@ -140,7 +145,7 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
     mPixelIDs[*source].push_back(Pixel);
     mTOFs[*source].push_back(TofBin);
 
-    if ((Pixel > mMaxPixel) or (Pixel < mMinPixel)) {
+    if ((Pixel > mMaxPixel) || (Pixel < mMinPixel)) {
       mEventDiscard++;
     } else {
       mEventAccept++;
@@ -222,7 +227,7 @@ uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
   vector<uint32_t> PixelVector(mNumPixels, 0);
   vector<uint32_t> TofBinVector(mConfig.mTOF.BinSize, 0);
 
-  for (uint i = 0; i < PixelIds->size(); i++) {
+  for (size_t i = 0; i < PixelIds->size(); i++) {
     uint32_t Pixel = static_cast<uint32_t>((*PixelIds)[i]);
     uint32_t Tof   = static_cast<uint32_t>((*TOFs)[i]) / mConfig.mTOF.Scale; // ns to us
 
@@ -232,7 +237,7 @@ uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
     mPixelIDs[*source].push_back(Pixel);
     mTOFs[*source].push_back(TofBin);
 
-    if ((Pixel > mMaxPixel) or (Pixel < mMinPixel)) {
+    if ((Pixel > mMaxPixel) || (Pixel < mMinPixel)) {
       mEventDiscard++;
     } else {
       mEventAccept++;
@@ -315,7 +320,6 @@ vector<int64_t>
 ESSConsumer::getDataVector(const da00_Variable &Variable) const {
   vector<int64_t> Data;
 
-  auto data = Variable.unit()->str();
   auto shape = Variable.shape()->Get(0);
 
   switch (Variable.data_type()) {
@@ -356,6 +360,8 @@ ESSConsumer::getDataVector(const da00_Variable &Variable) const {
   }
   return Data;
 }
+
+#pragma GCC diagnostic pop
 
 /// \todo is timeout reasonable?
 std::unique_ptr<RdKafka::Message> ESSConsumer::consume() {

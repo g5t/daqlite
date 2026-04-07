@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2020 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file AMOR2DTofPlot.cpp
@@ -31,8 +31,8 @@ using std::vector;
 AMOR2DTofPlot::AMOR2DTofPlot(Configuration &Config,
                              ESSConsumer &Consumer)
     : AbstractPlot(PlotType::TOF2D, Consumer, Config) {
-  if ((not(mConfig.mGeometry.YDim <= TOF2DY) or
-       (not(mConfig.mTOF.BinSize <= TOF2DX)))) {
+  if ((!(mConfig.mGeometry.YDim <= TOF2DY) ||
+       (!(mConfig.mTOF.BinSize <= TOF2DX)))) {
     throw(std::runtime_error("2D TOF histogram size mismatch"));
   }
   memset(HistogramData2D, 0, sizeof(HistogramData2D));
@@ -125,7 +125,7 @@ void AMOR2DTofPlot::plotDetectorImage(bool Force) {
 
   for (int y = 0; y < YDim; y++) {
     for (int x = 0; x < BinSize; x++) {
-      if ((HistogramData2D[x][y] == 0) and (not Force)) {
+      if ((HistogramData2D[x][y] == 0) && (!Force)) {
         continue;
       }
       mColorMap->data()->setCell(x, y, HistogramData2D[x][y]);

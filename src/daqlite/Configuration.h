@@ -1,4 +1,4 @@
-// Copyright (C) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2020 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file Configuration.h
@@ -23,7 +23,7 @@
 class Configuration {
 public:
   /// \brief constructor using default values
-  /// Default are likely to be unsuitable and this should probably
+  /// Defaults are likely to be unsuitable and this should probably
   /// always be followed by a call to fromJsonFile()
   Configuration() {}
 

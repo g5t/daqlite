@@ -135,7 +135,7 @@ void PixelsPlot::plotDetectorImage(bool Force) {
   // if scales match the dimensions (xdim 400, range 0, 399) then cell indexes
   // and coordinates match. PixelId 0 does not exist.
   for (size_t i = 1; i < HistogramData.size(); i++) {
-    if ((HistogramData[i] != 0) or (Force)) {
+    if ((HistogramData[i] != 0) || (Force)) {
       int xIndex = static_cast<int>(LogicalGeometry->x(i));
       int yIndex = static_cast<int>(LogicalGeometry->y(i));
       int zIndex = static_cast<int>(LogicalGeometry->z(i));
@@ -176,7 +176,7 @@ void PixelsPlot::updateData() {
   vector<uint32_t> Histogram = mConsumer.readData(DataType::HISTOGRAM, source);
 
   int64_t nsBetweenClear = 1000000000LL * mConfig.mPlot.ClearEverySeconds;
-  if (mConfig.mPlot.ClearPeriodic and (elapsed.count() >= nsBetweenClear)) {
+  if (mConfig.mPlot.ClearPeriodic && (elapsed.count() >= nsBetweenClear)) {
     t1 = std::chrono::high_resolution_clock::now();
     std::fill(HistogramData.begin(), HistogramData.end(), 0);
 
