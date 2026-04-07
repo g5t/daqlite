@@ -55,7 +55,6 @@ HistogramPlot::HistogramPlot(Configuration &Config, ESSConsumer &Consumer)
   xAxis->setTickLabelRotation(90);
 
   mGraph = new QCPGraph(xAxis, yAxis);
-  // mGraph->setLineStyle(QCPGraph::lsNone);
   mGraph->setBrush(QBrush(QColor(0, 0, 255, 20)));
   mGraph->setLineStyle(QCPGraph::lsStepCenter);
   mGraph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
@@ -118,11 +117,10 @@ void HistogramPlot::plotDetectorImage(bool) {
 }
 
 void HistogramPlot::updateData() {
-  // printf("addData (TOF) Histogram size %lu\n", Histogram.size());
   auto t2 = std::chrono::high_resolution_clock::now();
   std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
 
-  // continue the the update only if we have data available from the consumer
+  // continue the update only if we have data available from the consumer
   const auto &source = mConfig.mPlot.Source;
   if (mConsumer.getDataSize(DataType::HISTOGRAM, source) == 0 or mConsumer.getDataSize(DataType::TOF, source) == 0) {
     return;
@@ -156,7 +154,6 @@ void HistogramPlot::updateData() {
   }
 
   plotDetectorImage(false);
-  return;
 }
 
 void HistogramPlot::clearDetectorImage() {

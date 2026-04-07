@@ -69,7 +69,7 @@ private:
   /// \param event Mouse event
   void mouseReleaseEvent(QMouseEvent *event) override;
 
-  /// \brief Type plot type - Pixel, Histogram, etc.
+  /// \brief The plot type - Pixel, Histogram, etc.
   PlotType mPlotType;
 
   /// Zoom rectangle vars

@@ -1,7 +1,7 @@
 // Copyright (C) 2020 - 2025 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
-/// \file PixelsPlot.cpp
+/// \file AMOR2DTofPlot.cpp
 ///
 //===----------------------------------------------------------------------===//
 
@@ -42,7 +42,6 @@ AMOR2DTofPlot::AMOR2DTofPlot(Configuration &Config,
 
   auto &geom = mConfig.mGeometry;
   LogicalGeometry = new ESSGeometry(geom.XDim, geom.YDim, geom.ZDim, 1);
-  // HistogramData.resize(LogicalGeometry->max_pixel() + 1);
 
   // this will also allow rescaling the color scale by dragging/zooming
   setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
@@ -129,7 +128,6 @@ void AMOR2DTofPlot::plotDetectorImage(bool Force) {
       if ((HistogramData2D[x][y] == 0) and (not Force)) {
         continue;
       }
-      // printf("debug x %u, y %u, z %u\n", x, y, HistogramData2D[x][y]);
       mColorMap->data()->setCell(x, y, HistogramData2D[x][y]);
     }
   }
@@ -148,7 +146,7 @@ void AMOR2DTofPlot::updateData() {
   vector<uint32_t> TOFs = mConsumer.readData(DataType::TOF, source);
 
   // Accumulate counts, PixelId 0 does not exist
-  if (PixelIDs.size() == 0) {
+  if (PixelIDs.empty()) {
     return;
   }
 
@@ -161,8 +159,6 @@ void AMOR2DTofPlot::updateData() {
     HistogramData2D[tof][yvals]++;
   }
   plotDetectorImage(false);
-
-  return;
 }
 
 // MouseOver

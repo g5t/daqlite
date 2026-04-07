@@ -100,8 +100,6 @@ int main(int argc, char *argv[]) {
 
   // Start the worker and let the Qt event handler take over
   Worker->start();
-  // main.show();
-  // main.raise();
 
   return app.exec();
 }

@@ -189,8 +189,6 @@ void PixelsPlot::updateData() {
     HistogramData[i] += Histogram[i];
   }
   plotDetectorImage(false);
-
-  return;
 }
 
 // MouseOver, display coordinate and data in tooltip

@@ -3,7 +3,7 @@
 ///
 /// \file AMOR2DTofPlot.h
 ///
-/// \brief Creates (maybe) a QCustomPlot based on the configuration parameters
+/// \brief Creates a 2D TOF plot based on the configuration parameters
 //===----------------------------------------------------------------------===//
 
 #pragma once

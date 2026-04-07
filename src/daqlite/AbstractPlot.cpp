@@ -23,12 +23,12 @@ QCPColorGradient AbstractPlot::getColorGradient(const string &GradientName) {
 
   fmt::print("Gradient {} not found, using 'hot' instead.\n", GradientName);
   fmt::print("Supported gradients are: ");
-  for (auto &Gradient : GRADIENTS) {
+  for (const auto &Gradient : GRADIENTS) {
     fmt::print("{} ", Gradient.first);
   }
   fmt::print("\n");
 
-  return GRADIENTS["hot"];
+  return GRADIENTS.at("hot");
 }
 
 AbstractPlot::AbstractPlot(PlotType Type, ESSConsumer &Consumer, Configuration &Config)
@@ -38,7 +38,7 @@ AbstractPlot::AbstractPlot(PlotType Type, ESSConsumer &Consumer, Configuration &
     , mZoomRectActive(false) {
     mConsumer.addSubscriber(mPlotType);
     mConsumer.addSource(mConfig.mPlot.Source);
-  };
+  }
 
 void AbstractPlot::paintEvent(QPaintEvent *event) {
   // ---------------------------------------------------------------------------
@@ -157,7 +157,6 @@ void AbstractPlot::mousePressEvent(QMouseEvent *event) {
   if (leftMouse && ctrlOn) {
     mZoomRectActive = true;
     mPoint0 = event->position().toPoint();
-    // fmt::print("mousePressEvent: {} {}\n", mPoint0->x(), mPoint0->y());
   }
 
   // ... otherwise, we let the base class handle the event

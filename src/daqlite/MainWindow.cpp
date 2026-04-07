@@ -44,7 +44,6 @@ MainWindow::MainWindow(const Configuration &Config, WorkerThread *Worker, QWidge
   , ui(new Ui::MainWindow)
   , mConfig(Config)
   , mWorker(Worker)
-  , mCount(0)
   , mGradientIconSize(QSize(128, 24)) {
   ui->setupUi(this);
   setupPlots();
@@ -304,11 +303,12 @@ void MainWindow::handleGradientComboBox(int comboIndex) {
 }
 
 QIcon MainWindow::makeIcon(std::string key) {
-  const int width = mGradientIconSize.width();
-  const auto range = QCPRange(0, width - 1);
-  QImage image(width, 1, QImage::Format_RGB32);
-  for (int i=0; i<width; ++i) {
-    const QColor color(GRADIENTS[key].color(mConfig.mPlot.InvertGradient ? width - i : i, range));
+  const size_t width = static_cast<size_t>(mGradientIconSize.width());
+  const auto range = QCPRange(0, static_cast<double>(width - 1));
+  QCPColorGradient gradient = GRADIENTS.at(key);
+  QImage image(static_cast<int>(width), 1, QImage::Format_RGB32);
+  for (size_t i=0; i<width; ++i) {
+    const QColor color(gradient.color(mConfig.mPlot.InvertGradient ? static_cast<int>(width - i) : static_cast<int>(i), range));
     image.setPixelColor(i, 0, color);
   }
   image = image.scaled(mGradientIconSize);

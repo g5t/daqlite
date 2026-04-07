@@ -261,7 +261,6 @@ bool ESSConsumer::handleMessage(RdKafka::Message *Message) {
   case RdKafka::ERR__TIMED_OUT:
     mKafkaStats.MessagesTMO++;
     return false;
-    break;
 
   case RdKafka::ERR_NO_ERROR:
     mKafkaStats.MessagesData++;
@@ -279,19 +278,16 @@ bool ESSConsumer::handleMessage(RdKafka::Message *Message) {
     }
 
     return true;
-    break;
 
   case RdKafka::ERR__PARTITION_EOF:
     mKafkaStats.MessagesEOF++;
     return false;
-    break;
 
   case RdKafka::ERR__UNKNOWN_TOPIC:
   case RdKafka::ERR__UNKNOWN_PARTITION:
     mKafkaStats.MessagesUnknown++;
     fmt::print("Consume failed: {}\n", Message->errstr());
     return false;
-    break;
 
   default: // Other errors
     mKafkaStats.MessagesOther++;

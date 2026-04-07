@@ -33,10 +33,10 @@ public:
   static constexpr int MAX = Types::HISTOGRAM;
 
   // Construct from string
-  PlotType(const std::string &type) {
+  PlotType(const std::string &name) {
 
     // Convert to lower case, so both "value" and "VALUE" will work
-    std::string lower = type;
+    std::string lower = name;
     std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c){ return std::tolower(c); });
 
     if (lower == "none") {
@@ -64,19 +64,19 @@ public:
     }
 
     else {
-      throw std::invalid_argument("Invalid PlotType string: " + type);
+      throw std::invalid_argument("Invalid PlotType string: " + name);
     }
   }
 
   // Construct from integer
-  PlotType(const int type) {
-    if (type >= MIN && type <= MAX) {
-      mPlotType = static_cast<Types>(type);
+  PlotType(const int value) {
+    if (value >= MIN && value <= MAX) {
+      mPlotType = static_cast<Types>(value);
     }
 
     else {
       throw std::invalid_argument("Invalid PlotType integer: " +
-                                  std::to_string(type));
+                                  std::to_string(value));
     }
   }
 
