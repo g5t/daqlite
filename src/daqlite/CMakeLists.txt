@@ -50,8 +50,11 @@ add_executable(
 set_target_properties(daqlite PROPERTIES AUTOUIC ON)
 
 target_compile_options(daqlite PRIVATE
-  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wshadow>
-  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=shadow>)
+  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=shadow>
+  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=float-conversion>
+  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=sign-conversion>
+  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=old-style-cast>
+  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=null-dereference>)
 
 target_link_libraries(
   daqlite

@@ -153,11 +153,10 @@ void HelpWindow::resizeEvent(QResizeEvent *event) {
 QSize HelpWindow::sizeHint() const {
   // Adjust size, then calculate new width that includes the clearbutton
   document()->adjustSize();
-  int w = document()->idealWidth() + mClearButton->rect().width();
+  double w = document()->idealWidth() + mClearButton->rect().width();
   document()->setTextWidth(w);
 
-  return QSize(w, document()->size().height() + 2);
-
+  return QSizeF(w, document()->size().height() + 2).toSize();
 }
 
 void HelpWindow::updateClearPosition()

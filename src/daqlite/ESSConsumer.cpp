@@ -11,10 +11,14 @@
 #include <ThreadSafeVector.h>
 #include <types/PlotType.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #include <da00_dataarray_generated.h>
 #include <ev42_events_generated.h>
 #include <ev44_events_generated.h>
 #include <flatbuffers/flatbuffers.h>
+#pragma GCC diagnostic pop
 
 #include <algorithm>
 #include <cassert>
@@ -49,11 +53,11 @@ ESSConsumer::ESSConsumer(Configuration &Config,
   assert(mConsumer != nullptr);
 
   const auto types = {
-    DataType::NONE, 
-    DataType::ANY, 
-    DataType::TOF, 
+    DataType::NONE,
+    DataType::ANY,
+    DataType::TOF,
     DataType::HISTOGRAM,
-    DataType::HISTOGRAM_TOF, 
+    DataType::HISTOGRAM_TOF,
     DataType::PIXEL_ID
   };
   for (DataType t : types) {
@@ -126,9 +130,9 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
   vector<uint32_t> PixelVector(mNumPixels, 0);
   vector<uint32_t> TofBinVector(mConfig.mTOF.BinSize, 0);
 
-  for (uint i = 0; i < PixelIds->size(); i++) {
-    uint32_t Pixel = (*PixelIds)[i];
-    uint32_t Tof = (*TOFs)[i] / mConfig.mTOF.Scale; // ns to us
+  for (size_t i = 0; i < PixelIds->size(); i++) {
+    auto Pixel = static_cast<uint32_t>((*PixelIds)[i]);
+    auto Tof   = static_cast<uint32_t>((*TOFs)[i]) / mConfig.mTOF.Scale; // ns to us
 
     // accumulate events for 2D TOF
     uint32_t TofBin = std::min(Tof, mConfig.mTOF.MaxValue) *
@@ -219,8 +223,8 @@ uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
   vector<uint32_t> TofBinVector(mConfig.mTOF.BinSize, 0);
 
   for (uint i = 0; i < PixelIds->size(); i++) {
-    uint32_t Pixel = (*PixelIds)[i];
-    uint32_t Tof = (*TOFs)[i] / mConfig.mTOF.Scale; // ns to us
+    uint32_t Pixel = static_cast<uint32_t>((*PixelIds)[i]);
+    uint32_t Tof   = static_cast<uint32_t>((*TOFs)[i]) / mConfig.mTOF.Scale; // ns to us
 
     // accumulate events for 2D TOF
     uint32_t TofBin = std::min(Tof, mConfig.mTOF.MaxValue) *
@@ -499,30 +503,32 @@ bool ESSConsumer::checkDelivery(DataType Type) {
 }
 
 void ESSConsumer::addSubscriber(PlotType Type, bool add) {
-  // Check if we register or deregister a plot
-  const int increment = add ? 1 : -1;
-
   // Increment the total number of plots
-  mSubscribers += increment;
-  mSubscriptionCount[DataType::ANY] += increment;
+  if (add) mSubscribers++; else mSubscribers--;
+  if (add) mSubscriptionCount[DataType::ANY]++; else mSubscriptionCount[DataType::ANY]--;
 
   // Register or de-register data types for the plot type
   switch (Type) {
   case PlotType::TOF:
-    mSubscriptionCount[DataType::HISTOGRAM_TOF] += increment;
+    if (add) mSubscriptionCount[DataType::HISTOGRAM_TOF]++;
+    else     mSubscriptionCount[DataType::HISTOGRAM_TOF]--;
     break;
 
   case PlotType::TOF2D:
-    mSubscriptionCount[DataType::PIXEL_ID] += increment;
-    mSubscriptionCount[DataType::TOF] += increment;
+    if (add) mSubscriptionCount[DataType::PIXEL_ID]++;
+    else     mSubscriptionCount[DataType::PIXEL_ID]--;
+    if (add) mSubscriptionCount[DataType::TOF]++;
+    else     mSubscriptionCount[DataType::TOF]--;
     break;
 
   case PlotType::PIXELS:
-    mSubscriptionCount[DataType::HISTOGRAM] += increment;
+    if (add) mSubscriptionCount[DataType::HISTOGRAM]++;
+    else     mSubscriptionCount[DataType::HISTOGRAM]--;
     break;
 
   case PlotType::HISTOGRAM:
-    mSubscriptionCount[DataType::HISTOGRAM] += increment;
+    if (add) mSubscriptionCount[DataType::HISTOGRAM]++;
+    else     mSubscriptionCount[DataType::HISTOGRAM]--;
     break;
 
   default:

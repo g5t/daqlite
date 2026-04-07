@@ -82,7 +82,7 @@ void TofPlot::plotDetectorImage(bool Force) {
   setCustomParameters();
   mGraph->data()->clear();
   uint32_t MaxY{0};
-  for (unsigned int i = 0; i < HistogramTofData.size(); i++) {
+  for (size_t i = 0; i < HistogramTofData.size(); i++) {
     if ((HistogramTofData[i] != 0) or (Force)) {
       uint32_t x = i * mConfig.mTOF.MaxValue / mConfig.mTOF.BinSize;
       uint32_t y = HistogramTofData[i];
@@ -120,7 +120,7 @@ void TofPlot::updateData() {
   }
 
   // Accumulate counts, PixelId 0 does not exist
-  for (unsigned int i = 1; i < HistogramTof.size(); i++) {
+  for (size_t i = 1; i < HistogramTof.size(); i++) {
     HistogramTofData[i] += HistogramTof[i];
   }
   plotDetectorImage(false);
@@ -135,16 +135,16 @@ void TofPlot::clearDetectorImage() {
 
 // MouseOver, display coordinate and data in tooltip
 void TofPlot::showPointToolTip(QMouseEvent *event) {
-  int x = this->xAxis->pixelToCoord(event->pos().x());
+  int x = qRound(this->xAxis->pixelToCoord(event->position().x()));
 
   // Calculate x coord width of the graphical representation of the column
-  int xCoordStep = int(mConfig.mTOF.MaxValue / mConfig.mTOF.BinSize);
+  int xCoordStep = static_cast<int>(mConfig.mTOF.MaxValue / mConfig.mTOF.BinSize);
 
   // Get the index in data store for the x coordinate
-  int xCoordDataIndex = int((x - xCoordStep / 2) / xCoordStep);
+  int xCoordDataIndex = (x - xCoordStep / 2) / xCoordStep;
 
   // Get column middle TOF value for the x coordinate
-  int xCoordTofValue = int((x + xCoordStep / 2) / xCoordStep) * xCoordStep;
+  int xCoordTofValue = (x + xCoordStep / 2) / xCoordStep * xCoordStep;
 
   // Get the count value from the data store
   const bool empty = mGraph->data()->isEmpty();
