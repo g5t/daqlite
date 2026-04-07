@@ -13,7 +13,7 @@
 #include <map>
 #include <string>
 
-inline std::map<std::string, QCPColorGradient> GRADIENTS = {
+inline const std::map<std::string, QCPColorGradient> GRADIENTS = {
   {"candy",     QCPColorGradient::gpCandy},
   {"cold",      QCPColorGradient::gpCold},
   {"geography", QCPColorGradient::gpGeography},

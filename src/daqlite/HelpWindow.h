@@ -35,11 +35,11 @@ public:
   /// \param event
   void keyPressEvent(QKeyEvent *event) override;
 
-  /// \brief Update clear button postion when the help window is shown
+  /// \brief Update clear button position when the help window is shown
   /// \param event
   void showEvent(QShowEvent* event) override;
 
-  /// \brief Update clear button postion when the help window is resized
+  /// \brief Update clear button position when the help window is resized
   /// \param event
   void resizeEvent(QResizeEvent* event) override;
 
@@ -47,7 +47,7 @@ public:
   QSize sizeHint() const override;
 
 private:
-  /// \brief  Hide this line edit and "steal" it's clear button
+  /// \brief  Hide this line edit and "steal" its clear button
   QLineEdit *mLineEdit;
 
   /// \brief Button used to close/hide the help window

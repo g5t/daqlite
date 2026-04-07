@@ -21,7 +21,7 @@ using std::map;
 using std::string;
 
 KafkaConfig::KafkaConfig(const string &KafkaConfigFile) {
-  if (KafkaConfigFile == "") {
+  if (KafkaConfigFile.empty()) {
     return;
   }
   fmt::print("KAFKA CONFIG FROM FILE\n");

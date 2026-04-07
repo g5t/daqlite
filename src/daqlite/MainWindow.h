@@ -92,7 +92,7 @@ private:
   WorkerThread *mWorker;
 
   /// \brief Number of updates data deliveries so far
-  size_t mCount;
+  size_t mCount{0};
 
   /// \brief The size of the gradient icons
   QSize mGradientIconSize;

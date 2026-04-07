@@ -118,8 +118,8 @@ public:
     bool InvertGradient{false};
     bool LogScale{false};
     std::string WindowTitle{"Daquiri Lite - Daqlite"};
-    std::string PlotTitle{""};
-    std::string XAxis{""};
+    std::string PlotTitle;
+    std::string XAxis;
     std::optional<std::string> Source{std::nullopt};
 
     int Width{600};             // Default window width
@@ -127,12 +127,12 @@ public:
     bool defaultGeometry{true}; // True if window geometries are default
   };
 
-  struct TOFOptions mTOF;
-  struct GeometryOptions mGeometry;
-  struct KafkaOptions mKafka;
-  struct PlotOptions mPlot;
+  TOFOptions mTOF;
+  GeometryOptions mGeometry;
+  KafkaOptions mKafka;
+  PlotOptions mPlot;
 
-  std::string mKafkaConfigFile{""};
+  std::string mKafkaConfigFile;
   std::vector<std::pair<std::string, std::string>> mKafkaConfig;
 
   nlohmann::json mJsonObj;

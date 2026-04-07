@@ -33,10 +33,10 @@ public:
   static constexpr int MAX = Types::PIXEL_ID;
 
   // Construct from string
-  DataType(const std::string &type) {
+  DataType(const std::string &name) {
 
     // Convert to lower case, so both "value" and "VALUE" will work
-    std::string lower = type;
+    std::string lower = name;
     std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c){ return std::tolower(c); });
 
     if (lower == "none") {
@@ -64,19 +64,19 @@ public:
     }
 
     else {
-      throw std::invalid_argument("Invalid DataType string: " + type);
+      throw std::invalid_argument("Invalid DataType string: " + name);
     }
   }
 
   // Construct from integer
-  DataType(const int type) {
-    if (type >= MIN && type <= MAX) {
-      mDataType = static_cast<Types>(type);
+  DataType(const int value) {
+    if (value >= MIN && value <= MAX) {
+      mDataType = static_cast<Types>(value);
     }
 
     else {
-      throw std::invalid_argument("Invalid PlotType integer: " +
-                                  std::to_string(type));
+      throw std::invalid_argument("Invalid DataType integer: " +
+                                  std::to_string(value));
     }
   }
 

@@ -19,7 +19,7 @@
 
 inline nlohmann::json from_json_file(const std::string &fname) {
   nlohmann::json j;
-  std::ifstream ifs(fname, std::ofstream::in);
+  std::ifstream ifs(fname);
   if (ifs.fail()) {
     throw std::runtime_error(
         fmt::format("file permission error or missing json file {}", fname));

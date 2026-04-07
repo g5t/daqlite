@@ -49,7 +49,6 @@ TofPlot::TofPlot(Configuration &Config, ESSConsumer &Consumer)
   xAxis->setTickLabelRotation(90);
 
   mGraph = new QCPGraph(xAxis, yAxis);
-  // mGraph->setLineStyle(QCPGraph::lsNone);
   mGraph->setBrush(QBrush(QColor(0, 0, 255, 20)));
   mGraph->setLineStyle(QCPGraph::lsStepCenter);
   mGraph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
@@ -104,7 +103,6 @@ void TofPlot::plotDetectorImage(bool Force) {
 }
 
 void TofPlot::updateData() {
-  // printf("addData (TOF) Histogram size %lu\n", Histogram.size());
   auto t2 = std::chrono::high_resolution_clock::now();
   std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
 
@@ -124,8 +122,6 @@ void TofPlot::updateData() {
     HistogramTofData[i] += HistogramTof[i];
   }
   plotDetectorImage(false);
-
-  return;
 }
 
 void TofPlot::clearDetectorImage() {
