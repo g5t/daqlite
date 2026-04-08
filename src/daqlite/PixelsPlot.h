@@ -12,7 +12,6 @@
 
 #include <QPlot/qcustomplot/qcustomplot.h>
 
-#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -65,6 +64,4 @@ private:
   //
   Projection mProjection;
 
-  /// \brief reference time for periodic clearing of histogram
-  std::chrono::time_point<std::chrono::high_resolution_clock> t1;
 };

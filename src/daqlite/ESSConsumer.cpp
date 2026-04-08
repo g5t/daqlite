@@ -76,8 +76,6 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic(
   }
 
   string ErrStr;
-  /// \todo figure out good values for these
-  /// \todo some may be obsolete
   Conf->set("metadata.broker.list", mConfig.mKafka.Broker, ErrStr);
   Conf->set("message.max.bytes", mConfig.mKafka.MessageMaxBytes, ErrStr);
   Conf->set("fetch.message.max.bytes", mConfig.mKafka.FetchMessageMaxBytes,
@@ -135,6 +133,10 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
   vector<uint32_t> PixelVector(mNumPixels, 0);
   vector<uint32_t> TofBinVector(mConfig.mTOF.BinSize, 0);
 
+  const auto PixelDim = mPixelIDs[*source].size() + PixelIds->size();
+  const auto TofDim   = mTOFs[*source].size() + PixelIds->size();
+  mPixelIDs[*source].reserve(PixelDim);
+  mTOFs[*source].reserve(TofDim);
   for (size_t i = 0; i < PixelIds->size(); i++) {
     auto Pixel = static_cast<uint32_t>((*PixelIds)[i]);
     auto Tof   = static_cast<uint32_t>((*TOFs)[i]) / mConfig.mTOF.Scale; // ns to us
@@ -200,7 +202,7 @@ uint32_t ESSConsumer::processDA00Data(RdKafka::Message *Msg) {
   }
 
   mHistograms[*source].add_values(DataBins);
-  mTOFs[*source] = BinEdges;
+  mTOFs[*source] = std::move(BinEdges);
 
   mEventCount++;
   mEventAccept++;
@@ -227,6 +229,10 @@ uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
   vector<uint32_t> PixelVector(mNumPixels, 0);
   vector<uint32_t> TofBinVector(mConfig.mTOF.BinSize, 0);
 
+  const auto PixelDim = mPixelIDs[*source].size() + PixelIds->size();
+  const auto TofDim   = mTOFs[*source].size() + PixelIds->size();
+  mPixelIDs[*source].reserve(PixelDim);
+  mTOFs[*source].reserve(TofDim);
   for (size_t i = 0; i < PixelIds->size(); i++) {
     uint32_t Pixel = static_cast<uint32_t>((*PixelIds)[i]);
     uint32_t Tof   = static_cast<uint32_t>((*TOFs)[i]) / mConfig.mTOF.Scale; // ns to us
@@ -256,20 +262,15 @@ uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
 }
 
 bool ESSConsumer::handleMessage(RdKafka::Message *Message) {
-  mKafkaStats.MessagesRx++;
-
   const uint8_t *FlatBuffer = static_cast<const uint8_t *>(Message->payload());
 
   flatbuffers::Verifier Verifier(FlatBuffer, Message->len());
 
   switch (Message->err()) {
   case RdKafka::ERR__TIMED_OUT:
-    mKafkaStats.MessagesTMO++;
     return false;
 
   case RdKafka::ERR_NO_ERROR:
-    mKafkaStats.MessagesData++;
-
     if (VerifyEvent44MessageBuffer(Verifier)) {
       processEV44Data(Message);
     } else if (VerifyEventMessageBuffer(Verifier)) {
@@ -277,7 +278,6 @@ bool ESSConsumer::handleMessage(RdKafka::Message *Message) {
     } else if (Verifyda00_DataArrayBuffer(Verifier)) {
       processDA00Data(Message);
     } else {
-      mKafkaStats.MessagesUnknown++;
       fmt::print("Unknown message type\n");
       return false;
     }
@@ -285,17 +285,14 @@ bool ESSConsumer::handleMessage(RdKafka::Message *Message) {
     return true;
 
   case RdKafka::ERR__PARTITION_EOF:
-    mKafkaStats.MessagesEOF++;
     return false;
 
   case RdKafka::ERR__UNKNOWN_TOPIC:
   case RdKafka::ERR__UNKNOWN_PARTITION:
-    mKafkaStats.MessagesUnknown++;
     fmt::print("Consume failed: {}\n", Message->errstr());
     return false;
 
   default: // Other errors
-    mKafkaStats.MessagesOther++;
     fmt::print("Consume failed: {}", Message->errstr());
     return false;
   }
@@ -356,6 +353,7 @@ ESSConsumer::getDataVector(const da00_Variable &Variable) const {
     break;
   }
   default:
+    fmt::print("getDataVector(): unsupported data type\n");
     break;
   }
   return Data;
@@ -363,7 +361,6 @@ ESSConsumer::getDataVector(const da00_Variable &Variable) const {
 
 #pragma GCC diagnostic pop
 
-/// \todo is timeout reasonable?
 std::unique_ptr<RdKafka::Message> ESSConsumer::consume() {
   std::unique_ptr<RdKafka::Message> msg(mConsumer->consume(1000));
   return msg;
@@ -388,7 +385,7 @@ const ESSConsumer::TSVectorMap *ESSConsumer::getData(DataType dataType) const {
     return &mTOFs;
 
   default:
-    assert(false && "Invalid data type");
+    fmt::print("getData(): invalid DataType\n");
     return nullptr;
   }
 }
@@ -414,29 +411,28 @@ vector<uint32_t> ESSConsumer::readData(DataType dataType,
       return {};
     }
 
-    // Get data copy
-    result = iter->second;
+    // Swap (O(1) under lock) when resetting; copy otherwise
+    const bool doReset = reset && checkDelivery(dataType);
+    result = iter->second.get(doReset);
   } else {
     // If no source is specified, combine data from all sources element-wise
-    // This adds values at the same index across all source vectors
-    for (const auto &[key, data] : *dataMap) {
+    const bool doReset = reset && checkDelivery(dataType);
+    for (auto &[key, data] : *dataMap) {
+      auto chunk = data.get(doReset);
       if (result.empty()) {
-        result = data;
+        result = std::move(chunk);
       } else {
         // Resize result if necessary to accommodate larger data
-        if (data.size() > result.size()) {
-          result.resize(data.size(), 0);
+        if (chunk.size() > result.size()) {
+          result.resize(chunk.size(), 0);
         }
         // Add values element-wise
-        for (size_t i = 0; i < data.size(); i++) {
-          result[i] += data[i];
+        for (size_t i = 0; i < chunk.size(); i++) {
+          result[i] += chunk[i];
         }
       }
     }
   }
-
-  // Clear data if reset is requested and all deliveries have been made
-  resetDataIfNeeded(dataMap, dataType, source, reset);
 
   return result;
 }

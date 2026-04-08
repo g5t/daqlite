@@ -20,9 +20,7 @@
 #include <fmt/format.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cstdint>
-#include <ratio>
 #include <string>
 #include <vector>
 
@@ -66,7 +64,6 @@ HistogramPlot::HistogramPlot(Configuration &Config, ESSConsumer &Consumer)
 
   setCustomParameters();
 
-  t1 = std::chrono::high_resolution_clock::now();
 }
 
 void HistogramPlot::setCustomParameters() {
@@ -92,26 +89,21 @@ void HistogramPlot::plotDetectorImage(bool) {
   }
 
   if (mConfig.mTOF.AutoScaleX && !HistogramXAxisValues.empty()) {
-    double MaxX = *std::max_element(HistogramXAxisValues.begin(),
-                                    HistogramXAxisValues.end());
-
-    double MinX = *std::min_element(HistogramXAxisValues.begin(),
-                                    HistogramXAxisValues.end());
-
+    double MinX = HistogramXAxisValues.front();
+    double MaxX = HistogramXAxisValues.back();
     xAxis->setRange(MinX / mConfig.mTOF.Scale, MaxX / mConfig.mTOF.Scale * 1.05);
   }
-  if (mConfig.mTOF.AutoScaleY && !HistogramYAxisValues.empty()) {
-    auto MaxY = *std::max_element(HistogramYAxisValues.begin(),
-                                  HistogramYAxisValues.end());
-    yAxis->setRange(0, MaxY * 1.05);
+  if (mConfig.mTOF.AutoScaleY) {
+    yAxis->setRange(0, mMaxY * 1.05);
   }
 
   replot();
 }
 
 void HistogramPlot::updateData() {
-  auto t2 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
+  if (shouldClear()) {
+    clearDetectorImage();
+  }
 
   // Continue the update only if we have data available from the consumer
   const auto &source = mConfig.mPlot.Source;
@@ -129,21 +121,13 @@ void HistogramPlot::updateData() {
     return;
   }
 
-  // Periodically clear the histogram data sets
-  //
-  int64_t nsBetweenClear = 1000000000LL * mConfig.mPlot.ClearEverySeconds;
-  if (mConfig.mPlot.ClearPeriodic && (elapsed.count() >= nsBetweenClear)) {
-    std::fill(HistogramYAxisValues.begin(), HistogramYAxisValues.end(), 0);
-    std::fill(HistogramXAxisValues.begin(), HistogramXAxisValues.end(), 0);
-    t1 = std::chrono::high_resolution_clock::now();
-  }
-
   if (HistogramYAxisValues.size() < YAxisValues.size()) {
     HistogramYAxisValues.resize(YAxisValues.size());
   }
 
   for (size_t i = 0; i < YAxisValues.size(); i++) {
     HistogramYAxisValues[i] += YAxisValues[i];
+    mMaxY = std::max(mMaxY, HistogramYAxisValues[i]);
   }
 
   plotDetectorImage(false);
@@ -151,6 +135,7 @@ void HistogramPlot::updateData() {
 
 void HistogramPlot::clearDetectorImage() {
   std::fill(HistogramYAxisValues.begin(), HistogramYAxisValues.end(), 0);
+  mMaxY = 0;
   plotDetectorImage(true);
 }
 

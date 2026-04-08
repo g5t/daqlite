@@ -194,46 +194,10 @@ private:
 
   std::vector<int64_t> getDataVector(const da00_Variable &Variable) const;
 
-  /// \brief Some stat counters
-  /// \todo use or delete?
-  struct Stat {
-    uint64_t MessagesRx{0};
-    uint64_t MessagesTMO{0};
-    uint64_t MessagesData{0};
-    uint64_t MessagesEOF{0};
-    uint64_t MessagesUnknown{0};
-    uint64_t MessagesOther{0};
-  } mKafkaStats;
-
   uint32_t mNumPixels{0}; ///< Number of pixels
   uint32_t mMinPixel{0};  ///< Offset
   uint32_t mMaxPixel{0};  ///< Number of pixels + offset
 
-  /// \brief  Reset data if requested and all deliveries have been made
-  /// \param  dataMap   The data map to reset
-  /// \param  dataType  The data type being delivered
-  /// \param  source    Source name. If empty, resets all sources; otherwise
-  ///                   resets specific source
-  /// \param  reset     Whether to reset data
-  ///
-  /// \note Only resets data when checkDelivery confirms all subscribers have
-  /// received data
-  inline void resetDataIfNeeded(TSVectorMap *dataMap, DataType dataType,
-                                const std::optional<std::string> &source,
-                                bool reset) {
-    if (reset && checkDelivery(dataType)) {
-      if (source.has_value()) {
-        auto iter = dataMap->find(*source);
-        if (iter != dataMap->end()) {
-          iter->second.clear();
-        }
-      } else {
-        for (auto &[key, data] : *dataMap) {
-          data.clear();
-        }
-      }
-    }
-  }
 
   /// \brief  Check if all deliveries have been made for a given data type
   /// \param  Type  Check for this data type

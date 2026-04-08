@@ -133,7 +133,6 @@ public:
   PlotOptions mPlot;
 
   std::string mKafkaConfigFile;
-  std::vector<std::pair<std::string, std::string>> mKafkaConfig;
 
   nlohmann::json mJsonObj;
 };

@@ -10,7 +10,6 @@
 
 #include <AbstractPlot.h>
 
-#include <chrono>
 #include <cstdint>
 #include <vector>
 
@@ -53,6 +52,4 @@ private:
 
   std::vector<uint32_t> HistogramTofData;
 
-  /// \brief reference time for periodic clearing of histogram
-  std::chrono::time_point<std::chrono::high_resolution_clock> t1;
 };

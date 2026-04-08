@@ -147,12 +147,13 @@ void AMOR2DTofPlot::updateData() {
     return;
   }
 
+  const auto XDim = mConfig.mGeometry.XDim;
   for (size_t i = 0; i < PixelIDs.size(); i++) {
     if (PixelIDs[i] == 0) {
       continue;
     }
     auto tof   = static_cast<size_t>(TOFs[i]);
-    auto yvals = static_cast<size_t>((PixelIDs[i] - 1) / mConfig.mGeometry.XDim);
+    auto yvals = static_cast<size_t>((PixelIDs[i] - 1) / XDim);
     HistogramData2D[tof][yvals]++;
   }
   plotDetectorImage(false);

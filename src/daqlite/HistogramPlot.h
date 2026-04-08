@@ -11,7 +11,6 @@
 
 #include <AbstractPlot.h>
 
-#include <chrono>
 #include <cstdint>
 #include <vector>
 
@@ -51,6 +50,7 @@ private:
   std::vector<uint32_t> HistogramYAxisValues;
   std::vector<uint32_t> HistogramXAxisValues;
 
-  /// \brief reference time for periodic clearing of histogram
-  std::chrono::time_point<std::chrono::high_resolution_clock> t1;
+  /// \brief cached maximum Y value for auto-scaling
+  uint32_t mMaxY{0};
+
 };
