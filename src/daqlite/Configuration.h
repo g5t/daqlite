@@ -39,16 +39,16 @@ public:
   static void prettyJSON(nlohmann::json &obj, const std::string &header = "",
                          int indent = 4);
 
-  // get the Kafka related config options
+  // Get the Kafka related config options
   void getKafkaConfig();
 
-  // get the Geometry related config options
+  // Get the Geometry related config options
   void getGeometryConfig();
 
-  // get the Plot related config options
+  // Get the Plot related config options
   void getPlotConfig();
 
-  // get the TOF related config options
+  // Get the TOF related config options
   void getTOFConfig();
 
   /// \brief prints the settings

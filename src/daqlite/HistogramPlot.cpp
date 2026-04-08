@@ -12,8 +12,6 @@
 #include <Configuration.h>
 #include <ESSConsumer.h>
 
-#include <logical_geometry/ESSGeometry.h>
-
 #include <QPlot/qcustomplot/qcustomplot.h>
 #include <QBrush>
 #include <QColor>
@@ -37,18 +35,14 @@ HistogramPlot::HistogramPlot(Configuration &Config, ESSConsumer &Consumer)
   connect(this, &QCustomPlot::mouseMove, this, &HistogramPlot::showPointToolTip);
   setAttribute(Qt::WA_AlwaysShowToolTips);
 
-  auto &geom = mConfig.mGeometry;
-
-  LogicalGeometry = new ESSGeometry(geom.XDim, geom.YDim, geom.ZDim, 1);
-
   HistogramYAxisValues.resize(mConfig.mTOF.BinSize);
 
-  // this will also allow rescaling the color scale by dragging/zooming
+  // This will also allow rescaling the color scale by dragging/zooming
   setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
   axisRect()->setupFullAxesBox(true);
 
-  // set up the QCPColorMap:
+  // Set up the QCPColorMap
   yAxis->setRangeReversed(false);
   yAxis->setSubTicks(true);
   xAxis->setSubTicks(false);
@@ -59,7 +53,7 @@ HistogramPlot::HistogramPlot(Configuration &Config, ESSConsumer &Consumer)
   mGraph->setLineStyle(QCPGraph::lsStepCenter);
   mGraph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
 
-  // we want the color map to have nx * ny data points
+  // We want the color map to have nx * ny data points
 
   if (mConfig.mPlot.XAxis.empty()) {
     xAxis->setLabel("TOF (μs)");
@@ -88,7 +82,7 @@ void HistogramPlot::plotDetectorImage(bool) {
   mGraph->data()->clear();
 
   for (size_t i = 0; i < HistogramYAxisValues.size(); i++) {
-    // calculate the middle x value of the bin to place the data point
+    // Calculate the middle x value of the bin to place the data point
     auto binWidth = HistogramXAxisValues[i + 1] - HistogramXAxisValues[i];
     auto middleXValue = HistogramXAxisValues[i] + binWidth / 2.0;
 
@@ -119,7 +113,7 @@ void HistogramPlot::updateData() {
   auto t2 = std::chrono::high_resolution_clock::now();
   std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
 
-  // continue the update only if we have data available from the consumer
+  // Continue the update only if we have data available from the consumer
   const auto &source = mConfig.mPlot.Source;
   if (mConsumer.getDataSize(DataType::HISTOGRAM, source) == 0 || mConsumer.getDataSize(DataType::TOF, source) == 0) {
     return;

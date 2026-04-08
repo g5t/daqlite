@@ -12,8 +12,6 @@
 #include <Configuration.h>
 #include <ESSConsumer.h>
 
-#include <logical_geometry/ESSGeometry.h>
-
 #include <QPlot/qcustomplot/qcustomplot.h>
 #include <QColor>
 #include <QEvent>
@@ -32,17 +30,14 @@ TofPlot::TofPlot(Configuration &Config, ESSConsumer &Consumer)
   connect(this, &QCustomPlot::mouseMove, this, &TofPlot::showPointToolTip);
   setAttribute(Qt::WA_AlwaysShowToolTips);
 
-  auto &geom = mConfig.mGeometry;
-  LogicalGeometry = new ESSGeometry(geom.XDim, geom.YDim, geom.ZDim, 1);
-
   HistogramTofData.resize(mConfig.mTOF.BinSize);
 
-  // this will also allow rescaling the color scale by dragging/zooming
+  // This will also allow rescaling the color scale by dragging/zooming
   setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
   axisRect()->setupFullAxesBox(true);
 
-  // set up the QCPColorMap:
+  // Set up the QCPColorMap
   yAxis->setRangeReversed(false);
   yAxis->setSubTicks(true);
   xAxis->setSubTicks(false);
@@ -53,7 +48,7 @@ TofPlot::TofPlot(Configuration &Config, ESSConsumer &Consumer)
   mGraph->setLineStyle(QCPGraph::lsStepCenter);
   mGraph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
 
-  // we want the color map to have nx * ny data points
+  // We want the color map to have nx * ny data points
 
   if (mConfig.mPlot.XAxis.empty()) {
     xAxis->setLabel("TOF (μs)");

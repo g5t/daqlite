@@ -12,30 +12,25 @@
 
 #pragma once
 
-#include <Configuration.h>
 #include <ESSConsumer.h>
-#include <KafkaConfig.h>
 
 #include <QThread>
 
+#include <atomic>
 #include <memory>
 #include <stdexcept>
+
+class Configuration;
 
 class WorkerThread : public QThread {
   Q_OBJECT
 
 public:
-  WorkerThread(Configuration &Config)
-  : mConfig(Config)
-  {
-    KafkaConfig KafkaCfg(Config.mKafkaConfigFile);
-    Consumer = std::make_unique<ESSConsumer>(Config, KafkaCfg.CfgParms);
-  };
+  WorkerThread(Configuration &Config);
 
   ~WorkerThread() {
-    this->terminate();
-    this->wait();
-    this->exit();
+    mStop = true;
+    wait();
   }
 
   /// \brief thread main loop
@@ -55,8 +50,8 @@ signals:
   void resultReady(int &val);
 
 private:
-  /// \brief configuration obtained from main()
-  Configuration &mConfig;
+  /// \brief Set to true by the destructor to signal the run() loop to exit
+  std::atomic<bool> mStop{false};
 
   /// \brief Kafka consumer
   std::unique_ptr<ESSConsumer> Consumer;

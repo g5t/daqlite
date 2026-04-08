@@ -1,7 +1,7 @@
-// Copyright (C) 2022 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2022 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
-/// \file
+/// \file KafkaConfig.cpp
 ///
 /// \brief using nlohmann json parser to read configurations from file
 //===----------------------------------------------------------------------===//
@@ -37,9 +37,9 @@ KafkaConfig::KafkaConfig(const string &KafkaConfigFile) {
       }
     }
 
-  } catch (...) {
-    fmt::print("Kafka JSON config - error: Invalid Json file: {}\n",
-        KafkaConfigFile);
-    throw std::runtime_error("Invalid Json file for Kafka config");
+  } catch (const std::exception &e) {
+    const string Msg = fmt::format("Invalid Json file for Kafka config: {}", e.what());
+    fmt::print("{}\n", Msg);
+    throw std::runtime_error(Msg);
   }
 }

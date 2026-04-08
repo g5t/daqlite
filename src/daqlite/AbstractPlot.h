@@ -1,9 +1,9 @@
-// Copyright (C) 2024 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2024 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file AbstractPlot.h
 ///
-/// \brief
+/// \brief Abstract base class for all daqlite plot widgets
 //===----------------------------------------------------------------------===//
 
 #pragma once

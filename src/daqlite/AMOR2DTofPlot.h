@@ -1,4 +1,4 @@
-// Copyright (C) 2022-2024 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2022 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
 /// \file AMOR2DTofPlot.h
@@ -14,11 +14,11 @@
 
 #include <chrono>
 #include <cstdint>
+#include <memory>
 
 // Forward declarations
 class Configuration;
 class ESSConsumer;
-class ESSGeometry;
 
 class AMOR2DTofPlot : public AbstractPlot {
   Q_OBJECT
@@ -47,14 +47,12 @@ private:
   // QCustomPlot variables
   QCPColorScale *mColorScale{nullptr};
   QCPColorMap *mColorMap{nullptr};
+  std::unique_ptr<QCPMarginGroup> mMarginGroup;
 
   /// \brief allocated according to config in constructor
   static constexpr uint32_t TOF2DX{512};
   static constexpr uint32_t TOF2DY{512};
   uint32_t HistogramData2D[TOF2DX + 1][TOF2DY + 1];
-
-  /// \brief for calculating x, y, z from pixelid
-  ESSGeometry *LogicalGeometry;
 
   /// \brief reference time for periodic clearing of histogram
   std::chrono::time_point<std::chrono::high_resolution_clock> t1;

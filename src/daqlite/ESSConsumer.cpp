@@ -131,7 +131,7 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
     return 0;
   }
 
-  // local temporary histograms to avoid locking during processing
+  // Local temporary histograms to avoid locking during processing
   vector<uint32_t> PixelVector(mNumPixels, 0);
   vector<uint32_t> TofBinVector(mConfig.mTOF.BinSize, 0);
 
@@ -139,7 +139,7 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
     auto Pixel = static_cast<uint32_t>((*PixelIds)[i]);
     auto Tof   = static_cast<uint32_t>((*TOFs)[i]) / mConfig.mTOF.Scale; // ns to us
 
-    // accumulate events for 2D TOF
+    // Accumulate events for 2D TOF
     uint32_t TofBin = std::min(Tof, mConfig.mTOF.MaxValue) *
                       (mConfig.mTOF.BinSize - 1) / mConfig.mTOF.MaxValue;
     mPixelIDs[*source].push_back(Pixel);
@@ -158,7 +158,7 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
     }
   }
 
-  // update thread safe histograms storage with new data
+  // Update thread safe histograms storage with new data
   mHistograms[*source].add_values(PixelVector);
   mHistogramTOFs[*source].add_values(TofBinVector);
 
@@ -231,7 +231,7 @@ uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
     uint32_t Pixel = static_cast<uint32_t>((*PixelIds)[i]);
     uint32_t Tof   = static_cast<uint32_t>((*TOFs)[i]) / mConfig.mTOF.Scale; // ns to us
 
-    // accumulate events for 2D TOF
+    // Accumulate events for 2D TOF
     uint32_t TofBin = std::min(Tof, mConfig.mTOF.MaxValue) *
                       (mConfig.mTOF.BinSize - 1) / mConfig.mTOF.MaxValue;
     mPixelIDs[*source].push_back(Pixel);
@@ -326,7 +326,7 @@ ESSConsumer::getDataVector(const da00_Variable &Variable) const {
   case da00_dtype::int32: {
     auto dataPtr = reinterpret_cast<const int32_t *>(Variable.data());
 
-    // skip the first element which is the length of the data
+    // Skip the first element which is the length of the data
     dataPtr++;
     Data.assign(dataPtr, dataPtr + shape);
     break;
@@ -334,7 +334,7 @@ ESSConsumer::getDataVector(const da00_Variable &Variable) const {
   case da00_dtype::int64: {
     auto dataPtr = reinterpret_cast<const int64_t *>(Variable.data());
 
-    // skip the first element which is the length of the data
+    // Skip the first element which is the length of the data
     dataPtr++;
     Data.assign(dataPtr, dataPtr + shape);
     break;
@@ -342,7 +342,7 @@ ESSConsumer::getDataVector(const da00_Variable &Variable) const {
   case da00_dtype::uint32: {
     auto dataPtr = reinterpret_cast<const uint32_t *>(Variable.data());
 
-    // skip the first element which is the length of the data
+    // Skip the first element which is the length of the data
     dataPtr++;
     Data.assign(dataPtr, dataPtr + shape);
     break;
@@ -350,7 +350,7 @@ ESSConsumer::getDataVector(const da00_Variable &Variable) const {
   case da00_dtype::uint64: {
     auto dataPtr = reinterpret_cast<const uint64_t *>(Variable.data());
 
-    // skip the first element which is the length of the data
+    // Skip the first element which is the length of the data
     dataPtr++;
     Data.assign(dataPtr, dataPtr + shape);
     break;
@@ -468,7 +468,7 @@ size_t ESSConsumer::getBinSize(optional<string> source) const {
 };
 
 void ESSConsumer::addSource(const optional<string> &source) {
-  // nullopt means "no filtering" - ignore
+  // std::nullopt means "no filtering" - ignore
   if (!source.has_value() || source->empty()) {
     return;
   }

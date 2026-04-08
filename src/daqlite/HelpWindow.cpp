@@ -116,7 +116,7 @@ HelpWindow::HelpWindow(QWidget *parent)
   setHtml(QString::fromStdString(html));
 
   // We extract/steal the clear button from a QLineEdit and use this as
-  // hide/close button for the help window
+  // Hide/close button for the help window
   mLineEdit = new QLineEdit(this);
   mLineEdit->setClearButtonEnabled(true);
   mLineEdit->setText("Daqlite rocks!");

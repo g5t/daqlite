@@ -14,8 +14,6 @@
 #include <types/PlotType.h>
 #include <types/Gradients.h>
 
-#include <logical_geometry/ESSGeometry.h>
-
 #include <QEvent>
 
 #include <fmt/format.h>
@@ -41,14 +39,13 @@ AMOR2DTofPlot::AMOR2DTofPlot(Configuration &Config,
   setAttribute(Qt::WA_AlwaysShowToolTips);
 
   auto &geom = mConfig.mGeometry;
-  LogicalGeometry = new ESSGeometry(geom.XDim, geom.YDim, geom.ZDim, 1);
 
-  // this will also allow rescaling the color scale by dragging/zooming
+  // This will also allow rescaling the color scale by dragging/zooming
   setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
   axisRect()->setupFullAxesBox(true);
 
-  // set up the QCPColorMap:
+  // Set up the QCPColorMap
   yAxis->setRangeReversed(true);
   yAxis->setSubTicks(true);
   xAxis->setSubTicks(false);
@@ -56,7 +53,7 @@ AMOR2DTofPlot::AMOR2DTofPlot(Configuration &Config,
 
   mColorMap = new QCPColorMap(xAxis, yAxis);
 
-  // we want the color map to have nx * ny data points
+  // We want the color map to have nx * ny data points
   const int BinSize = static_cast<int>(mConfig.mTOF.BinSize);
   const int YDim    = static_cast<int>(geom.YDim);
   xAxis->setLabel("TOF");
@@ -65,17 +62,17 @@ AMOR2DTofPlot::AMOR2DTofPlot(Configuration &Config,
   mColorMap->data()->setRange(QCPRange(0, mConfig.mTOF.MaxValue),
                               QCPRange(0, YDim)); //
 
-  // add a color scale:
+  // Add a color scale
   mColorScale = new QCPColorScale(this);
 
-  // add it to the right of the main axis rect
+  // Add it to the right of the main axis rect
   plotLayout()->addElement(0, 1, mColorScale);
 
-  // scale shall be vertical bar with tick/axis labels
+  // Scale shall be vertical bar with tick/axis labels
   // right (actually atRight is already the default)
   mColorScale->setType(QCPAxis::atRight);
 
-  // associate the color map with the color scale
+  // Associate the color map with the color scale
   mColorMap->setColorScale(mColorScale);
   mColorMap->setInterpolate(mConfig.mPlot.Interpolate);
   mColorMap->setTightBoundary(false);
@@ -83,20 +80,20 @@ AMOR2DTofPlot::AMOR2DTofPlot(Configuration &Config,
 
   setCustomParameters();
 
-  // make sure the axis rect and color scale synchronize their bottom and top
-  // margins (so they line up):
-  QCPMarginGroup *marginGroup = new QCPMarginGroup(this);
-  axisRect()->setMarginGroup(QCP::msBottom | QCP::msTop, marginGroup);
-  mColorScale->setMarginGroup(QCP::msBottom | QCP::msTop, marginGroup);
+  // Make sure the axis rect and color scale synchronize their bottom and top
+  // margins (so they line up)
+  mMarginGroup = std::make_unique<QCPMarginGroup>(this);
+  axisRect()->setMarginGroup(QCP::msBottom | QCP::msTop, mMarginGroup.get());
+  mColorScale->setMarginGroup(QCP::msBottom | QCP::msTop, mMarginGroup.get());
 
-  // rescale the key (x) and value (y) axes so the whole color map is visible:
+  // Rescale the key (x) and value (y) axes so the whole color map is visible
   rescaleAxes();
 
   t1 = std::chrono::high_resolution_clock::now();
 }
 
 void AMOR2DTofPlot::setCustomParameters() {
-  // set the color gradient of the color map to one of the presets:
+  // Set the color gradient of the color map to one of the presets
   QCPColorGradient Gradient(getColorGradient(mConfig.mPlot.ColorGradient));
   if (mConfig.mPlot.InvertGradient) {
     Gradient = Gradient.inverted();
@@ -132,8 +129,8 @@ void AMOR2DTofPlot::plotDetectorImage(bool Force) {
     }
   }
 
-  // rescale the data dimension (color) such that all data points lie in the
-  // span visualized by the color gradient:
+  // Rescale the data dimension (color) such that all data points lie in the
+  // span visualized by the color gradient
   mColorMap->rescaleDataRange(true);
 
   replot();
