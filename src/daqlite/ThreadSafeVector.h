@@ -48,24 +48,23 @@ public:
     mVector.reserve(capacity);
   }
 
-  /// \brief Retrieves a copy of the vector.
-  /// \return A copy of the vector.
-  inline std::vector<DataType> get() const {
+  /// \brief Retrieves a copy of the vector, optionally clearing it via swap.
+  ///        When clearing, holds the lock only for the O(1) swap, not the copy.
+  /// \param clear If true, atomically swaps out and clears the internal vector.
+  /// \return A copy (or the swapped-out contents) of the vector.
+  std::vector<DataType> get(bool clear = false) {
     std::lock_guard<std::mutex> lock(mMutex);
+    if (clear) {
+      std::vector<DataType> tmp;
+      std::swap(tmp, mVector);
+      return tmp;
+    }
     return mVector;
   }
 
-  /// \brief Retrieves the element at the specified index.
+  /// \brief Retrieves the element at the specified index using the subscript operator.
   /// \param index The index of the element to retrieve.
   /// \return The element at the specified index.
-  inline DataType at(size_t index) const {
-    std::lock_guard<std::mutex> lock(mMutex);
-    return mVector.at(index);
-  }
-
-  /// \brief Retrieves the element at the specified index using the subscript
-  /// operator. \param index The index of the element to retrieve. \return The
-  /// element at the specified index.
   inline DataType operator[](size_t index) const {
     std::lock_guard<std::mutex> lock(mMutex);
     return mVector[index];
@@ -142,9 +141,9 @@ public:
     return *this;
   }
 
-  /// \brief Assigns values from another vector of a different type to this
-  /// vector. \param other The vector containing values to be assigned. \return
-  /// A reference to this vector.
+  /// \brief Assigns values from another vector of a different type to this vector.
+  /// \param other The vector containing values to be assigned.
+  /// \return A reference to this vector.
   ThreadSafeVector<DataType, OtherDataType> &
   operator=(const std::vector<OtherDataType> &other) {
     std::lock_guard<std::mutex> lock(mMutex);

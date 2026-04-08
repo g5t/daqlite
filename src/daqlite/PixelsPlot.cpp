@@ -18,8 +18,6 @@
 #include <fmt/format.h>
 
 #include <algorithm>
-#include <chrono>
-#include <ratio>
 #include <string>
 
 using std::string;
@@ -106,7 +104,6 @@ PixelsPlot::PixelsPlot(Configuration &Config, ESSConsumer &Consumer,
   // Rescale the key (x) and value (y) axes so the whole color map is visible
   rescaleAxes();
 
-  t1 = std::chrono::high_resolution_clock::now();
 }
 
 void PixelsPlot::setCustomParameters() {
@@ -160,22 +157,14 @@ void PixelsPlot::plotDetectorImage(bool Force) {
 }
 
 void PixelsPlot::updateData() {
-  auto t2 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
+  if (shouldClear()) {
+    clearDetectorImage();
+  }
 
   // Update histogram data from Consumer according to the source specified in
   // the config
   const auto &source = mConfig.mPlot.Source;
   vector<uint32_t> Histogram = mConsumer.readData(DataType::HISTOGRAM, source);
-
-  int64_t nsBetweenClear = 1000000000LL * mConfig.mPlot.ClearEverySeconds;
-  if (mConfig.mPlot.ClearPeriodic && (elapsed.count() >= nsBetweenClear)) {
-    t1 = std::chrono::high_resolution_clock::now();
-    std::fill(HistogramData.begin(), HistogramData.end(), 0);
-
-    // Periodically clear the histogram
-    plotDetectorImage(true);
-  }
 
   // Accumulate counts, PixelId 0 does not exist
   for (size_t i = 1; i < Histogram.size(); i++) {

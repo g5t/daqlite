@@ -174,14 +174,14 @@ void MainWindow::setupPlots() {
   }
 
   // Autoscale buttons are only relevant for TOF and HISTOGRAM
-  const auto PlotType = Plots[0]->getPlotType();
-  const bool ScaleOn = PlotType == PlotType::TOF || PlotType == PlotType::HISTOGRAM;
+  const auto CurrentPlotType = Plots[0]->getPlotType();
+  const bool ScaleOn = CurrentPlotType == PlotType::TOF || CurrentPlotType == PlotType::HISTOGRAM;
   ui->labelAutoScale->setVisible(ScaleOn);
   ui->checkBoxAutoScaleX->setVisible(ScaleOn);
   ui->checkBoxAutoScaleY->setVisible(ScaleOn);
 
-  ui->lblBinSizeText->setVisible(PlotType == PlotType::HISTOGRAM);
-  ui->lblBinSize->setVisible(PlotType == PlotType::HISTOGRAM);
+  ui->lblBinSizeText->setVisible(CurrentPlotType == PlotType::HISTOGRAM);
+  ui->lblBinSize->setVisible(CurrentPlotType == PlotType::HISTOGRAM);
 }
 
 void MainWindow::startKafkaConsumerThread() {
@@ -265,8 +265,8 @@ void MainWindow::handleLogButton() {
 
 // toggle the invert gradient flag (irrelevant for TOF)
 void MainWindow::handleInvertButton() {
-  const auto PlotType = Plots[0]->getPlotType();
-  if (PlotType == PlotType::PIXELS || PlotType == PlotType::TOF2D) {
+  const auto CurrentPlotType = Plots[0]->getPlotType();
+  if (CurrentPlotType == PlotType::PIXELS || CurrentPlotType == PlotType::TOF2D) {
     mConfig.mPlot.InvertGradient = !mConfig.mPlot.InvertGradient;
     updateGradientComboBox();
   }
@@ -274,16 +274,16 @@ void MainWindow::handleInvertButton() {
 
 // toggle the auto scale x button
 void MainWindow::handleAutoScaleXButton() {
-  const auto PlotType = Plots[0]->getPlotType();
-  if (PlotType == PlotType::TOF || PlotType == PlotType::HISTOGRAM) {
+  const auto CurrentPlotType = Plots[0]->getPlotType();
+  if (CurrentPlotType == PlotType::TOF || CurrentPlotType == PlotType::HISTOGRAM) {
     mConfig.mTOF.AutoScaleX = !mConfig.mTOF.AutoScaleX;
   }
 }
 
 // toggle the auto scale y button
 void MainWindow::handleAutoScaleYButton() {
-  const auto PlotType = Plots[0]->getPlotType();
-  if (PlotType == PlotType::TOF || PlotType == PlotType::HISTOGRAM) {
+  const auto CurrentPlotType = Plots[0]->getPlotType();
+  if (CurrentPlotType == PlotType::TOF || CurrentPlotType == PlotType::HISTOGRAM) {
     mConfig.mTOF.AutoScaleY = !mConfig.mTOF.AutoScaleY;
   }
 }
@@ -291,8 +291,8 @@ void MainWindow::handleAutoScaleYButton() {
 void MainWindow::handleGradientComboBox(int comboIndex) {
   const size_t index = static_cast<size_t>(comboIndex);
   for (auto &Plot : Plots) {
-    const auto PlotType = Plot->getPlotType();
-    if (PlotType == PlotType::PIXELS || PlotType == PlotType::TOF2D) {
+    const auto CurrentPlotType = Plot->getPlotType();
+    if (CurrentPlotType == PlotType::PIXELS || CurrentPlotType == PlotType::TOF2D) {
       mConfig.mPlot.ColorGradient = mGradients[index];
     } else {
       return;

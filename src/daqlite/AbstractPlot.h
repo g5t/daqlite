@@ -12,6 +12,7 @@
 
 #include <QPlot/QPlot.h>
 
+#include <chrono>
 #include <optional>
 #include <string>
 
@@ -38,6 +39,9 @@ protected:
   /// \brief Returns the QCPColorGradient for the given name, falling back to
   ///        'hot' if not found
   QCPColorGradient getColorGradient(const std::string &GradientName);
+
+  /// \brief Returns true and resets the timer if a periodic clear is due
+  bool shouldClear();
 
   /// \brief Consumer thread used to deliver data to the plot
   ESSConsumer &mConsumer;
@@ -74,6 +78,9 @@ private:
 
   /// Zoom rectangle vars
   bool mZoomRectActive;
+
+  /// \brief Reference time for periodic clearing of plot data
+  std::chrono::time_point<std::chrono::high_resolution_clock> mLastClearTime;
 
   /// \brief First zoom rectangle corner
   std::optional<QPointF> mPoint0;

@@ -54,7 +54,8 @@ target_compile_options(daqlite PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=sign-conversion>
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=old-style-cast>
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=null-dereference>
-  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=unused-variable>)
+  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=unused-variable>
+  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=reorder>)
 
 target_link_libraries(
   daqlite

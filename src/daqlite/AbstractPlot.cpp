@@ -35,10 +35,29 @@ AbstractPlot::AbstractPlot(PlotType Type, ESSConsumer &Consumer, Configuration &
     : mConsumer(Consumer)
     , mConfig(Config)
     , mPlotType(Type)
-    , mZoomRectActive(false) {
+    , mZoomRectActive(false)
+    , mLastClearTime(std::chrono::high_resolution_clock::now()) {
     mConsumer.addSubscriber(mPlotType);
     mConsumer.addSource(mConfig.mPlot.Source);
   }
+
+bool AbstractPlot::shouldClear() {
+  if (!mConfig.mPlot.ClearPeriodic) {
+    return false;
+  }
+
+  auto now = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<int64_t, std::nano> elapsed = now - mLastClearTime;
+  int64_t nsBetweenClear = 1000000000LL * mConfig.mPlot.ClearEverySeconds;
+
+  if (elapsed.count() < nsBetweenClear) {
+    return false;
+  }
+
+  mLastClearTime = std::chrono::high_resolution_clock::now();
+
+  return true;
+}
 
 void AbstractPlot::paintEvent(QPaintEvent *event) {
   // ---------------------------------------------------------------------------

@@ -17,8 +17,6 @@
 #include <QEvent>
 
 #include <algorithm>
-#include <chrono>
-#include <ratio>
 #include <string>
 
 using std::string;
@@ -61,7 +59,6 @@ TofPlot::TofPlot(Configuration &Config, ESSConsumer &Consumer)
 
   setCustomParameters();
 
-  t1 = std::chrono::high_resolution_clock::now();
 }
 
 void TofPlot::setCustomParameters() {
@@ -97,19 +94,13 @@ void TofPlot::plotDetectorImage(bool Force) {
 }
 
 void TofPlot::updateData() {
-  auto t2 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
+  if (shouldClear()) {
+    clearDetectorImage();
+  }
 
   // Get histogram data from Consumer and clear it
   const auto &source = mConfig.mPlot.Source;
   vector<uint32_t> HistogramTof = mConsumer.readData(DataType::HISTOGRAM_TOF, source);
-
-  // Periodically clear the histogram
-  int64_t nsBetweenClear = 1000000000LL * mConfig.mPlot.ClearEverySeconds;
-  if (mConfig.mPlot.ClearPeriodic && (elapsed.count() >= nsBetweenClear)) {
-    std::fill(HistogramTofData.begin(), HistogramTofData.end(), 0);
-    t1 = std::chrono::high_resolution_clock::now();
-  }
 
   // Accumulate counts, PixelId 0 does not exist
   for (size_t i = 1; i < HistogramTof.size(); i++) {
