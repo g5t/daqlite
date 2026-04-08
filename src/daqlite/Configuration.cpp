@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 
 #include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <fstream>
 #include <initializer_list>
@@ -100,8 +101,8 @@ void Configuration::fromJsonFile(const string &fname) {
 
   try {
     ifs >> mJsonObj;
-  } catch (...) {
-    throw std::runtime_error("File is not valid JSON");
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format("File is not valid JSON: {}", e.what()));
   }
 
   getGeometryConfig();

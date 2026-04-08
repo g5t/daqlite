@@ -1,7 +1,8 @@
-// Copyright (C) 2019-2020 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2019 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
-/// \file
+/// \file JsonFile.h
+///
 /// \brief reads and writes JSON files to/from nlohmann types
 ///
 /// See https://nlohmann.github.io/json/doxygen/index.html

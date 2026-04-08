@@ -1,7 +1,7 @@
-// Copyright (C) 2022 European Spallation Source, ERIC. See LICENSE file
+// Copyright (C) 2022 - 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
-/// \file
+/// \file KafkaConfig.h
 ///
 /// \brief Read kafka configuration from file
 //===----------------------------------------------------------------------===//

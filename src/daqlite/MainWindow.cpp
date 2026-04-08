@@ -118,7 +118,7 @@ void MainWindow::setupPlots() {
     Plots.push_back(std::make_unique<AMOR2DTofPlot>(
         mConfig, mWorker->getConsumer()));
 
-    // register plot on ui
+    // Register plot on ui
     ui->gridLayout->addWidget(Plots.back().get(), 0, 0, 1, 1);
 
   }
@@ -127,7 +127,7 @@ void MainWindow::setupPlots() {
     Plots.push_back(std::make_unique<TofPlot>(
         mConfig, mWorker->getConsumer()));
 
-    // register plot on ui
+    // Register plot on ui
     ui->gridLayout->addWidget(Plots.back().get(), 0, 0, 1, 1);
 
     // Hide irrelevant buttons for TOF

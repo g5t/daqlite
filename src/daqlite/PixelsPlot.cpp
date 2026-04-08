@@ -25,6 +25,8 @@
 using std::string;
 using std::vector;
 
+PixelsPlot::~PixelsPlot() = default;
+
 // clang-format off
 PixelsPlot::PixelsPlot(Configuration &Config, ESSConsumer &Consumer,
                        Projection Proj)
@@ -37,15 +39,15 @@ PixelsPlot::PixelsPlot(Configuration &Config, ESSConsumer &Consumer,
   setAttribute(Qt::WA_AlwaysShowToolTips);
 
   auto &geom = mConfig.mGeometry;
-  LogicalGeometry = new ESSGeometry(geom.XDim, geom.YDim, geom.ZDim, 1);
+  LogicalGeometry = std::make_unique<ESSGeometry>(geom.XDim, geom.YDim, geom.ZDim, 1);
   HistogramData.resize(LogicalGeometry->max_pixel() + 1);
 
-  // this will also allow rescaling the color scale by dragging/zooming
+  // This will also allow rescaling the color scale by dragging/zooming
   setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
   axisRect()->setupFullAxesBox(true);
 
-  // set up the QCPColorMap:
+  // Set up the QCPColorMap
   yAxis->setRangeReversed(true);
   yAxis->setSubTicks(true);
   xAxis->setSubTicks(false);
@@ -53,7 +55,7 @@ PixelsPlot::PixelsPlot(Configuration &Config, ESSConsumer &Consumer,
 
   mColorMap = new QCPColorMap(xAxis, yAxis);
 
-  // we want the color map to have nx * ny data points
+  // We want the color map to have nx * ny data points
   const int XDim = static_cast<int>(geom.XDim);
   const int YDim = static_cast<int>(geom.YDim);
   const int ZDim = static_cast<int>(geom.ZDim);
@@ -77,17 +79,17 @@ PixelsPlot::PixelsPlot(Configuration &Config, ESSConsumer &Consumer,
     mColorMap->data()->setRange(QCPRange(0, YDim - 1),
                                 QCPRange(0, ZDim - 1));
   }
-  // add a color scale:
+  // Add a color scale
   mColorScale = new QCPColorScale(this);
 
-  // add it to the right of the main axis rect
+  // Add it to the right of the main axis rect
   plotLayout()->addElement(0, 1, mColorScale);
 
-  // scale shall be vertical bar with tick/axis labels
+  // Scale shall be vertical bar with tick/axis labels
   // right (actually atRight is already the default)
   mColorScale->setType(QCPAxis::atRight);
 
-  // associate the color map with the color scale
+  // Associate the color map with the color scale
   mColorMap->setColorScale(mColorScale);
   mColorMap->setInterpolate(mConfig.mPlot.Interpolate);
   mColorMap->setTightBoundary(false);
@@ -95,20 +97,20 @@ PixelsPlot::PixelsPlot(Configuration &Config, ESSConsumer &Consumer,
 
   setCustomParameters();
 
-  // make sure the axis rect and color scale synchronize their bottom and top
-  // margins (so they line up):
-  QCPMarginGroup *marginGroup = new QCPMarginGroup(this);
-  axisRect()->setMarginGroup(QCP::msBottom | QCP::msTop, marginGroup);
-  mColorScale->setMarginGroup(QCP::msBottom | QCP::msTop, marginGroup);
+  // Make sure the axis rect and color scale synchronize their bottom and top
+  // margins (so they line up)
+  mMarginGroup = std::make_unique<QCPMarginGroup>(this);
+  axisRect()->setMarginGroup(QCP::msBottom | QCP::msTop, mMarginGroup.get());
+  mColorScale->setMarginGroup(QCP::msBottom | QCP::msTop, mMarginGroup.get());
 
-  // rescale the key (x) and value (y) axes so the whole color map is visible:
+  // Rescale the key (x) and value (y) axes so the whole color map is visible
   rescaleAxes();
 
   t1 = std::chrono::high_resolution_clock::now();
 }
 
 void PixelsPlot::setCustomParameters() {
-  // set the color gradient of the color map to one of the presets:
+  // Set the color gradient of the color map to one of the presets
   QCPColorGradient Gradient(getColorGradient(mConfig.mPlot.ColorGradient));
 
   if (mConfig.mPlot.InvertGradient) {
@@ -132,7 +134,7 @@ void PixelsPlot::clearDetectorImage() {
 void PixelsPlot::plotDetectorImage(bool Force) {
   setCustomParameters();
 
-  // if scales match the dimensions (xdim 400, range 0, 399) then cell indexes
+  // If scales match the dimensions (xdim 400, range 0, 399) then cell indexes
   // and coordinates match. PixelId 0 does not exist.
   for (size_t i = 1; i < HistogramData.size(); i++) {
     if ((HistogramData[i] != 0) || (Force)) {
@@ -140,27 +142,18 @@ void PixelsPlot::plotDetectorImage(bool Force) {
       int yIndex = static_cast<int>(LogicalGeometry->y(i));
       int zIndex = static_cast<int>(LogicalGeometry->z(i));
 
-      // here we could
-      // x, y, z = pos(i)
-
       if (mProjection == ProjectionXY) {
-        // printf("XY: x,y,z %d, %d, %d: count %d\n", xIndex, yIndex, zIndex,
-        // HistogramData[i]);
         mColorMap->data()->setCell(xIndex, yIndex, HistogramData[i]);
       } else if (mProjection == ProjectionXZ) {
-        // printf("XZ: x,y,z %d, %d, %d: count %d\n", xIndex, yIndex, zIndex,
-        // HistogramData[i]);
         mColorMap->data()->setCell(xIndex, zIndex, HistogramData[i]);
       } else {
-        // printf("YZ: x,y,z %d, %d, %d: count %d\n", xIndex, yIndex, zIndex,
-        // HistogramData[i]);
         mColorMap->data()->setCell(yIndex, zIndex, HistogramData[i]);
       }
     }
   }
 
-  // rescale the data dimension (color) such that all data points lie in the
-  // span visualized by the color gradient:
+  // Rescale the data dimension (color) such that all data points lie in the
+  // span visualized by the color gradient
   mColorMap->rescaleDataRange(true);
 
   replot();
@@ -170,7 +163,7 @@ void PixelsPlot::updateData() {
   auto t2 = std::chrono::high_resolution_clock::now();
   std::chrono::duration<int64_t, std::nano> elapsed = t2 - t1;
 
-  // update histogram data from Consumer according to the source specified in
+  // Update histogram data from Consumer according to the source specified in
   // the config
   const auto &source = mConfig.mPlot.Source;
   vector<uint32_t> Histogram = mConsumer.readData(DataType::HISTOGRAM, source);

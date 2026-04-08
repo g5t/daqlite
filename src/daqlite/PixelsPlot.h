@@ -14,6 +14,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 // Forward declarations
@@ -28,6 +29,10 @@ public:
 
   /// \brief plot needs the configurable plotting options
   PixelsPlot(Configuration &Config, ESSConsumer&, Projection Proj);
+
+  /// \brief Destructor must be defined in .cpp due to forward declaration of ESSGeometry.
+  ///        This is required by std::unique_ptr with a forward-declared type
+  ~PixelsPlot();
 
   /// \brief adds histogram data, clears periodically then calls
   /// plotDetectorImage()
@@ -50,11 +55,12 @@ private:
   // QCustomPlot variables
   QCPColorScale *mColorScale{nullptr};
   QCPColorMap *mColorMap{nullptr};
+  std::unique_ptr<QCPMarginGroup> mMarginGroup;
 
   std::vector<uint32_t> HistogramData;
 
   /// \brief for calculating x, y, z from pixelid
-  ESSGeometry *LogicalGeometry;
+  std::unique_ptr<ESSGeometry> LogicalGeometry;
 
   //
   Projection mProjection;

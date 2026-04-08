@@ -74,8 +74,8 @@ int main(int argc, char *argv[]) {
   CLI.process(app);
 
   // Parent button used to quit all plot widgets
-  QPushButton main("&Quit");
-  main.connect(&main, &QPushButton::clicked, app.quit);
+  QPushButton QuitButton("&Quit");
+  QObject::connect(&QuitButton, &QPushButton::clicked, &app, &QApplication::quit);
 
   // ---------------------------------------------------------------------------
   // Get top configuration
@@ -88,18 +88,17 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<WorkerThread> Worker = std::make_shared<WorkerThread>(MainConfig);
 
   // Setup a window for each plot
-  for (size_t i=0; i < confs.size(); ++i) {
-    Configuration Config = confs[i];
-    setKafkaOptions(CLI, MainConfig);
+  for (auto Config: confs) {
+    setKafkaOptions(CLI, Config);
 
     MainWindow* w = new MainWindow(Config, Worker.get());
     w->setWindowTitle(QString::fromStdString(Config.mPlot.WindowTitle));
-    w->setParent(&main, Qt::Window);
+    w->setParent(&QuitButton, Qt::Window);
     w->show();
   }
 
   // Start the worker and let the Qt event handler take over
   Worker->start();
-
+  
   return app.exec();
 }

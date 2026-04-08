@@ -17,7 +17,6 @@
 // Forward declarations
 class Configuration;
 class ESSConsumer;
-class ESSGeometry;
 class QCPGraph;
 class QMouseEvent;
 class QObject;
@@ -53,9 +52,6 @@ private:
   QCPGraph *mGraph{nullptr};
 
   std::vector<uint32_t> HistogramTofData;
-
-  /// \brief for calculating x, y, z from pixelid
-  ESSGeometry *LogicalGeometry;
 
   /// \brief reference time for periodic clearing of histogram
   std::chrono::time_point<std::chrono::high_resolution_clock> t1;

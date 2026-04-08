@@ -10,7 +10,6 @@
 
 #include <Configuration.h>
 #include <QMainWindow>
-#include <QTextEdit>
 
 #include <cstddef>
 #include <memory>
