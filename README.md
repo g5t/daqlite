@@ -9,14 +9,32 @@ daqlite subscribes to Kafka topics and provides simple visualizations, such as
 
 ## Build
 
+### Prerequisites
+* Qt6 library (ensure `qmake` is in your path)
+* Conan package manager version 1.x (https://conan.io) - **Note:** We use Conan before Conan 2
+* CMake 3.0.0 or higher
+* C++17 compatible compiler
+
+### Conan Initialization
+Before building for the first time, initialize Conan with the ESS configuration:
+
+    conan config install https://github.com/ess-dmsc/conan-configuration.git
+
+Then install the dependencies (from the build directory):
+
     mkdir build
     cd build
-    cmake ..
-    make
+    conan install .. --build=missing --profile=linux_x86_64_gcc11
 
-### Qt library
-Note that the Qt6 library needs to be installed. Ensure that `qmake` is in your
-path, and CMake will use this to determine the location of the Qt6 installation.
+This only needs to be done once per Conan installation.
+
+**Note:** To switch between Release and Debug builds, you need to rerun `conan install` with the same command but adding `-s build_type=Debug` or `-s build_type=Release`.
+
+### Build Steps
+
+    cd build
+    cmake ..
+    make -j$(nproc)
 
 ## Run
 
