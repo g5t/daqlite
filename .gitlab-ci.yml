@@ -9,17 +9,58 @@ default:
     - docker
 
 stages:
+  - setup
   - build
   - publish
 
+variables:
+  UBUNTU2204_QT6_IMAGE: "registry.esss.lu.se/ecdc/ess-dmsc/build-nodes/ubuntu2204-qt6:1.1"
+  ALMALINUX9_IMAGE: "registry.esss.lu.se/ecdc/ess-dmsc/docker-almalinux9-conan:1.5.0-rc.1"
+  CONAN_USER_HOME: "$CI_PROJECT_DIR"
+
+conan_setup:
+  stage: setup
+  image: $UBUNTU2204_QT6_IMAGE
+  script:
+    - conan config install https://github.com/ess-dmsc/conan-configuration.git
+    - mkdir -p build
+    - cd build
+    - conan install .. --build=missing --profile=linux_x86_64_gcc11
+  artifacts:
+    paths:
+      - .conan/
+      - build/
+    expire_in: 1 hour
+    when: always
+
+cppcheck:
+  stage: setup
+  image: python:3-alpine
+  before_script:
+    - apk add --no-cache cppcheck
+    - pip install --no-cache-dir cppcheck-codequality
+  script:
+    - find src/ -type f \( -name '*.cpp' -o -name '*.c' -o -name '*.h' \) '!' -path "*/test/*" '!' -name "*Test*" > cppcheck_files.txt
+    - cppcheck --xml-version=2 --enable=all --inconclusive --std=c++17 --suppress=missingIncludeSystem --file-list=cppcheck_files.txt 2> cppcheck.xml
+    - cppcheck-codequality --input-file cppcheck.xml --output-file codequality.json
+  artifacts:
+    reports:
+      codequality: codequality.json
+    paths:
+      - cppcheck.xml
+      - codequality.json
+    expire_in: 1 week
+
 build:
   stage: build
-  image: registry.esss.lu.se/ecdc/ess-dmsc/build-nodes/ubuntu2204-qt6:1.1
+  image: $UBUNTU2204_QT6_IMAGE
+  needs:
+    - conan_setup
+    - cppcheck
+  dependencies:
+    - conan_setup
   script:
-      - mkdir -p build
       - cd build
-      - conan remote add --insert 0 --force ecdc-conan-external https://artifactory.esss.lu.se/artifactory/api/conan/ecdc-conan-external
-      - conan install ..
       - cmake ..
       - make -j$(nproc)
   artifacts:

@@ -12,3 +12,6 @@ else
     DAQLITE_HOME="../build"
     DAQLITE_CONFIG="../configs"
 fi
+
+# Set LD_LIBRARY_PATH to include the lib directory for shared libraries
+export LD_LIBRARY_PATH="${DAQLITE_HOME}/lib:${LD_LIBRARY_PATH}"
