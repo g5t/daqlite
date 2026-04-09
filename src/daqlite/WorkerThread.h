@@ -26,7 +26,7 @@ class WorkerThread : public QThread {
   Q_OBJECT
 
 public:
-  WorkerThread(Configuration &Config);
+  explicit WorkerThread(Configuration &Config);
 
   ~WorkerThread() {
     mStop = true;

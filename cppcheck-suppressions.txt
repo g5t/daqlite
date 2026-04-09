@@ -1,0 +1,12 @@
+// Qt widget constructors with QWidget *parent = nullptr are intentionally not explicit
+noExplicitConstructor:*/HelpWindow.h
+
+// Missing system includes are expected when running without include paths
+missingIncludeSystem
+
+// False positives without include paths - members used in .cpp files cppcheck cannot see
+unusedStructMember
+
+// types/ subdirectory findings are not relevant
+noExplicitConstructor:*/types/*
+unusedFunction:*/types/*

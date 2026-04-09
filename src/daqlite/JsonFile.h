@@ -30,7 +30,3 @@ inline nlohmann::json from_json_file(const std::string &fname) {
 
   return j;
 }
-
-inline void to_json_file(const nlohmann::json &j, const std::string &fname) {
-  std::ofstream(fname, std::ofstream::trunc) << j.dump(1);
-}
