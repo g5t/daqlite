@@ -1,6 +1,14 @@
+#=============================================================================
+# Dependencies
+#=============================================================================
+
 include(QtLibraryConfig)
 find_package(RdKafka REQUIRED)
 find_package(qplot REQUIRED)
+
+#=============================================================================
+# Sources
+#=============================================================================
 
 set(daqlite_src
   AbstractPlot.cpp
@@ -39,6 +47,10 @@ set(daqlite_ui
   MainWindow.ui
   )
 
+#=============================================================================
+# Target
+#=============================================================================
+
 add_executable(
   daqlite
   ${daqlite_src}
@@ -48,6 +60,10 @@ add_executable(
 
 set_target_properties(daqlite PROPERTIES AUTOUIC ON)
 
+#=============================================================================
+# Compiler options
+#=============================================================================
+
 target_compile_options(daqlite PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=shadow>
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=float-conversion>
@@ -56,6 +72,10 @@ target_compile_options(daqlite PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=null-dereference>
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=unused-variable>
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror=reorder>)
+
+#=============================================================================
+# Link libraries
+#=============================================================================
 
 target_link_libraries(
   daqlite
