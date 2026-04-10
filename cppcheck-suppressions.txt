@@ -4,6 +4,9 @@ noExplicitConstructor:*/HelpWindow.h
 // Missing system includes are expected when running without include paths
 missingIncludeSystem
 
+// Generated flatbuffers headers are not present during static analysis
+missingInclude:*/ar51consumer/ESSConsumer.h
+
 // False positives without include paths - members used in .cpp files cppcheck cannot see
 unusedStructMember
 

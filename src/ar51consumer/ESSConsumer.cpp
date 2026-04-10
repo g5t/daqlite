@@ -58,10 +58,10 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic() const {
 
 
 /// \brief Example parser for VMM3a data
-void ESSConsumer::parseVMM3aData(uint8_t * Readout, int Size) {
+void ESSConsumer::parseVMM3aData(const uint8_t * Readout, int Size) {
   int BytesLeft = Size;
   while (BytesLeft >= static_cast<int>(sizeof(vmm3a_readout))) {
-    vmm3a_readout * vmd = (vmm3a_readout *) Readout;
+    const vmm3a_readout * vmd = reinterpret_cast<const vmm3a_readout *>(Readout);
     int Ring = vmd->Fiber/2;
     int FEN = vmd->FEN;
     int Hybrid = vmd->VMM >> 1;
@@ -76,15 +76,15 @@ void ESSConsumer::parseVMM3aData(uint8_t * Readout, int Size) {
 }
 
 /// \brief Example parser for CAEN Data
-void ESSConsumer::parseCAENData(uint8_t *, int) {
+void ESSConsumer::parseCAENData(const uint8_t *, int) {
   printf("Nothing to see here, please move on\n");
 }
 
 /// \brief Example parser for CDT data
-void ESSConsumer::parseCDTData(uint8_t * Readout, int Size) {
+void ESSConsumer::parseCDTData(const uint8_t * Readout, int Size) {
   int BytesLeft = Size;
   while (BytesLeft >= static_cast<int>(sizeof(vmm3a_readout))) {
-    cdt_readout * cd = (cdt_readout *)Readout;
+    const cdt_readout * cd = reinterpret_cast<const cdt_readout *>(Readout);
     int Ring = cd->Fiber/2;
     int FEN = cd->FEN;
     int Cathode = cd->Cathode;
@@ -104,7 +104,7 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
   const auto & RawReadoutMsg = GetRawReadoutMessage(Msg->payload());
   int MsgSize = RawReadoutMsg->raw_data()->size();
 
-  struct PacketHeaderV0 * Header = (struct PacketHeaderV0 *)RawReadoutMsg->raw_data()->Data();
+  const struct PacketHeaderV0 * Header = reinterpret_cast<const struct PacketHeaderV0 *>(RawReadoutMsg->raw_data()->Data());
 
   if ((Header->CookieAndType & 0xffffff) != 0x535345) {
     printf("Non-ESS readout (cookie 0x%08x)\n", Header->CookieAndType);
@@ -128,7 +128,7 @@ uint32_t ESSConsumer::processAR51Data(RdKafka::Message *Msg) {
 
   int Type = Header->CookieAndType >> 28;
 
-  uint8_t * DataPtr = (uint8_t * )Header + 30;
+  const uint8_t * DataPtr = reinterpret_cast<const uint8_t *>(Header) + 30;
   if (Header->Version == 1) {
     DataPtr += 2;
   }

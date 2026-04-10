@@ -81,13 +81,13 @@ public:
   uint32_t processAR51Data(RdKafka::Message *Msg);
 
   ///
-  void parseVMM3aData(uint8_t * Readout, int Size);
+  void parseVMM3aData(const uint8_t * Readout, int Size);
 
   ///
-  void parseCAENData(uint8_t * Readout, int Size);
+  void parseCAENData(const uint8_t * Readout, int Size);
 
   ///
-  void parseCDTData(uint8_t * Readout, int Size);
+  void parseCDTData(const uint8_t * Readout, int Size);
 
   // Ring, Hybrid, Asic, Channel
   int Histogram[12][5][2][64];

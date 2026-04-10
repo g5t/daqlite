@@ -40,3 +40,41 @@ if(GTest_FOUND)
     daqlite
     )
 endif()
+
+#=============================================================================
+# cppcheck target — mirrors the GitLab CI invocation
+#=============================================================================
+
+find_program(CPPCHECK cppcheck)
+if(CPPCHECK)
+  add_custom_target(cppcheck
+    COMMAND find src/ -type f
+      \( -name "*.cpp" -o -name "*.c" -o -name "*.h" \)
+      ! -path "*/test/*" ! -name "*Test*"
+      -print > cppcheck_files.txt
+    COMMAND ${CPPCHECK} -v
+      --platform=unix64
+      --force
+      --xml-version=2
+      --enable=all
+      --inconclusive
+      --std=c++17
+      --language=c++
+      --library=qt
+      --suppressions-list=cppcheck-suppressions.txt
+      "--template={file},{line},{severity},{id},{message}"
+      --file-list=cppcheck_files.txt
+      --output-file=cppcheck.xml
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Static analysis with cppcheck"
+    VERBATIM
+  )
+
+  add_custom_target(cppcheck_html
+    COMMAND cppcheck-htmlreport --file cppcheck.xml --report-dir cppcheck_html
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Generating cppcheck HTML report in cppcheck_html/"
+  )
+else()
+  message(STATUS "cppcheck not found — 'make cppcheck' target unavailable")
+endif()
