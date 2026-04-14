@@ -40,7 +40,16 @@ cppcheck:
     - apk add --no-cache cppcheck
     - pip install --no-cache-dir cppcheck-codequality
   script:
-    - find src/ -type f \( -name '*.cpp' -o -name '*.c' -o -name '*.h' \) '!' -path "*/test/*" '!' -name "*Test*" > cppcheck_files.txt
+    # Collect C/C++ source files from src, excluding:
+    #   - test files from test dirs and Test files)
+    #   - fylgje
+    - |
+      find src/ -type f \
+        \( -name '*.cpp' -o -name '*.c' -o -name '*.h' \) \
+        ! -path '*/test/*' \
+        ! -name '*Test*' \
+        ! -path '*/fylgje/*' \
+        > cppcheck_files.txt
     - cppcheck --xml-version=2 --enable=all --inconclusive --std=c++17 --language=c++ --library=qt --suppressions-list=cppcheck-suppressions.txt --file-list=cppcheck_files.txt 2> cppcheck.xml
     - cppcheck-codequality --input-file cppcheck.xml --output-file codequality.json
   artifacts:

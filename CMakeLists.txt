@@ -48,9 +48,13 @@ endif()
 find_program(CPPCHECK cppcheck)
 if(CPPCHECK)
   add_custom_target(cppcheck
+    # Collect C/C++ source files from src, excluding:
+    #   - test files from test dirs and Test files)
+    #   - fylgje
     COMMAND find src/ -type f
       \( -name "*.cpp" -o -name "*.c" -o -name "*.h" \)
       ! -path "*/test/*" ! -name "*Test*"
+      ! -path "*/fylgje/*"
       -print > cppcheck_files.txt
     COMMAND ${CPPCHECK} -v
       --platform=unix64
