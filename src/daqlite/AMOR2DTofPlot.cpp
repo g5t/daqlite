@@ -18,7 +18,9 @@
 
 #include <fmt/format.h>
 
+#include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -148,7 +150,11 @@ void AMOR2DTofPlot::updateData() {
   }
 
   const auto XDim = mConfig.mGeometry.XDim;
-  for (size_t i = 0; i < PixelIDs.size(); i++) {
+  // PIXEL_ID and TOF are read in two separate atomic calls; the consumer
+  // thread can push more pairs between them, so the returned vectors may
+  // differ in size. Iterate over the shorter to keep indices aligned.
+  const size_t N = std::min(PixelIDs.size(), TOFs.size());
+  for (size_t i = 0; i < N; i++) {
     if (PixelIDs[i] == 0) {
       continue;
     }
