@@ -10,6 +10,7 @@
 
 #include <Configuration.h>
 #include <MainWindow.h>
+#include <VNCMessageFilter.h>
 #include <WorkerThread.h>
 
 #include <QApplication>
@@ -53,6 +54,7 @@ namespace {
 }
 
 int main(int argc, char *argv[]) {
+  installVNCMessageFilter();
   QApplication app(argc, argv);
 
   // Handle all command line args
