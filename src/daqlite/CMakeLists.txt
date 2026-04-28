@@ -22,6 +22,7 @@ set(daqlite_src
   MainWindow.cpp
   PixelsPlot.cpp
   TofPlot.cpp
+  VNCMessageFilter.cpp
   WorkerThread.cpp
   )
 
@@ -37,6 +38,7 @@ set(daqlite_inc
   PixelsPlot.h
   ThreadSafeVector.h
   TofPlot.h
+  VNCMessageFilter.h
   WorkerThread.h
 
   # Types
