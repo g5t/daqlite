@@ -3,6 +3,7 @@
 ///
 /// \file HelpWindow.h
 ///
+/// \brief Help window with daqlite keyboard/mouse shortcuts
 //===----------------------------------------------------------------------===//
 
 #pragma once
@@ -13,7 +14,6 @@
 class QLineEdit;
 class QToolButton;
 
-///
 /// \brief Window showing a table with all daqlite keyboard and mouse shortcuts
 class HelpWindow : public QTextEdit {
   Q_OBJECT
@@ -27,20 +27,20 @@ public:
   void updateClearPosition();
 
   /// \brief  Ensure that the help window is positioned intelligently close to
-  /// the cursor
-  /// \param pos
+  ///         the cursor
+  /// \param pos  Cursor/anchor position to place the help window near
   void placeHelp(const QPoint &pos);
 
   /// \brief  Hide/close the window when ESC is pressed
-  /// \param event
+  /// \param event  Key event delivered by Qt
   void keyPressEvent(QKeyEvent *event) override;
 
   /// \brief Update clear button position when the help window is shown
-  /// \param event
+  /// \param event  Show event delivered by Qt
   void showEvent(QShowEvent* event) override;
 
   /// \brief Update clear button position when the help window is resized
-  /// \param event
+  /// \param event  Resize event delivered by Qt
   void resizeEvent(QResizeEvent* event) override;
 
   /// \return a size that matches the size of the help table

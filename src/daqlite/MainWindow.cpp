@@ -142,7 +142,7 @@ void MainWindow::setupPlots() {
 
     ui->gridLayout->addWidget(Plots.back().get(), 0, 0, 1, 1);
 
-    // Hide irrelevant buttons for TOF
+    // Hide irrelevant buttons for HISTOGRAM
     ui->comboGradient->setVisible(false);
     ui->checkBoxInvert->setVisible(false);
     ui->gradientLine->setVisible(false);

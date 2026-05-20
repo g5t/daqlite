@@ -9,8 +9,8 @@
 //===----------------------------------------------------------------------===//
 
 #include <Configuration.h>
+#include <DaqliteMsgFilter.h>
 #include <MainWindow.h>
-#include <VNCMessageFilter.h>
 #include <WorkerThread.h>
 
 #include <QApplication>
@@ -18,6 +18,7 @@
 #include <QCommandLineParser>
 #include <QPushButton>
 #include <QString>
+#include <QStringList>
 
 #include <fmt/format.h>
 
@@ -37,62 +38,92 @@ namespace {
     for (const QString &option: CLI.optionNames()) {
       if (option == "b") {
         Config.mKafka.Broker = CLI.value(option).toStdString();
-        fmt::print("<<<< \n WARNING Overriding kafka broker to {} \n>>>>\n", Config.mKafka.Broker);
       }
 
       else if (option == "t") {
         Config.mKafka.Topic = CLI.value(option).toStdString();
-        fmt::print("<<<< \n WARNING Overriding kafka topic to {} \n>>>>\n", Config.mKafka.Topic);
       }
 
       else if (option == "k") {
         Config.mKafkaConfigFile = CLI.value(option).toStdString();
-        fmt::print("<<<< \n WARNING Overriding path to kafka config file to {} \n>>>>\n", Config.mKafkaConfigFile);
       }
     }
+  }
+
+  /// \brief Print a one-shot summary of the resolved setup
+  void printSetupSummary(const string &PlotConfigFile,
+                        const vector<Configuration> &Configs) {
+    const Configuration &Main = Configs.front();
+    fmt::print("\n=== daqlite setup ===\n");
+    fmt::print("  Plot config  : {}\n", PlotConfigFile);
+    fmt::print("  Kafka broker : {}\n", Main.mKafka.Broker);
+    fmt::print("  Kafka topic  : {}\n", Main.mKafka.Topic);
+    fmt::print("  Kafka config : {}\n", Main.mKafkaConfigFile);
+    fmt::print("  Plots        : {} window(s)\n", Configs.size());
+    for (const auto &Config: Configs) {
+      fmt::print("    - {}\n", Config.mPlot.WindowTitle);
+    }
+    fmt::print("=====================\n");
   }
 }
 
 int main(int argc, char *argv[]) {
-  installVNCMessageFilter();
+  installDaqliteMsgFilter();
   QApplication app(argc, argv);
 
   // Handle all command line args
   QCommandLineParser CLI;
-  CLI.setApplicationDescription("Daquiri light - when you're driving home");
+  CLI.setApplicationDescription(
+      "Daquiri light - Qt visualizer for ESS detector data streamed via Kafka.\n"
+      "(When you're driving home.)");
   CLI.addHelpOption();
 
-  // Add specified options
-  vector<std::tuple<QString, QString, QString>> Options = {
-    {"f", "Configuration file",       "unusedDefault"},
-    {"b", "Kafka broker",             "unusedDefault"},
-    {"t", "Kafka topic",              "unusedDefault"},
-    {"k", "Kafka configuration file", "unusedDefault"},
+  // Add specified options. Empty valueName means the option is a flag (no value).
+  vector<std::tuple<QStringList, QString, QString>> Options = {
+    {{"f", "config"},       "Configuration file.",                          "file"},
+    {{"b", "broker"},       "Kafka broker.",                                "host:port"},
+    {{"t", "topic"},        "Kafka topic.",                                 "topic"},
+    {{"k", "kafka-config"}, "Kafka configuration file.",                    "kafka-config"},
+    {{"q", "quiet"},        "Suppress setup summary output.",               ""},
+    {{"d", "debug"},        "Enable verbose configuration parsing output.", ""},
   };
-  for (const auto& [key, info, unused]: Options) {
-    QCommandLineOption option(key, info, unused);
+  for (const auto& [names, info, valueName]: Options) {
+    QCommandLineOption option(names, info, valueName);
     CLI.addOption(option);
   }
   CLI.process(app);
+
+  // Validate required args and propagate global flags before any config is loaded
+  if (!CLI.isSet("f")) {
+    fmt::print(stderr,
+               "Error: missing required option -f/--config <file>.\n"
+               "Run with --help for usage.\n");
+    return 1;
+  }
+  // Must be set before getConfigurations() so JSON parsing honours the flag
+  Configuration::sDebug = CLI.isSet("d");
 
   // Parent button used to quit all plot widgets
   QPushButton QuitButton("&Quit");
   QObject::connect(&QuitButton, &QPushButton::clicked, &app, &QApplication::quit);
 
   // ---------------------------------------------------------------------------
-  // Get top configuration
+  // Load configurations and apply CLI overrides
   const string FileName = CLI.value("f").toStdString();
   vector<Configuration> confs = Configuration::getConfigurations(FileName);
-  Configuration MainConfig = confs.front();
-  setKafkaOptions(CLI, MainConfig);
+  for (auto &Config: confs) {
+    setKafkaOptions(CLI, Config);
+  }
 
-  // Setup worker thread
-  std::shared_ptr<WorkerThread> Worker = std::make_shared<WorkerThread>(MainConfig);
+  if (!CLI.isSet("q")) {
+    printSetupSummary(FileName, confs);
+  }
+
+  // Setup worker thread from the (now-overridden) primary configuration
+  std::shared_ptr<WorkerThread> Worker = std::make_shared<WorkerThread>(confs.front());
 
   // Setup a window for each plot
-  for (auto Config: confs) {
-    setKafkaOptions(CLI, Config);
-
+  for (const auto &Config: confs) {
     MainWindow* w = new MainWindow(Config, Worker.get());
     w->setWindowTitle(QString::fromStdString(Config.mPlot.WindowTitle));
     w->setParent(&QuitButton, Qt::Window);
@@ -101,6 +132,6 @@ int main(int argc, char *argv[]) {
 
   // Start the worker and let the Qt event handler take over
   Worker->start();
-  
+
   return app.exec();
 }

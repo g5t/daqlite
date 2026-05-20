@@ -3,7 +3,7 @@
 ///
 /// \file JsonFile.h
 ///
-/// \brief reads and writes JSON files to/from nlohmann types
+/// \brief Reads JSON files into nlohmann types
 ///
 /// See https://nlohmann.github.io/json/doxygen/index.html
 //===----------------------------------------------------------------------===//
@@ -16,17 +16,32 @@
 #pragma GCC diagnostic pop
 
 #include <fmt/format.h>
-#include <fstream>
 
-inline nlohmann::json from_json_file(const std::string &fname) {
-  nlohmann::json j;
+#include <exception>
+#include <fstream>
+#include <stdexcept>
+#include <string>
+
+/// \brief Read a JSON file from disk and parse it into an nlohmann::json
+/// \param fname  Path to the JSON file
+/// \return Parsed JSON object
+/// \throws std::runtime_error if the file cannot be opened or is not valid JSON
+inline nlohmann::json readJsonFile(const std::string &fname) {
+  // Open the file and bail out clearly on missing path or permission errors
   std::ifstream ifs(fname);
   if (ifs.fail()) {
     throw std::runtime_error(
-        fmt::format("file permission error or missing json file {}", fname));
+        fmt::format("could not open JSON file {}", fname));
   }
-  if (ifs.good())
-    ifs >> j;
 
-  return j;
+  // Parse the stream; rethrow nlohmann's parse_error with file context
+  nlohmann::json Parsed;
+  try {
+    ifs >> Parsed;
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format("file {} is not valid JSON: {}", fname, e.what()));
+  }
+
+  return Parsed;
 }

@@ -1,13 +1,19 @@
 // Copyright (C) 2026 European Spallation Source, ERIC. See LICENSE file
 //===----------------------------------------------------------------------===//
 ///
-/// \file VNCMessageFilter.cpp
+/// \file DaqliteMsgFilter.cpp
 ///
 /// \brief Suppress benign Qt xcb warnings emitted by VNC X servers
 ///
+/// \note If more messages need to be suppressed, this handler can be
+/// generalized by replacing the inline `{category, needle}` check with a
+/// table of suppression rules iterated by the filter callback. Each rule
+/// can carry its own activation gate (e.g. an environment variable) so
+/// VNC-only and always-on rules coexist cleanly.
+///
 //===----------------------------------------------------------------------===//
 
-#include "VNCMessageFilter.h"
+#include <DaqliteMsgFilter.h>
 
 #include <QString>
 #include <QtGlobal>
@@ -32,7 +38,7 @@ namespace {
   }
 }
 
-void installVNCMessageFilter() {
+void installDaqliteMsgFilter() {
   if (std::getenv("VNCDESKTOP") != nullptr) {
     PrevHandler = qInstallMessageHandler(filter);
   }

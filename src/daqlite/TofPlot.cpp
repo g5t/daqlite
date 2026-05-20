@@ -46,8 +46,6 @@ TofPlot::TofPlot(Configuration &Config, ESSConsumer &Consumer)
   mGraph->setLineStyle(QCPGraph::lsStepCenter);
   mGraph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
 
-  // We want the color map to have nx * ny data points
-
   if (mConfig.mPlot.XAxis.empty()) {
     xAxis->setLabel("TOF (μs)");
   } else {

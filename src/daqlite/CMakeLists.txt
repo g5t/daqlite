@@ -14,6 +14,7 @@ set(daqlite_src
   AbstractPlot.cpp
   AMOR2DTofPlot.cpp
   Configuration.cpp
+  DaqliteMsgFilter.cpp
   daqlite.cpp
   ESSConsumer.cpp
   HelpWindow.cpp
@@ -22,7 +23,6 @@ set(daqlite_src
   MainWindow.cpp
   PixelsPlot.cpp
   TofPlot.cpp
-  VNCMessageFilter.cpp
   WorkerThread.cpp
   )
 
@@ -30,6 +30,7 @@ set(daqlite_inc
   AbstractPlot.h
   AMOR2DTofPlot.h
   Configuration.h
+  DaqliteMsgFilter.h
   ESSConsumer.h
   HelpWindow.h
   HistogramPlot.h
@@ -38,7 +39,6 @@ set(daqlite_inc
   PixelsPlot.h
   ThreadSafeVector.h
   TofPlot.h
-  VNCMessageFilter.h
   WorkerThread.h
 
   # Types

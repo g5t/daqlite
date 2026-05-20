@@ -35,7 +35,7 @@ HistogramPlot::HistogramPlot(Configuration &Config, ESSConsumer &Consumer)
 
   HistogramYAxisValues.resize(mConfig.mTOF.BinSize);
 
-  // This will also allow rescaling the color scale by dragging/zooming
+  // This will also allow rescaling the axes by dragging/zooming
   setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
   axisRect()->setupFullAxesBox(true);

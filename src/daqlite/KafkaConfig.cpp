@@ -3,7 +3,7 @@
 ///
 /// \file KafkaConfig.cpp
 ///
-/// \brief using nlohmann json parser to read configurations from file
+/// \brief Uses the nlohmann JSON parser to read configurations from file
 //===----------------------------------------------------------------------===//
 
 #include <KafkaConfig.h>
@@ -25,7 +25,7 @@ KafkaConfig::KafkaConfig(const string &KafkaConfigFile) {
     return;
   }
   fmt::print("KAFKA CONFIG FROM FILE\n");
-  nlohmann::json root = from_json_file(KafkaConfigFile);
+  nlohmann::json root = readJsonFile(KafkaConfigFile);
 
   try {
     nlohmann::json KafkaParms = root["KafkaParms"];
