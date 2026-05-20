@@ -131,10 +131,12 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
   vector<uint32_t> PixelVector(mNumPixels, 0);
   vector<uint32_t> TofBinVector(mConfig.mTOF.BinSize, 0);
 
-  const auto PixelDim = mPixelIDs[*source].size() + PixelIds->size();
-  const auto TofDim   = mTOFs[*source].size() + PixelIds->size();
-  mPixelIDs[*source].reserve(PixelDim);
-  mTOFs[*source].reserve(TofDim);
+  if (mHasPixelIds) {
+    mPixelIDs[*source].reserve(mPixelIDs[*source].size() + PixelIds->size());
+  }
+  if (mHasTOFs) {
+    mTOFs[*source].reserve(mTOFs[*source].size() + PixelIds->size());
+  }
   for (size_t i = 0; i < PixelIds->size(); i++) {
     auto Pixel = static_cast<uint32_t>((*PixelIds)[i]);
     auto Tof   = static_cast<uint32_t>((*TOFs)[i]) / mConfig.mTOF.Scale; // ns to us
@@ -142,8 +144,8 @@ uint32_t ESSConsumer::processEV44Data(RdKafka::Message *Msg) {
     // Accumulate events for 2D TOF
     uint32_t TofBin = std::min(Tof, mConfig.mTOF.MaxValue) *
                       (mConfig.mTOF.BinSize - 1) / mConfig.mTOF.MaxValue;
-    mPixelIDs[*source].push_back(Pixel);
-    mTOFs[*source].push_back(TofBin);
+    if (mHasPixelIds) mPixelIDs[*source].push_back(Pixel);
+    if (mHasTOFs)     mTOFs[*source].push_back(TofBin);
 
     if ((Pixel > mMaxPixel) || (Pixel < mMinPixel)) {
       mEventDiscard++;
@@ -200,7 +202,9 @@ uint32_t ESSConsumer::processDA00Data(RdKafka::Message *Msg) {
   }
 
   mHistograms[*source].add_values(DataBins);
-  mTOFs[*source] = std::move(BinEdges);
+  if (mHasTOFs) {
+    mTOFs[*source] = std::move(BinEdges);
+  }
 
   mEventCount++;
   mEventAccept++;
@@ -227,10 +231,12 @@ uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
   vector<uint32_t> PixelVector(mNumPixels, 0);
   vector<uint32_t> TofBinVector(mConfig.mTOF.BinSize, 0);
 
-  const auto PixelDim = mPixelIDs[*source].size() + PixelIds->size();
-  const auto TofDim   = mTOFs[*source].size() + PixelIds->size();
-  mPixelIDs[*source].reserve(PixelDim);
-  mTOFs[*source].reserve(TofDim);
+  if (mHasPixelIds) {
+    mPixelIDs[*source].reserve(mPixelIDs[*source].size() + PixelIds->size());
+  }
+  if (mHasTOFs) {
+    mTOFs[*source].reserve(mTOFs[*source].size() + PixelIds->size());
+  }
   for (size_t i = 0; i < PixelIds->size(); i++) {
     uint32_t Pixel = static_cast<uint32_t>((*PixelIds)[i]);
     uint32_t Tof   = static_cast<uint32_t>((*TOFs)[i]) / mConfig.mTOF.Scale; // ns to us
@@ -238,8 +244,8 @@ uint32_t ESSConsumer::processEV42Data(RdKafka::Message *Msg) {
     // Accumulate events for 2D TOF
     uint32_t TofBin = std::min(Tof, mConfig.mTOF.MaxValue) *
                       (mConfig.mTOF.BinSize - 1) / mConfig.mTOF.MaxValue;
-    mPixelIDs[*source].push_back(Pixel);
-    mTOFs[*source].push_back(TofBin);
+    if (mHasPixelIds) mPixelIDs[*source].push_back(Pixel);
+    if (mHasTOFs)     mTOFs[*source].push_back(TofBin);
 
     if ((Pixel > mMaxPixel) || (Pixel < mMinPixel)) {
       mEventDiscard++;
@@ -530,6 +536,12 @@ void ESSConsumer::addSubscriber(PlotType Type, bool add) {
   default:
     break;
   }
+
+  // Containers for unsubscribed data types are never cleared, so we refresh
+  // subscription flags to skip appends to mPixelIDs / mTOFs when no plot
+  // subscribes to those data types.
+  mHasPixelIds = mSubscriptionCount[DataType::PIXEL_ID] > 0;
+  mHasTOFs     = mSubscriptionCount[DataType::TOF] > 0;
 
   // Uncomment to print the subscription state
   // for (const auto& dt: DataType::types()) {
