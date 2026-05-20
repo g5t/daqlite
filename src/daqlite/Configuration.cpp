@@ -20,6 +20,8 @@ using std::optional;
 using std::string;
 using std::vector;
 
+bool Configuration::sDebug = false;
+
 void Configuration::prettyJSON(nlohmann::json &obj, const string &header, int indent) {
   fmt::print("{}:\n", header);
   fmt::print("{}\n\n", obj.dump(indent));
@@ -90,7 +92,9 @@ void Configuration::fromJsonObj(const nlohmann::json &obj) {
   getKafkaConfig();
   getPlotConfig();
   getTOFConfig();
-  print();
+  if (sDebug) {
+    print();
+  }
 }
 
 void Configuration::fromJsonFile(const string &fname) {
@@ -109,7 +113,9 @@ void Configuration::fromJsonFile(const string &fname) {
   getKafkaConfig();
   getPlotConfig();
   getTOFConfig();
-  print();
+  if (sDebug) {
+    print();
+  }
 }
 
 void Configuration::getGeometryConfig() {
@@ -210,8 +216,6 @@ Configuration::getVal(const string &Group, const string &Option,
   return Default;
 }
 
-//\brief getVal() template is used to effectively achieve
-// getInt(), getString() and getBool() functionality through T
 template <typename T>
 T Configuration::getVal(const string &Group, const string &Option, T Default,
                         bool Throw) {
@@ -224,13 +228,15 @@ T Configuration::getVal(const string &Group, const string &Option, T Default,
 
   // ... inform, if it is missing
   else {
-    fmt::print("Missing [{}][{}] configuration\n", Group, Option);
     if (Throw) {
+      fmt::print("Missing [{}][{}] configuration\n", Group, Option);
       throw std::runtime_error("Daqlite config error");
-    } else {
-      fmt::print("Using default: {}\n", Default);
-      return Default;
     }
+    if (sDebug) {
+      fmt::print("Missing [{}][{}] configuration\n", Group, Option);
+      fmt::print("Using default: {}\n", Default);
+    }
+    return Default;
   }
 
   return ConfigVal;

@@ -9,6 +9,7 @@
 /// The ThreadSafeVector class provides a thread-safe wrapper around a
 /// std::vector. It ensures that all operations on the vector are protected by a
 /// mutex, making it safe to use in a multi-threaded environment.
+//===----------------------------------------------------------------------===//
 
 #pragma once
 

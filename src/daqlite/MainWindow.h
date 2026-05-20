@@ -35,7 +35,7 @@ public:
   /// \brief Constructor
   ///
   /// \param Config  All plot and Kafka configuration options
-  /// \param Worker  Common worker thread shared by a all plot windows
+  /// \param Worker  Common worker thread shared by all plot windows
   /// \param parent  Parent widget
   MainWindow(const Configuration &Config, WorkerThread *Worker, QWidget *parent = nullptr);
 

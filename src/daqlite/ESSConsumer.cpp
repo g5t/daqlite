@@ -97,8 +97,6 @@ RdKafka::KafkaConsumer *ESSConsumer::subscribeTopic(
     fmt::print("Failed to create consumer: {}\n", ErrStr);
     return nullptr;
   }
-  //
-  // // Start consumer for topic+partition at start offset
   RdKafka::ErrorCode resp = ret->subscribe({mConfig.mKafka.Topic});
   if (resp != RdKafka::ERR_NO_ERROR) {
     fmt::print("Failed to subscribe consumer to '{}': {}\n",
@@ -293,7 +291,7 @@ bool ESSConsumer::handleMessage(RdKafka::Message *Message) {
     return false;
 
   default: // Other errors
-    fmt::print("Consume failed: {}", Message->errstr());
+    fmt::print("Consume failed: {}\n", Message->errstr());
     return false;
   }
 }

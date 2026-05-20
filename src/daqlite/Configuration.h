@@ -5,7 +5,7 @@
 ///
 /// \brief Daquiri light configuration parameters
 ///
-/// Provides default values and allow loading from json file
+/// Provides default values and allows loading from a JSON file
 //===----------------------------------------------------------------------===//
 
 #pragma once
@@ -22,6 +22,10 @@
 
 class Configuration {
 public:
+  /// \brief When false, suppress per-key "Missing" / "Using default" messages
+  ///        and the per-window settings dump. Set from main() before loading.
+  static bool sDebug;
+
   /// \brief constructor using default values
   /// Defaults are likely to be unsuitable and this should probably
   /// always be followed by a call to fromJsonFile()
