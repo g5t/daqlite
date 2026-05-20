@@ -216,4 +216,10 @@ private:
 
   /// \brief The number of deliveries made so far for different data types
   std::map<DataType, size_t> mDeliveryCount;
+
+  /// \brief True when at least one plot subscribes to PIXEL_ID events.
+  bool mHasPixelIds{false};
+
+  /// \brief True when at least one plot subscribes to TOF events.
+  bool mHasTOFs{false};
 };
