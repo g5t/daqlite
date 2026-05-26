@@ -531,6 +531,8 @@ void ESSConsumer::addSubscriber(PlotType Type, bool add) {
   case PlotType::HISTOGRAM:
     if (add) mSubscriptionCount[DataType::HISTOGRAM]++;
     else     mSubscriptionCount[DataType::HISTOGRAM]--;
+    if (add) mSubscriptionCount[DataType::TOF]++;
+    else     mSubscriptionCount[DataType::TOF]--;
     break;
 
   default:
