@@ -33,7 +33,7 @@ HistogramPlot::HistogramPlot(Configuration &Config, ESSConsumer &Consumer)
   connect(this, &QCustomPlot::mouseMove, this, &HistogramPlot::showPointToolTip);
   setAttribute(Qt::WA_AlwaysShowToolTips);
 
-  HistogramYAxisValues.resize(mConfig.mTOF.BinSize);
+  Histogram.resize(mConfig.mTOF.BinSize);
 
   // This will also allow rescaling the axes by dragging/zooming
   setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
@@ -78,19 +78,17 @@ void HistogramPlot::plotDetectorImage(bool) {
   setCustomParameters();
   mGraph->data()->clear();
 
-  for (size_t i = 0; i < HistogramYAxisValues.size(); i++) {
+  for (size_t i = 0; i < Histogram.size(); i++) {
     // Calculate the middle x value of the bin to place the data point
-    auto binWidth = HistogramXAxisValues[i + 1] - HistogramXAxisValues[i];
-    auto middleXValue = HistogramXAxisValues[i] + binWidth / 2.0;
+    double binValue = 0.5 * (Bins[i] + Bins[i + 1]);
+    binValue /= mConfig.mTOF.Scale;
 
-    double ScaledXValue = middleXValue / mConfig.mTOF.Scale;
-
-    mGraph->addData(ScaledXValue, HistogramYAxisValues[i]);
+    mGraph->addData(binValue, Histogram[i]);
   }
 
-  if (mConfig.mTOF.AutoScaleX && !HistogramXAxisValues.empty()) {
-    double MinX = HistogramXAxisValues.front();
-    double MaxX = HistogramXAxisValues.back();
+  if (mConfig.mTOF.AutoScaleX && !Bins.empty()) {
+    double MinX = Bins.front();
+    double MaxX = Bins.back();
     xAxis->setRange(MinX / mConfig.mTOF.Scale, MaxX / mConfig.mTOF.Scale * 1.05);
   }
   if (mConfig.mTOF.AutoScaleY) {
@@ -111,30 +109,30 @@ void HistogramPlot::updateData() {
     return;
   }
 
-  vector<uint32_t> YAxisValues = mConsumer.readData(DataType::HISTOGRAM, source);
+  vector<uint32_t> NewHistogram = mConsumer.readData(DataType::HISTOGRAM, source);
   auto TofValues = mConsumer.readData(DataType::TOF, source, false);
 
-  HistogramXAxisValues = TofValues;
-  if (YAxisValues.size() != HistogramXAxisValues.size() - 1) {
+  Bins = TofValues;
+  if (NewHistogram.size() != Bins.size() - 1) {
     fmt::print("HistogramPlot::updateData() - Y axis values do not match x "
                "axis values. Skip processing!\n");
     return;
   }
 
-  if (HistogramYAxisValues.size() < YAxisValues.size()) {
-    HistogramYAxisValues.resize(YAxisValues.size());
+  if (Histogram.size() < NewHistogram.size()) {
+    Histogram.resize(NewHistogram.size());
   }
 
-  for (size_t i = 0; i < YAxisValues.size(); i++) {
-    HistogramYAxisValues[i] += YAxisValues[i];
-    mMaxY = std::max(mMaxY, HistogramYAxisValues[i]);
+  for (size_t i = 0; i < NewHistogram.size(); i++) {
+    Histogram[i] += NewHistogram[i];
+    mMaxY = std::max(mMaxY, Histogram[i]);
   }
 
   plotDetectorImage(false);
 }
 
 void HistogramPlot::clearDetectorImage() {
-  std::fill(HistogramYAxisValues.begin(), HistogramYAxisValues.end(), 0);
+  std::fill(Histogram.begin(), Histogram.end(), 0);
   mMaxY = 0;
   plotDetectorImage(true);
 }
