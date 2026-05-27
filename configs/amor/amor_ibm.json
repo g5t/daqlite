@@ -3,7 +3,7 @@
     "broker"                   : "10.70.6.62:9092",
     "topic"                    : "amor_beam_monitor",
     "source"                   : "cbm1",
-    
+
     "message.max.bytes"        : "10000000",
     "fetch.message.max.bytes"  : "10000000",
     "replica.fetch.max.bytes"  : "10000000",
@@ -20,7 +20,8 @@
 
   "tof": {
     "scale"     : 1000,
-    "max_value" : 150000
+    "max_value" : 133400,
+    "bin_size"  : 12
   },
 
   "plot": {

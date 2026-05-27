@@ -47,8 +47,8 @@ private:
   // QCustomPlot variables
   QCPGraph *mGraph{nullptr};
 
-  std::vector<uint32_t> HistogramYAxisValues;
-  std::vector<uint32_t> HistogramXAxisValues;
+  std::vector<uint32_t> Histogram;
+  std::vector<uint32_t> Bins;
 
   /// \brief cached maximum Y value for auto-scaling
   uint32_t mMaxY{0};
