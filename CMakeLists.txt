@@ -40,6 +40,7 @@ add_subdirectory(src)
 #    daqlite
 #    )
 #endif()
+enable_testing() # must be at the top level for ctest to see tests/ registrations
 add_subdirectory(tests)
 
 #=============================================================================
