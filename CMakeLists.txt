@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
 project(daquiri
     LANGUAGES CXX C
     VERSION 0.0.1
@@ -33,13 +33,14 @@ include(CoverageReports)
 
 add_subdirectory(src)
 
-include(FindGTestFix)
-if(GTest_FOUND)
-  #add_subdirectory(tests)
-  add_custom_target(everything DEPENDS
-    daqlite
-    )
-endif()
+#include(FindGTestFix)
+#if(GTest_FOUND)
+#  message(STATUS "GTest found, adding tests subdirectory")
+#  add_custom_target(everything DEPENDS
+#    daqlite
+#    )
+#endif()
+add_subdirectory(tests)
 
 #=============================================================================
 # cppcheck target — mirrors the GitLab CI invocation
